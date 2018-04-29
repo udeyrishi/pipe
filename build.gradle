@@ -2,7 +2,10 @@ buildscript {
     ext {
         versions = [
                 'junit' : '4.12',
-                'kotlin': '1.2.40'
+                'kotlin': [
+                        'coroutines': '0.21',
+                        'lang': '1.2.40'
+                ]
         ]
 
         coreVersions = [
@@ -12,8 +15,9 @@ buildscript {
         depends = [
                 'junit' : "junit:junit:${versions.junit}",
                 'kotlin': [
-                        'gradle_plugin': "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}",
-                        'stdlib'       : "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${versions.kotlin}"
+                        'coroutines'   : "org.jetbrains.kotlinx:kotlinx-coroutines-core:${versions.kotlin.coroutines}",
+                        'gradle_plugin': "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin.lang}",
+                        'stdlib'       : "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${versions.kotlin.lang}"
                 ]
         ]
     }
@@ -35,17 +39,27 @@ apply plugin: 'kotlin'
 sourceCompatibility = 1.7
 
 repositories {
+    jcenter()
     mavenCentral()
 }
 
 dependencies {
     implementation depends.kotlin.stdlib
+    implementation depends.kotlin.coroutines
     testImplementation depends.junit
+}
+
+kotlin {
+    experimental {
+        coroutines 'enable'
+    }
 }
 
 compileKotlin {
     kotlinOptions.jvmTarget = "1.7"
+    kotlinOptions.allWarningsAsErrors = true
 }
 compileTestKotlin {
     kotlinOptions.jvmTarget = "1.7"
+    kotlinOptions.allWarningsAsErrors = true
 }
