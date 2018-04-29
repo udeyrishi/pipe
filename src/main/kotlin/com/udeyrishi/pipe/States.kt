@@ -1,5 +1,6 @@
-/* Copyright (c) 2018 Udey Rishi. All rights reserved. */
-
+/**
+ * Copyright (c) 2018 Udey Rishi. All rights reserved.
+ */
 package com.udeyrishi.pipe
 
 sealed class State {
@@ -13,7 +14,7 @@ sealed class State {
         fun onFailure(cause: Throwable) = TerminalFailure(listOf(cause))
     }
 
-    class RunningStep private constructor(private val step: String) : State() {
+    class RunningStep(val step: String) : State() {
         fun onSuccess(nextStep: String? = null): State {
             return nextStep?.let {
                 RunningStep(it)
@@ -26,18 +27,21 @@ sealed class State {
     }
 
     class StepFailed(cause: Throwable) : State() {
-        private val causes = mutableListOf<Throwable>().apply { add(cause) }
+        private val _causes = mutableListOf<Throwable>().apply { add(cause) }
 
-        fun onSuccess(retryStep: String): State = RunningStep(retryStep)
+        val causes: List<Throwable>
+            get() = _causes.toList()
 
-        fun onFailure(cause: Throwable? = null): State {
+        fun onSuccess(retryStep: String) = RunningStep(retryStep)
+
+        fun onFailure(cause: Throwable? = null): TerminalFailure {
             if (cause != null) {
-                causes.add(cause)
+                _causes.add(cause)
             }
-            return TerminalFailure(causes)
+            return TerminalFailure(_causes)
         }
 
-        override fun toString(): String = "${super.toString()}(causes=${causes.size})"
+        override fun toString(): String = "${super.toString()}(causes=${_causes.size})"
     }
 
     class TerminalSuccess : State()
@@ -46,5 +50,5 @@ sealed class State {
         override fun toString(): String = "${super.toString()}(causes=${causes.size})"
     }
 
-    override fun toString(): String = this.javaClass.name
+    override fun toString(): String = this.javaClass.simpleName
 }
