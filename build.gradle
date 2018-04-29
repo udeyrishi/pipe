@@ -1,0 +1,51 @@
+buildscript {
+    ext {
+        versions = [
+                'junit' : '4.12',
+                'kotlin': '1.2.40'
+        ]
+
+        coreVersions = [
+                'pipe': '0.0.1'
+        ]
+
+        depends = [
+                'junit' : "junit:junit:${versions.junit}",
+                'kotlin': [
+                        'gradle_plugin': "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}",
+                        'stdlib'       : "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${versions.kotlin}"
+                ]
+        ]
+    }
+
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath depends.kotlin.gradle_plugin
+    }
+}
+
+group 'com.udeyrishi'
+version coreVersions.pipe
+
+apply plugin: 'java'
+apply plugin: 'kotlin'
+
+sourceCompatibility = 1.7
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation depends.kotlin.stdlib
+    testImplementation depends.junit
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.7"
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.7"
+}
