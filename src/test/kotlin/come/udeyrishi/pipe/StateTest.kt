@@ -18,17 +18,18 @@ class StateTest {
         val scheduled = State.Scheduled()
         assertTrue(scheduled.onSuccess() is State.Terminal.Success)
 
-        val cause = RuntimeException("Some error")
-
-        val terminalFailure: State.Terminal.Failure = scheduled.onFailure(cause)
-        assertEquals(1, terminalFailure.causes.size)
-        assertTrue(cause === terminalFailure.causes[0])
-
         val running = scheduled.onSuccess(nextStep = "foo")
         assertTrue(running is State.Running.Attempting)
         assertEquals("foo", (running as State.Running.Attempting).step)
 
         assertEquals("Scheduled", scheduled.toString())
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun scheduledFailsOnFailure() {
+        val scheduled = State.Scheduled()
+        val cause = RuntimeException("Some error")
+        scheduled.onFailure(cause)
     }
 
     @Test
@@ -37,39 +38,83 @@ class StateTest {
         assertEquals("Attempting(step=foo)", runningStep.toString())
 
         val cause = RuntimeException("Some error")
-        val attemptFailed: State.Running.AttemptFailed = runningStep.onFailure(cause)
-        assertEquals(1, attemptFailed.causes.size)
-        assertEquals(cause, attemptFailed.causes[0])
+        val attemptFailed = runningStep.onFailure(cause)
+        assertTrue(attemptFailed is State.Running.AttemptFailed)
 
-        assertTrue(runningStep.onSuccess() is State.Terminal.Success)
+        (attemptFailed as State.Running.AttemptFailed).let {
+            assertEquals(cause, it.cause)
+        }
 
-        val nextRunningStep = runningStep.onSuccess("bar")
-        assertTrue(nextRunningStep is State.Running.Attempting)
+        assertTrue(runningStep.onSuccess() is State.Running.AttemptSuccessful)
+    }
 
-        assertEquals("bar", (nextRunningStep as State.Running.Attempting).step)
+    @Test(expected = IllegalArgumentException::class)
+    fun runningStepStateFailsOnSuccessWithNextStepName() {
+        val runningStep = State.Running.Attempting("foo")
+        runningStep.onSuccess("bar")
+    }
+
+    @Test
+    fun stepSucceededWorks() {
+        val stepSucceeded = State.Running.AttemptSuccessful("foo")
+        assertEquals("AttemptSuccessful(step=foo)", stepSucceeded.toString())
+        assertTrue(stepSucceeded.onSuccess() is State.Terminal.Success)
+
+        val attempting = stepSucceeded.onSuccess("bar")
+        assertTrue(attempting is State.Running.Attempting)
+        assertEquals("bar", (attempting as State.Running.Attempting).step)
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun stepSucceededFailsOnFailure() {
+        val stepSucceeded = State.Running.AttemptSuccessful("foo")
+        stepSucceeded.onFailure(RuntimeException())
     }
 
     @Test
     fun stepFailedWorks() {
         val cause = RuntimeException("Some error")
-        val attemptFailed: State.Running.AttemptFailed = State.Running.AttemptFailed(cause)
-        assertEquals(1, attemptFailed.causes.size)
-        assertEquals(cause, attemptFailed.causes[0])
+        val attemptFailed: State.Running.AttemptFailed = State.Running.AttemptFailed("foo", cause)
+        assertEquals(cause, attemptFailed.cause)
+        assertEquals("foo", attemptFailed.step)
 
         val cause2 = RuntimeException("Some error 2")
-        val terminal: State.Terminal.Failure = attemptFailed.onFailure(cause2)
-        assertEquals(2, terminal.causes.size)
-        assertEquals(cause, terminal.causes[0])
-        assertEquals(cause2, terminal.causes[1])
+        val terminal = attemptFailed.onFailure(cause2)
+        assertTrue(terminal is State.Terminal.Failure)
 
-        val success: State.Running.Attempting = attemptFailed.onSuccess("foo")
-        assertEquals("foo", success.step)
+        (terminal as State.Terminal.Failure).let {
+            assertEquals(2, it.causes.size)
+            assertEquals(cause, it.causes[0])
+            assertEquals(cause2, it.causes[1])
+        }
+
+        val success = attemptFailed.onSuccess()
+        assertTrue(success is State.Running.Attempting)
+        assertEquals("foo", (success as State.Running.Attempting).step)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun failureStepStateFailsOnSuccessWithNextStepName() {
+        val runningStep = State.Running.AttemptFailed("foo", RuntimeException())
+        runningStep.onSuccess("bar")
     }
 
     @Test
     fun terminalSuccessWorks() {
         val terminalSuccess = State.Terminal.Success()
         assertEquals("Success", terminalSuccess.toString())
+        assertTrue(terminalSuccess === terminalSuccess.onSuccess())
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun terminalSuccessStateFailsOnFailure() {
+        State.Terminal.Success().onFailure(RuntimeException())
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun terminalSuccessStateFailsOnSuccessWithNextStepName() {
+        val terminalSuccess = State.Terminal.Success()
+        terminalSuccess.onSuccess("bar")
     }
 
     @Test
@@ -80,5 +125,21 @@ class StateTest {
         assertEquals(causes[0], terminalFailure.causes[0])
         assertEquals(causes[1], terminalFailure.causes[1])
         assertEquals("Failure(causes=2)", terminalFailure.toString())
+
+        val anotherCause = RuntimeException("hello")
+        val anotherRef = terminalFailure.onFailure(anotherCause)
+
+        assertTrue(anotherRef === terminalFailure)
+
+        assertEquals(3, terminalFailure.causes.size)
+        assertEquals(causes[0], terminalFailure.causes[0])
+        assertEquals(causes[1], terminalFailure.causes[1])
+        assertEquals(anotherCause, terminalFailure.causes[2])
+        assertEquals("Failure(causes=3)", terminalFailure.toString())
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun terminalFailureFailsOnSuccess() {
+        State.Terminal.Failure(listOf(RuntimeException())).onSuccess()
     }
 }

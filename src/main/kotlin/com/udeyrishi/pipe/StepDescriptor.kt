@@ -3,4 +3,4 @@
  */
 package com.udeyrishi.pipe
 
-internal data class StepDescriptor<T>(val step: Step<T>, val maxAttempts: Long)
+internal data class StepDescriptor<T>(val step: Step<T>, val maxAttempts: Long, val name: String)
