@@ -11,74 +11,74 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 @RunWith(JUnit4::class)
-class StatesTest {
+class StateTest {
 
     @Test
     fun scheduledWorks() {
         val scheduled = State.Scheduled()
-        assertTrue(scheduled.onSuccess() is State.TerminalSuccess)
+        assertTrue(scheduled.onSuccess() is State.Terminal.Success)
 
         val cause = RuntimeException("Some error")
 
-        val terminalFailure: State.TerminalFailure = scheduled.onFailure(cause)
+        val terminalFailure: State.Terminal.Failure = scheduled.onFailure(cause)
         assertEquals(1, terminalFailure.causes.size)
         assertTrue(cause === terminalFailure.causes[0])
 
         val running = scheduled.onSuccess(nextStep = "foo")
-        assertTrue(running is State.RunningStep)
-        assertEquals("foo", (running as State.RunningStep).step)
+        assertTrue(running is State.Running.Attempting)
+        assertEquals("foo", (running as State.Running.Attempting).step)
 
         assertEquals("Scheduled", scheduled.toString())
     }
 
     @Test
     fun runningStepWorks() {
-        val runningStep = State.RunningStep("foo")
-        assertEquals("RunningStep(step=foo)", runningStep.toString())
+        val runningStep = State.Running.Attempting("foo")
+        assertEquals("Attempting(step=foo)", runningStep.toString())
 
         val cause = RuntimeException("Some error")
-        val stepFailed: State.StepFailed = runningStep.onFailure(cause)
-        assertEquals(1, stepFailed.causes.size)
-        assertEquals(cause, stepFailed.causes[0])
+        val attemptFailed: State.Running.AttemptFailed = runningStep.onFailure(cause)
+        assertEquals(1, attemptFailed.causes.size)
+        assertEquals(cause, attemptFailed.causes[0])
 
-        assertTrue(runningStep.onSuccess() is State.TerminalSuccess)
+        assertTrue(runningStep.onSuccess() is State.Terminal.Success)
 
         val nextRunningStep = runningStep.onSuccess("bar")
-        assertTrue(nextRunningStep is State.RunningStep)
+        assertTrue(nextRunningStep is State.Running.Attempting)
 
-        assertEquals("bar", (nextRunningStep as State.RunningStep).step)
+        assertEquals("bar", (nextRunningStep as State.Running.Attempting).step)
     }
 
     @Test
     fun stepFailedWorks() {
         val cause = RuntimeException("Some error")
-        val stepFailed: State.StepFailed = State.StepFailed(cause)
-        assertEquals(1, stepFailed.causes.size)
-        assertEquals(cause, stepFailed.causes[0])
+        val attemptFailed: State.Running.AttemptFailed = State.Running.AttemptFailed(cause)
+        assertEquals(1, attemptFailed.causes.size)
+        assertEquals(cause, attemptFailed.causes[0])
 
         val cause2 = RuntimeException("Some error 2")
-        val terminal: State.TerminalFailure = stepFailed.onFailure(cause2)
+        val terminal: State.Terminal.Failure = attemptFailed.onFailure(cause2)
         assertEquals(2, terminal.causes.size)
         assertEquals(cause, terminal.causes[0])
         assertEquals(cause2, terminal.causes[1])
 
-        val success: State.RunningStep = stepFailed.onSuccess("foo")
+        val success: State.Running.Attempting = attemptFailed.onSuccess("foo")
         assertEquals("foo", success.step)
     }
 
     @Test
     fun terminalSuccessWorks() {
-        val terminalSuccess = State.TerminalSuccess()
-        assertEquals("TerminalSuccess", terminalSuccess.toString())
+        val terminalSuccess = State.Terminal.Success()
+        assertEquals("Success", terminalSuccess.toString())
     }
 
     @Test
     fun terminalFailureWorks() {
         val causes = listOf(RuntimeException("foo"), RuntimeException("bar"))
-        val terminalFailure = State.TerminalFailure(causes = causes)
+        val terminalFailure = State.Terminal.Failure(causes = causes)
         assertEquals(2, terminalFailure.causes.size)
         assertEquals(causes[0], terminalFailure.causes[0])
         assertEquals(causes[1], terminalFailure.causes[1])
-        assertEquals("TerminalFailure(causes=2)", terminalFailure.toString())
+        assertEquals("Failure(causes=2)", terminalFailure.toString())
     }
 }
