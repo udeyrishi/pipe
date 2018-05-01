@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2018 Udey Rishi. All rights reserved.
  */
-package come.udeyrishi.pipe
+package com.udeyrishi.pipe
 
 import com.udeyrishi.pipe.State
 import org.junit.Assert.assertEquals
@@ -23,13 +23,12 @@ class StateTest {
         assertEquals("foo", (running as State.Running.Attempting).step)
 
         assertEquals("Scheduled", scheduled.toString())
-    }
 
-    @Test(expected = IllegalStateException::class)
-    fun scheduledFailsOnFailure() {
-        val scheduled = State.Scheduled()
         val cause = RuntimeException("Some error")
-        scheduled.onFailure(cause)
+        val terminal = scheduled.onFailure(cause)
+        assertTrue(terminal is State.Terminal.Failure)
+        assertEquals(1, (terminal as State.Terminal.Failure).causes.size)
+        assertTrue(cause === terminal.causes[0])
     }
 
     @Test
@@ -63,12 +62,12 @@ class StateTest {
         val attempting = stepSucceeded.onSuccess("bar")
         assertTrue(attempting is State.Running.Attempting)
         assertEquals("bar", (attempting as State.Running.Attempting).step)
-    }
 
-    @Test(expected = IllegalStateException::class)
-    fun stepSucceededFailsOnFailure() {
-        val stepSucceeded = State.Running.AttemptSuccessful("foo")
-        stepSucceeded.onFailure(RuntimeException())
+        val cause = RuntimeException()
+        val terminal = stepSucceeded.onFailure(cause)
+        assertTrue(terminal is State.Terminal.Failure)
+        assertEquals(1, (terminal as State.Terminal.Failure).causes.size)
+        assertTrue(cause === terminal.causes[0])
     }
 
     @Test
@@ -88,13 +87,13 @@ class StateTest {
             assertEquals(cause2, it.causes[1])
         }
 
-        val success = attemptFailed.onSuccess()
+        val success = attemptFailed.onSuccess("foo")
         assertTrue(success is State.Running.Attempting)
         assertEquals("foo", (success as State.Running.Attempting).step)
     }
 
     @Test(expected = IllegalArgumentException::class)
-    fun failureStepStateFailsOnSuccessWithNextStepName() {
+    fun failureStepStateFailsOnSuccessWithInconsistentStepName() {
         val runningStep = State.Running.AttemptFailed("foo", RuntimeException())
         runningStep.onSuccess("bar")
     }
@@ -104,11 +103,12 @@ class StateTest {
         val terminalSuccess = State.Terminal.Success()
         assertEquals("Success", terminalSuccess.toString())
         assertTrue(terminalSuccess === terminalSuccess.onSuccess())
-    }
 
-    @Test(expected = IllegalStateException::class)
-    fun terminalSuccessStateFailsOnFailure() {
-        State.Terminal.Success().onFailure(RuntimeException())
+        val cause = RuntimeException()
+        val terminalFailure = terminalSuccess.onFailure(cause)
+        assertTrue(terminalFailure is State.Terminal.Failure)
+        assertEquals(1, (terminalFailure as State.Terminal.Failure).causes.size)
+        assertTrue(cause === terminalFailure.causes[0])
     }
 
     @Test(expected = IllegalArgumentException::class)

@@ -14,11 +14,11 @@ sealed class State {
             } ?: Terminal.Success()
         }
 
-        override fun onFailure(cause: Throwable): State = throw IllegalStateException("Scheduled state can never fail.")
+        override fun onFailure(cause: Throwable): State = Terminal.Failure(listOf(cause))
     }
 
-    sealed class Running : State() {
-        class Attempting internal constructor(val step: String) : Running() {
+    sealed class Running(val step: String) : State() {
+        class Attempting internal constructor(step: String) : Running(step) {
             override fun onSuccess(nextStep: String?): State {
                 if (nextStep != null) {
                     throw IllegalArgumentException("nextStep must be null for ${this::class.java.simpleName}.")
@@ -32,32 +32,28 @@ sealed class State {
             override fun toString(): String = "${super.toString()}(step=$step)"
         }
 
-        class AttemptFailed internal constructor(val step: String, val cause: Throwable) : Running() {
+        class AttemptFailed internal constructor(step: String, val cause: Throwable) : Running(step) {
             override fun onSuccess(nextStep: String?): State {
-                if (nextStep != null) {
-                    throw IllegalArgumentException("nextStep must be null for ${this::class.java.simpleName}.")
+                if (nextStep != step) {
+                    throw IllegalArgumentException("nextStep must be the same as step for ${this::class.java.simpleName}.")
                 }
 
                 return Attempting(step)
             }
 
-            override fun onFailure(cause: Throwable): State {
-                return Terminal.Failure(listOf(this.cause, cause))
-            }
+            override fun onFailure(cause: Throwable): State = Terminal.Failure(listOf(this.cause, cause))
 
             override fun toString(): String = "${super.toString()}(cause=${cause::class.java.simpleName})"
         }
 
-        class AttemptSuccessful internal constructor(val step: String) : Running() {
+        class AttemptSuccessful internal constructor(step: String) : Running(step) {
             override fun onSuccess(nextStep: String?): State {
                 return nextStep?.let {
                     Attempting(it)
                 } ?: Terminal.Success()
             }
 
-            override fun onFailure(cause: Throwable): State {
-                throw IllegalStateException("${this::class.java.simpleName} cannot have a failure state following it.")
-            }
+            override fun onFailure(cause: Throwable): State = Terminal.Failure(listOf(cause))
 
             override fun toString(): String = "${super.toString()}(step=$step)"
         }
@@ -72,9 +68,7 @@ sealed class State {
                 return this
             }
 
-            override fun onFailure(cause: Throwable): State {
-                throw IllegalStateException("${this::class.java.simpleName} cannot have a failure state following it.")
-            }
+            override fun onFailure(cause: Throwable): State = Terminal.Failure(listOf(cause))
         }
 
         class Failure internal constructor(causes: List<Throwable>) : Terminal() {
