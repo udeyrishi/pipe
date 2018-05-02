@@ -4,6 +4,7 @@
 package com.udeyrishi.pipe
 
 import com.udeyrishi.pipe.util.immutableAfterSet
+import com.udeyrishi.pipe.util.synchronizedRun
 import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.launch
 import java.io.Serializable
@@ -15,7 +16,7 @@ class Tracker<T : Serializable> internal constructor(override val uuid: UUID, ov
 
     private var started: Boolean by immutableAfterSet(false)
     private var interrupted: Boolean by immutableAfterSet(false)
-    private val stateChangeListeners = StateChangeListeners()
+    private val stateChangeListeners = mutableListOf<StateChangeListener>()
 
     var state: State = State.Scheduled()
         private set
@@ -29,19 +30,19 @@ class Tracker<T : Serializable> internal constructor(override val uuid: UUID, ov
      * If the StateChangeListener throws an exception, the execution will be stopped, and state will be State.Terminal.Failure.
      */
     fun subscribe(stateChangeListener: StateChangeListener) {
-        stateChangeListeners.synchronizedApply {
+        stateChangeListeners.synchronizedRun {
             add(stateChangeListener)
         }
     }
 
     fun unsubscribe(stateChangeListener: StateChangeListener): Boolean {
-        return stateChangeListeners.synchronizedApply {
+        return stateChangeListeners.synchronizedRun {
             remove(stateChangeListener)
         }
     }
 
     fun unsubscribeAll() {
-        stateChangeListeners.synchronizedApply {
+        stateChangeListeners.synchronizedRun {
             clear()
         }
     }
@@ -54,9 +55,7 @@ class Tracker<T : Serializable> internal constructor(override val uuid: UUID, ov
         started = true
 
         stateChangeListener?.let {
-            this.stateChangeListeners.synchronizedApply {
-                add(it)
-            }
+            subscribe(it)
         }
 
         launch {
@@ -83,7 +82,7 @@ class Tracker<T : Serializable> internal constructor(override val uuid: UUID, ov
     }
 
     private fun notifyStateChangeListeners(previousState: State): Boolean {
-        return stateChangeListeners.synchronizedApply {
+        return stateChangeListeners.synchronizedRun {
             var allCallbacksCalled = true
             for (it in this) {
                 try {
@@ -219,15 +218,4 @@ private class Cursor<T>(input: T, private val steps: Iterator<StepDescriptor<T>>
 
     operator fun component1() = nextInput
     operator fun component2() = nextStep
-}
-
-private class StateChangeListeners {
-    private val stateChangeListenersLock = Any()
-    private val listeners = mutableListOf<StateChangeListener>()
-
-    fun <T> synchronizedApply(action: (MutableList<StateChangeListener>.() -> T)): T {
-        return synchronized(stateChangeListenersLock) {
-            listeners.action()
-        }
-    }
 }
