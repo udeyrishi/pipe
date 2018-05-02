@@ -601,4 +601,76 @@ class TrackerTest {
         tracker.start()
         tracker.start()
     }
+
+    @Test
+    fun unsubscribeWorks() {
+        val steps =  (0..2).map { i ->
+            StepDescriptor<String>("step$i", 1, Step {
+                it
+            })
+        }
+
+        val listener = StateChangeListener { _, _ ->
+        }
+
+        var called = false
+        val badListener = StateChangeListener { _, _ ->
+            called = true
+            fail("should not have been called")
+        }
+
+        val tracker = Tracker(UUID.randomUUID(), 0L, "in", steps.iterator())
+        tracker.subscribe(listener)
+        tracker.subscribe(listener)
+        tracker.subscribe(badListener)
+        tracker.subscribe(listener)
+        assertTrue(tracker.unsubscribe(badListener))
+        assertFalse(tracker.unsubscribe(StateChangeListener { _, _ ->  }))
+        tracker.start(listener)
+
+        while (tracker.state !is State.Terminal) {
+            Thread.sleep(100)
+        }
+
+        assertTrue(tracker.state is State.Terminal.Success)
+        assertFalse(called)
+    }
+
+    @Test
+    fun callbacksAreCalledInTheCorrectOrder() {
+        var i = 0
+        val listener1 = StateChangeListener { _, _ ->
+            assertEquals(0, i)
+            ++i
+        }
+
+        val listener2 = StateChangeListener { _, _ ->
+            assertEquals(1, i)
+            ++i
+        }
+
+        val listener3 = StateChangeListener { _, _ ->
+            assertEquals(2, i)
+            i = (i + 1) % 3
+        }
+
+        val steps =  (0..2).map { j ->
+            StepDescriptor<String>("step$j", 1, Step {
+                it
+            })
+        }
+
+        val tracker = Tracker(UUID.randomUUID(), 0L, "in", steps.iterator())
+
+        tracker.subscribe(listener1)
+        tracker.subscribe(listener2)
+        tracker.start(listener3)
+
+        while (tracker.state !is State.Terminal) {
+            Thread.sleep(100)
+        }
+
+        assertTrue(tracker.state is State.Terminal.Success)
+        assertEquals(0, i)
+    }
 }
