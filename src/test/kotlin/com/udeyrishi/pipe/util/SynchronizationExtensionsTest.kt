@@ -28,8 +28,8 @@ class SynchronizationExtensionsTest {
         // By that time job1 is done waiting, and it tries to acquire the lock, it wouldn't get access, because job2 would still be holding it.
         // The resulting list would be [1, 0].
         // (job1's delayInside is pointless)
-        val job1 = appendToList(0, delayOutside = 200, delayInside = 0)
-        val job2 = appendToList(1, delayOutside = 100, delayInside = 300)
+        val job1 = appendToList(0, delayOutside = 500, delayInside = 0)
+        val job2 = appendToList(1, delayOutside = 200, delayInside = 700)
 
         runBlocking {
             job1.join()
@@ -45,8 +45,8 @@ class SynchronizationExtensionsTest {
     fun synchronizedRunHoldsLockCorrectlyUnderSimpleCase() {
         // job1 will be in and out by the time job2 tries to acquire the lock (200 + 300 < 600).
         // The execution here would be simple.
-        val job1 = appendToList(0, delayOutside = 50, delayInside = 60)
-        val job2 = appendToList(1, delayOutside = 150, delayInside = 0)
+        val job1 = appendToList(0, delayOutside = 100, delayInside = 200)
+        val job2 = appendToList(1, delayOutside = 500, delayInside = 0)
 
         runBlocking {
             job1.join()
