@@ -60,41 +60,46 @@ class Tracker<T : Serializable> internal constructor(override val uuid: UUID, ov
             val (nextInput: T, nextStep: StepDescriptor<T>?) = cursor
 
             if (nextStep == null) {
-                result = nextInput
-                if (stateHolder.onStateSuccess()) {
-                    // No more steps. Next input _is the_ result for this tracker
-                    state.sanityCheck<State.Terminal.Success>()
-                } else {
-                    // Bad state change listener callback
-                    state.sanityCheck<State.Terminal.Failure>()
-                }
+                onResultPrepared(result = nextInput)
                 break
             }
 
             val stepResult: T? = runStep(nextInput, nextStep)
 
             if (stepResult == null) {
-                // Ran out of attempts or interrupted, or a bad state changed callback
-                if (state !is State.Terminal.Failure) {
-                    // Normal execution: Ran out of attempts or interrupted
-                    state.sanityCheck<State.Running.AttemptFailed>()
-                    stateHolder.onStateFailure(cause = if (interrupted) TrackerInterruptedException(this) else StepOutOfAttemptsException(this, nextStep))
-                    // No need to check the result for ^. Even if it's false, the state is still terminal false
-                    state.sanityCheck<State.Terminal.Failure>()
-                }
+                onStepResultNull(failingStep = nextStep)
                 break
             }
 
             state.sanityCheck<State.Running.AttemptSuccessful>()
-
             cursor.move(nextInput = stepResult)
         }
     }
 
-    private suspend fun <T> runStep(nextInput: T, nextStep: StepDescriptor<T>): T? {
-        val (name: String, maxAttempts: Long, step: Step<T>) = nextStep
+    private fun onResultPrepared(result: T) {
+        this.result = result
+        if (stateHolder.onStateSuccess()) {
+            // No more steps. Next input _is the_ result for this tracker
+            state.sanityCheck<State.Terminal.Success>()
+        } else {
+            // Bad state change listener callback
+            state.sanityCheck<State.Terminal.Failure>()
+        }
+    }
 
-        for (i in 0L until maxAttempts) {
+    private fun onStepResultNull(failingStep: StepDescriptor<T>) {
+        // Ran out of attempts or interrupted, or a bad state changed callback
+        if (state !is State.Terminal.Failure) {
+            // Normal execution: Ran out of attempts or interrupted
+            state.sanityCheck<State.Running.AttemptFailed>()
+            stateHolder.onStateFailure(cause = if (interrupted) TrackerInterruptedException(this) else StepOutOfAttemptsException(this, failingStep))
+            // No need to check the result for ^. Even if it's false, the state is still terminal false
+            state.sanityCheck<State.Terminal.Failure>()
+        }
+    }
+
+    private suspend fun runStep(nextInput: T, nextStep: StepDescriptor<T>): T? {
+        for (i in 0L until nextStep.maxAttempts) {
             if (!stateHolder.onStateSuccess(nextStep.name)) {
                 // Bad state change listener
                 state.sanityCheck<State.Terminal.Failure>()
@@ -102,42 +107,63 @@ class Tracker<T : Serializable> internal constructor(override val uuid: UUID, ov
             }
             state.sanityCheck<State.Running.Attempting>()
 
-            if (interrupted) {
-                if (stateHolder.onStateFailure(StepInterruptedException(tracker = this, attempt = i, stepName = name))) {
-                    state.sanityCheck<State.Running.AttemptFailed>()
-                } else {
-                    // Bad state change listener
-                    state.sanityCheck<State.Terminal.Failure>()
-                }
-                break
-            }
+            if (checkInterruption(attempt = i, stepName = nextStep.name)) break
 
-            val stepResult: T? = try {
-                val result = step.doStep(nextInput)
-                if (!stateHolder.onStateSuccess()) {
-                    // Bad state change listener
-                    state.sanityCheck<State.Terminal.Failure>()
-                    break
-                }
-                result
-            } catch (e: Throwable) {
-                if (!stateHolder.onStateFailure(StepFailureException(tracker = this, attempt = i, stepName = name, throwable = e))) {
-                    // Bad state change listener
-                    state.sanityCheck<State.Terminal.Failure>()
-                    break
-                }
-                null
-            }
+            val attemptResult = doStepAttempt(attempt = i, step = nextStep, input = nextInput)
+            if (attemptResult.fatalError) break
 
-            if (stepResult == null) {
+            if (attemptResult.stepResult == null) {
                 state.sanityCheck<State.Running.AttemptFailed>()
             } else {
                 state.sanityCheck<State.Running.AttemptSuccessful>()
-                return stepResult
+                return attemptResult.stepResult
             }
         }
 
         return null
+    }
+
+    private fun checkInterruption(attempt: Long, stepName: String): Boolean {
+        return if (interrupted) {
+            if (stateHolder.onStateFailure(StepInterruptedException(tracker = this, attempt = attempt, stepName = stepName))) {
+                state.sanityCheck<State.Running.AttemptFailed>()
+            } else {
+                // Bad state change listener
+                state.sanityCheck<State.Terminal.Failure>()
+            }
+            true
+        } else {
+            false
+        }
+    }
+
+    private fun doStepAttempt(attempt: Long, step: StepDescriptor<T>, input: T): StepAttemptResult<T> {
+        return try {
+            val result: T = step.step.doStep(input)
+            if (stateHolder.onStateSuccess()) {
+                StepAttemptResult.forSuccess(result)
+            } else {
+                // Bad state change listener
+                state.sanityCheck<State.Terminal.Failure>()
+                StepAttemptResult.forFatalError()
+            }
+        } catch (e: Throwable) {
+            if (stateHolder.onStateFailure(StepFailureException(tracker = this, attempt = attempt, stepName = step.name, throwable = e))) {
+                StepAttemptResult.forFailedStep()
+            } else {
+                // Bad state change listener
+                state.sanityCheck<State.Terminal.Failure>()
+                StepAttemptResult.forFatalError()
+            }
+        }
+    }
+
+    private class StepAttemptResult<out T> private constructor(val stepResult: T?, val fatalError: Boolean) {
+        companion object {
+            fun forFatalError() = StepAttemptResult(null, true)
+            fun forFailedStep() = StepAttemptResult(null, false)
+            fun <T> forSuccess(result: T) = StepAttemptResult(result, false)
+        }
     }
 
     override fun compareTo(other: Tracker<T>): Int = position.compareTo(other.position)
