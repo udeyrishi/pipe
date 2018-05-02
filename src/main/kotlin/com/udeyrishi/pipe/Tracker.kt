@@ -16,36 +16,22 @@ class Tracker<T : Serializable> internal constructor(override val uuid: UUID, ov
 
     private var started: Boolean by immutableAfterSet(false)
     private var interrupted: Boolean by immutableAfterSet(false)
-    private val stateChangeListeners = mutableListOf<StateChangeListener>()
-
-    var state: State = State.Scheduled()
-        private set
+    private val stateHolder = StateHolder()
 
     var result: T? by immutableAfterSet(null)
         private set
+
+    val state: State
+        get() = stateHolder.state
 
     private val cursor = Cursor(input, steps)
 
     /**
      * If the StateChangeListener throws an exception, the execution will be stopped, and state will be State.Terminal.Failure.
      */
-    fun subscribe(stateChangeListener: StateChangeListener) {
-        stateChangeListeners.synchronizedRun {
-            add(stateChangeListener)
-        }
-    }
-
-    fun unsubscribe(stateChangeListener: StateChangeListener): Boolean {
-        return stateChangeListeners.synchronizedRun {
-            remove(stateChangeListener)
-        }
-    }
-
-    fun unsubscribeAll() {
-        stateChangeListeners.synchronizedRun {
-            clear()
-        }
-    }
+    fun subscribe(stateChangeListener: StateChangeListener) = stateHolder.subscribe(stateChangeListener)
+    fun unsubscribe(stateChangeListener: StateChangeListener): Boolean = stateHolder.unsubscribe(stateChangeListener)
+    fun unsubscribeAll() = stateHolder.unsubscribeAll()
 
     fun start(stateChangeListener: StateChangeListener? = null) {
         if (started) {
@@ -69,49 +55,13 @@ class Tracker<T : Serializable> internal constructor(override val uuid: UUID, ov
         }
     }
 
-    private fun onStateSuccess(nextStep: String? = null): Boolean {
-        val previousState = state
-        state = state.onSuccess(nextStep)
-        return notifyStateChangeListeners(previousState)
-    }
-
-    private fun onStateFailure(cause: Throwable): Boolean {
-        val previousState = state
-        state = state.onFailure(cause)
-        return notifyStateChangeListeners(previousState)
-    }
-
-    private fun notifyStateChangeListeners(previousState: State): Boolean {
-        return stateChangeListeners.synchronizedRun {
-            var allCallbacksCalled = true
-            for (it in this) {
-                try {
-                    it.onStateChanged(previousState, state)
-                } catch (e: Throwable) {
-                    // Bad state change listener callback. Try to stop executing, and move the state to failure
-                    state = state.onFailure(e)
-                    if (state !is State.Terminal.Failure) {
-                        state = state.onFailure(e)
-                    }
-                    if (state !is State.Terminal.Failure) {
-                        // Terminal Failure should not be more than 2 steps away. No clue what happened
-                        throw e
-                    }
-                    allCallbacksCalled = false
-                    break
-                }
-            }
-            allCallbacksCalled
-        }
-    }
-
     private suspend fun runAllSteps() {
         while (true) {
             val (nextInput: T, nextStep: StepDescriptor<T>?) = cursor
 
             if (nextStep == null) {
                 result = nextInput
-                if (onStateSuccess()) {
+                if (stateHolder.onStateSuccess()) {
                     // No more steps. Next input _is the_ result for this tracker
                     state.sanityCheck<State.Terminal.Success>()
                 } else {
@@ -128,7 +78,7 @@ class Tracker<T : Serializable> internal constructor(override val uuid: UUID, ov
                 if (state !is State.Terminal.Failure) {
                     // Normal execution: Ran out of attempts or interrupted
                     state.sanityCheck<State.Running.AttemptFailed>()
-                    onStateFailure(cause = if (interrupted) TrackerInterruptedException(this) else StepOutOfAttemptsException(this, nextStep))
+                    stateHolder.onStateFailure(cause = if (interrupted) TrackerInterruptedException(this) else StepOutOfAttemptsException(this, nextStep))
                     // No need to check the result for ^. Even if it's false, the state is still terminal false
                     state.sanityCheck<State.Terminal.Failure>()
                 }
@@ -145,7 +95,7 @@ class Tracker<T : Serializable> internal constructor(override val uuid: UUID, ov
         val (name: String, maxAttempts: Long, step: Step<T>) = nextStep
 
         for (i in 0L until maxAttempts) {
-            if (!onStateSuccess(nextStep.name)) {
+            if (!stateHolder.onStateSuccess(nextStep.name)) {
                 // Bad state change listener
                 state.sanityCheck<State.Terminal.Failure>()
                 break
@@ -153,7 +103,7 @@ class Tracker<T : Serializable> internal constructor(override val uuid: UUID, ov
             state.sanityCheck<State.Running.Attempting>()
 
             if (interrupted) {
-                if (onStateFailure(StepInterruptedException(tracker = this, attempt = i, stepName = name))) {
+                if (stateHolder.onStateFailure(StepInterruptedException(tracker = this, attempt = i, stepName = name))) {
                     state.sanityCheck<State.Running.AttemptFailed>()
                 } else {
                     // Bad state change listener
@@ -164,14 +114,14 @@ class Tracker<T : Serializable> internal constructor(override val uuid: UUID, ov
 
             val stepResult: T? = try {
                 val result = step.doStep(nextInput)
-                if (!onStateSuccess()) {
+                if (!stateHolder.onStateSuccess()) {
                     // Bad state change listener
                     state.sanityCheck<State.Terminal.Failure>()
                     break
                 }
                 result
             } catch (e: Throwable) {
-                if (!onStateFailure(StepFailureException(tracker = this, attempt = i, stepName = name, throwable = e))) {
+                if (!stateHolder.onStateFailure(StepFailureException(tracker = this, attempt = i, stepName = name, throwable = e))) {
                     // Bad state change listener
                     state.sanityCheck<State.Terminal.Failure>()
                     break
@@ -218,4 +168,65 @@ private class Cursor<T>(input: T, private val steps: Iterator<StepDescriptor<T>>
 
     operator fun component1() = nextInput
     operator fun component2() = nextStep
+}
+
+private class StateHolder {
+    var state: State = State.Scheduled()
+        private set
+
+    private val stateChangeListeners = mutableListOf<StateChangeListener>()
+
+    fun subscribe(stateChangeListener: StateChangeListener) {
+        stateChangeListeners.synchronizedRun {
+            add(stateChangeListener)
+        }
+    }
+
+    fun unsubscribe(stateChangeListener: StateChangeListener): Boolean {
+        return stateChangeListeners.synchronizedRun {
+            remove(stateChangeListener)
+        }
+    }
+
+    fun unsubscribeAll() {
+        stateChangeListeners.synchronizedRun {
+            clear()
+        }
+    }
+
+    fun onStateSuccess(nextStep: String? = null): Boolean {
+        val previousState = state
+        state = state.onSuccess(nextStep)
+        return notifyStateChangeListeners(previousState)
+    }
+
+    fun onStateFailure(cause: Throwable): Boolean {
+        val previousState = state
+        state = state.onFailure(cause)
+        return notifyStateChangeListeners(previousState)
+    }
+
+    private fun notifyStateChangeListeners(previousState: State): Boolean {
+        return stateChangeListeners.synchronizedRun {
+            var allCallbacksCalled = true
+            for (it in this) {
+                try {
+                    it.onStateChanged(previousState, state)
+                } catch (e: Throwable) {
+                    // Bad state change listener callback. Try to stop executing, and move the state to failure
+                    state = state.onFailure(e)
+                    if (state !is State.Terminal.Failure) {
+                        state = state.onFailure(e)
+                    }
+                    if (state !is State.Terminal.Failure) {
+                        // Terminal Failure should not be more than 2 steps away. No clue what happened
+                        throw e
+                    }
+                    allCallbacksCalled = false
+                    break
+                }
+            }
+            allCallbacksCalled
+        }
+    }
 }
