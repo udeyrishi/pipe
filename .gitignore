@@ -1,6 +1,8 @@
 # Personal files
 .braindump.md
 
+.idea/markdown-navigator*
+
 ### AndroidStudio ###
 # Covers files to be ignored for android development using Android Studio.
 
