@@ -73,9 +73,8 @@ val tracker: Tracker<T> = pipeline.push(someInput)
 val anotherRefToTracker = pipeline[uuid]
 val trackers = pipeline.trackers
 
-val barrierCount = pipeline.barrierCount
-pipeline.barriers.forEach { it.lift(uuid) }
-pipeline.barriers[0].lift(uuid) // or liftForAll()
+// Lifts the barrier for all currently blocked, and future arriving items
+pipeline.barriers.forEach { it.lift() }
 ```
 
 
