@@ -12,7 +12,7 @@ import java.util.UUID
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 class Tracker<T : Serializable> internal constructor(override val uuid: UUID, override val position: Long, input: T, steps: Iterator<StepDescriptor<T>>)
-    : Serializable, Identifiable, Sequential, Comparable<Tracker<T>> {
+    : Identifiable, Sequential, Comparable<Tracker<T>> {
 
     private var started: Boolean by immutableAfterSet(false)
     private var interrupted: Boolean by immutableAfterSet(false)
