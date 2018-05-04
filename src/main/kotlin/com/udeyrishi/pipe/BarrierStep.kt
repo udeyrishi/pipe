@@ -7,7 +7,7 @@ import com.udeyrishi.pipe.util.immutableAfterSet
 import kotlin.coroutines.experimental.Continuation
 import kotlin.coroutines.experimental.suspendCoroutine
 
-class BarrierStep<T> internal constructor() {
+class BarrierStep<T : Any> internal constructor() {
     private var lifted: Boolean by immutableAfterSet(false)
     private var continuation: Continuation<T>? by immutableAfterSet(null)
     private var input: T? by immutableAfterSet(null)

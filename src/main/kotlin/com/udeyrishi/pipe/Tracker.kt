@@ -5,13 +5,11 @@ package com.udeyrishi.pipe
 
 import com.udeyrishi.pipe.util.immutableAfterSet
 import com.udeyrishi.pipe.util.synchronizedRun
-import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.launch
-import java.io.Serializable
 import java.util.UUID
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
-class Tracker<T : Serializable> internal constructor(override val uuid: UUID, override val position: Long, input: T, steps: Iterator<StepDescriptor<T>>)
+class Tracker<T : Any> internal constructor(override val uuid: UUID, override val position: Long, input: T, steps: Iterator<StepDescriptor<T>>)
     : Identifiable, Sequential, Comparable<Tracker<T>> {
 
     private var started: Boolean by immutableAfterSet(false)
@@ -181,7 +179,7 @@ private inline fun <reified T : State> State.sanityCheck() {
     }
 }
 
-private class Cursor<T>(input: T, private val steps: Iterator<StepDescriptor<T>>) {
+private class Cursor<T : Any>(input: T, private val steps: Iterator<StepDescriptor<T>>) {
     var nextInput: T = input
         private set
     var nextStep: StepDescriptor<T>? = if (steps.hasNext()) steps.next() else null
