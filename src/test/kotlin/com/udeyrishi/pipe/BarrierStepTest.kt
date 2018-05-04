@@ -3,12 +3,15 @@
  */
 package com.udeyrishi.pipe
 
+import com.udeyrishi.pipe.testutil.Repeat
+import com.udeyrishi.pipe.testutil.RepeatRule
 import kotlinx.coroutines.experimental.launch
 import kotlinx.coroutines.experimental.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -17,7 +20,12 @@ import org.junit.runners.JUnit4
 @RunWith(JUnit4::class)
 class BarrierStepTest {
 
+    @Rule
+    @JvmField
+    val repeatRule = RepeatRule()
+
     @Test
+    @Repeat
     fun worksIfLiftedAfterStart() {
         val barrier = BarrierStep<String>()
         var result: String? = null
@@ -38,6 +46,7 @@ class BarrierStepTest {
     }
 
     @Test
+    @Repeat
     fun worksIfLiftedBeforeStart() {
         val barrier = BarrierStep<String>()
         barrier.lift()
