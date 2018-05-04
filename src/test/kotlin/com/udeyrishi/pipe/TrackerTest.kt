@@ -16,6 +16,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import java.util.UUID
 
+@Suppress("EXPERIMENTAL_FEATURE_WARNING")
 @RunWith(JUnit4::class)
 class TrackerTest {
 
@@ -58,10 +59,10 @@ class TrackerTest {
     @Test
     fun executesStepsWithCorrectStateChanges() {
         val steps =  (0..5).map { i ->
-            StepDescriptor<String>("step$i", 1, Step {
+            StepDescriptor<String>("step$i", 1) {
                 Thread.sleep(100)
                 "$it->$i"
-            })
+            }
         }
 
 
@@ -119,7 +120,7 @@ class TrackerTest {
     @Test
     fun handlesExceptionsInStateChangeListenersWhenStateIsNotAttemptFailed() {
         val steps =  (0..5).map { i ->
-            StepDescriptor<String>("step$i", 1, Step {
+            StepDescriptor<String>("step$i", 1, {
                 Thread.sleep(100)
                 "$it->$i"
             })
@@ -152,10 +153,10 @@ class TrackerTest {
         val error2 = IllegalAccessException("testing")
 
         val steps =  (0..5).map { i ->
-            StepDescriptor<String>("step$i", 1, Step {
+            StepDescriptor<String>("step$i", 1) {
                 Thread.sleep(100)
                 throw error
-            })
+            }
         }
 
         val tracker = Tracker(UUID.randomUUID(), 0L, "in", steps.iterator())
@@ -187,22 +188,18 @@ class TrackerTest {
     @Test
     fun handlesFailuresCorrectly() {
         val error = RuntimeException("something went wrong")
+        var called = 0
         val steps =  (0..5).map { i ->
-            StepDescriptor("step$i", 1, object : Step<String> {
-                private var called = false
-
-                override fun doStep(input: String): String {
-                    // Should not call this step more than once
-                    assertFalse(called)
-                    called = true
-                    Thread.sleep(100)
-                    return when {
-                        i == 2 -> throw error
-                        i > 2 -> throw AssertionError("Step 2 should've been the last one.")
-                        else -> "$input->$i"
-                    }
+            StepDescriptor<String>("step$i", 1) {
+                // Should not call this step more than once
+                assertEquals(i, called++)
+                Thread.sleep(100)
+                when {
+                    i == 2 -> throw error
+                    i > 2 -> throw AssertionError("Step 2 should've been the last one.")
+                    else -> "$it->$i"
                 }
-            })
+            }
         }
 
 
@@ -276,26 +273,22 @@ class TrackerTest {
     fun retriesWhenNeeded() {
         val error = RuntimeException("something went wrong")
         var failureCount = 0
+        var called = 0
         val steps =  (0..5).map { i ->
-            StepDescriptor("step$i", 2, object : Step<String> {
-                private var called = 0
-
-                override fun doStep(input: String): String {
-                    if (i == 2) {
-                        assertTrue(called++ < 2)
-                    } else {
-                        assertEquals(0, called++)
-                    }
-
-                    Thread.sleep(100)
-
-                    if (i == 2 && failureCount++ < 1) {
-                        throw error
-                    }
-                    return "$input->$i"
+            StepDescriptor<String>("step$i", 2) {
+                when {
+                    i == 2 -> assertTrue(listOf(2, 3).contains(called++))
+                    i < 2 -> assertEquals(i, called++)
+                    else -> assertEquals(i + 1, called++)
                 }
 
-            })
+                Thread.sleep(100)
+
+                if (i == 2 && failureCount++ < 1) {
+                    throw error
+                }
+                "$it->$i"
+            }
         }
 
         val tracker = Tracker(UUID.randomUUID(), 0L, "in", steps.iterator())
@@ -373,7 +366,7 @@ class TrackerTest {
         var step2Called = 0
 
         val steps =  (0..5).map { i ->
-            StepDescriptor("step$i", 5, Step<String> { input ->
+            StepDescriptor<String>("step$i", 5) {
                 Thread.sleep(100)
                 when {
                     i == 2 -> {
@@ -381,9 +374,9 @@ class TrackerTest {
                         throw error
                     }
                     i > 2 -> throw AssertionError("Step 2 should've been the last one.")
-                    else -> "$input->$i"
+                    else -> "$it->$i"
                 }
-            })
+            }
         }
 
 
@@ -466,11 +459,11 @@ class TrackerTest {
     fun interruptsCorrectly() {
         var lastStep = -1
         val steps =  (0..100).map { i ->
-            StepDescriptor<String>("step$i", 1, Step {
+            StepDescriptor<String>("step$i", 1) {
                 Thread.sleep(100)
                 lastStep = i
                 it
-            })
+            }
         }
 
         val tracker = Tracker(UUID.randomUUID(), 0L, "in", steps.iterator())
@@ -500,11 +493,11 @@ class TrackerTest {
     fun canInterruptMultipleTimes() {
         var lastStep = -1
         val steps =  (0..100).map { i ->
-            StepDescriptor<String>("step$i", 1, Step {
+            StepDescriptor<String>("step$i", 1) {
                 Thread.sleep(100)
                 lastStep = i
                 it
-            })
+            }
         }
 
         val tracker = Tracker(UUID.randomUUID(), 0L, "in", steps.iterator())
@@ -536,11 +529,11 @@ class TrackerTest {
     fun canInterruptBeforeStart() {
         var lastStep = -1
         val steps =  (0..100).map { i ->
-            StepDescriptor<String>("step$i", 1, Step {
+            StepDescriptor<String>("step$i", 1) {
                 Thread.sleep(100)
                 lastStep = i
                 it
-            })
+            }
         }
 
         val tracker = Tracker(UUID.randomUUID(), 0L, "in", steps.iterator())
@@ -567,9 +560,9 @@ class TrackerTest {
     @Test
     fun callsStateChangeListeners() {
         val steps =  (0..2).map { i ->
-            StepDescriptor<String>("step$i", 1, Step {
+            StepDescriptor<String>("step$i", 1) {
                 it
-            })
+            }
         }
 
         var callbackCount = 0
@@ -605,9 +598,9 @@ class TrackerTest {
     @Test
     fun unsubscribeWorks() {
         val steps =  (0..2).map { i ->
-            StepDescriptor<String>("step$i", 1, Step {
+            StepDescriptor<String>("step$i", 1) {
                 it
-            })
+            }
         }
 
         val listener = StateChangeListener { _, _ ->
@@ -655,9 +648,9 @@ class TrackerTest {
         }
 
         val steps =  (0..2).map { j ->
-            StepDescriptor<String>("step$j", 1, Step {
+            StepDescriptor<String>("step$j", 1) {
                 it
-            })
+            }
         }
 
         val tracker = Tracker(UUID.randomUUID(), 0L, "in", steps.iterator())

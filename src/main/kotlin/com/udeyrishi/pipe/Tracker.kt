@@ -137,9 +137,9 @@ class Tracker<T : Serializable> internal constructor(override val uuid: UUID, ov
         }
     }
 
-    private fun doStepAttempt(attempt: Long, step: StepDescriptor<T>, input: T): StepAttemptResult<T> {
+    private suspend fun doStepAttempt(attempt: Long, step: StepDescriptor<T>, input: T): StepAttemptResult<T> {
         return try {
-            val result: T = step.step.doStep(input)
+            val result: T = step.step(input)
             if (stateHolder.onStateSuccess()) {
                 StepAttemptResult.forSuccess(result)
             } else {
