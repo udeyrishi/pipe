@@ -462,7 +462,7 @@ class TrackerTest {
     }
 
     @Test
-    @Repeat(10)
+    @Repeat
     fun interruptsCorrectly() {
         var lastStep = -1
         val steps =  (0..100).map { i ->
@@ -496,7 +496,7 @@ class TrackerTest {
     }
 
     @Test
-    @Repeat(10)
+    @Repeat
     fun canInterruptMultipleTimes() {
         var lastStep = -1
         val steps =  (0..100).map { i ->
@@ -532,7 +532,7 @@ class TrackerTest {
     }
 
     @Test
-    @Repeat(10)
+    @Repeat
     fun canInterruptBeforeStart() {
         var lastStep = -1
         val steps =  (0..100).map { i ->
