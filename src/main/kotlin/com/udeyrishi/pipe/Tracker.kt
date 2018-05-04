@@ -3,6 +3,7 @@
  */
 package com.udeyrishi.pipe
 
+import com.udeyrishi.pipe.steps.StepDescriptor
 import com.udeyrishi.pipe.util.immutableAfterSet
 import com.udeyrishi.pipe.util.synchronizedRun
 import kotlinx.coroutines.experimental.launch

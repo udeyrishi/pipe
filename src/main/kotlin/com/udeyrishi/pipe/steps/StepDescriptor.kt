@@ -1,6 +1,6 @@
 /**
  * Copyright (c) 2018 Udey Rishi. All rights reserved.
  */
-package com.udeyrishi.pipe
+package com.udeyrishi.pipe.steps
 
 internal data class StepDescriptor<T : Any>(val name: String, val maxAttempts: Long, val step: Step<T>)
