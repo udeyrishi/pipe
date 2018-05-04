@@ -22,4 +22,4 @@ private class ImmutableAfterSet<T>(private var value: T) : ReadWriteProperty<Any
     }
 }
 
-fun <T> immutableAfterSet(initialValue: T): ReadWriteProperty<Any, T> = ImmutableAfterSet(initialValue)
+internal fun <T> immutableAfterSet(initialValue: T): ReadWriteProperty<Any, T> = ImmutableAfterSet(initialValue)
