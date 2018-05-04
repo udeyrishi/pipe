@@ -3,8 +3,8 @@ buildscript {
         versions = [
                 'junit' : '4.12',
                 'kotlin': [
-                        'coroutines': '0.21',
-                        'lang': '1.2.40'
+                        'coroutines': '0.22.5',
+                        'lang': '1.2.41'
                 ]
         ]
 
