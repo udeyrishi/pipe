@@ -5,6 +5,7 @@ package com.udeyrishi.pipe.util
 
 internal class SortReplayer<T : Any>(original: List<T>, sorted: List<T>) {
     private val transformations: Map<Int, Int>?
+    private val size: Int
 
     init {
         if (original.size != sorted.size) {
@@ -14,45 +15,39 @@ internal class SortReplayer<T : Any>(original: List<T>, sorted: List<T>) {
         transformations = if (original === sorted) {
             null
         } else {
+            val positionMapSorted = sorted.mapIndexed { index, item -> Pair(item, index) }.toMap()
 
-            // TODO: optimize this n^2
-            HashMap<Int, Int>().apply {
-                original.forEachIndexed { unsortedIndex, item ->
-                    val sortedIndex = sorted.indexOfFirst { it === item }
-                    if (sortedIndex < 0) {
-                        throw IllegalArgumentException("original and sorted must be lists of the same size and same elements, just in different orders.")
-                    }
-                    put(unsortedIndex, sortedIndex)
-                }
-            }
+            original.mapIndexed { unsortedIndex, item ->
+                unsortedIndex to (positionMapSorted[item] ?: throw IllegalArgumentException("original and sorted must be lists of the same size and same elements, just in different orders."))
+            }.toMap()
         }
+
+        size = original.size
     }
 
     fun <R> applySortTransformations(unsorted: List<R>): List<R> {
+        if (unsorted.size != size) {
+            throw IllegalArgumentException("unsorted's size must be the same as the original list that was used to generate the SortMap.")
+        }
+
         if (transformations == null) {
             return unsorted.map { it }
         }
 
-        if (unsorted.size != transformations.size) {
-            throw IllegalArgumentException("unsorted's size must be the same as the original list that was used to generate the SortMap.")
-        }
-
         val sorted = MutableList<R?>(unsorted.size) { null }
-
         transformations.entries.forEach { (unsortedIndex, sortedIndex) ->
             sorted[sortedIndex] = unsorted[unsortedIndex]
         }
-
         return sorted.map { it!! }
     }
 
     fun <R> reverseApplySortTransformations(sorted: List<R>): List<R> {
-        if (transformations == null) {
-             return sorted.map { it }
+        if (sorted.size != size) {
+            throw IllegalArgumentException("sorted's size must be the same as the original list that was used to generate the SortMap.")
         }
 
-        if (sorted.size != transformations.size) {
-            throw IllegalArgumentException("sorted's size must be the same as the original list that was used to generate the SortMap.")
+        if (transformations == null) {
+            return sorted.map { it }
         }
 
         return List(sorted.size) { unsortedIndex ->
