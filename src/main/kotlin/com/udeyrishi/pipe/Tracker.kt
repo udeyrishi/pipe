@@ -7,11 +7,14 @@ import com.udeyrishi.pipe.steps.StepDescriptor
 import com.udeyrishi.pipe.util.immutableAfterSet
 import com.udeyrishi.pipe.util.synchronizedRun
 import kotlinx.coroutines.experimental.launch
-import java.util.UUID
 
+/**
+ * An object that:
+ * - guides the provided input through the provided steps
+ * - updates and monitors its state
+ */
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
-class Tracker<T : Any> internal constructor(override val uuid: UUID, override val position: Long, input: T, steps: Iterator<StepDescriptor<T>>)
-    : Identifiable, Sequential, Comparable<Tracker<T>> {
+class Tracker<T : Any> internal constructor(input: T, steps: Iterator<StepDescriptor<T>>) {
 
     private var started: Boolean by immutableAfterSet(false)
     private var interrupted: Boolean by immutableAfterSet(false)
@@ -56,15 +59,15 @@ class Tracker<T : Any> internal constructor(override val uuid: UUID, override va
 
     private suspend fun runAllSteps() {
         while (true) {
-            val (nextInput: T, nextStep: StepDescriptor<T>?) = cursor
+            val (input, nextStep) = cursor
 
             if (nextStep == null) {
                 // No more steps. Next input _is the_ result for this tracker
-                onResultPrepared(result = nextInput)
+                onResultPrepared(result = input)
                 break
             }
 
-            val stepResult = runStep(nextInput, nextStep)
+            val stepResult = runStep(input, nextStep)
 
             if (stepResult.stepResult == null) {
                 onStepResultNull(failingStep = nextStep, dueToInterruption = stepResult.interrupted)
@@ -97,7 +100,7 @@ class Tracker<T : Any> internal constructor(override val uuid: UUID, override va
         }
     }
 
-    private suspend fun runStep(nextInput: T, nextStep: StepDescriptor<T>): StepResult<T> {
+    private suspend fun runStep(input: T, nextStep: StepDescriptor<T>): StepResult<T> {
         for (i in 0L until nextStep.maxAttempts) {
             if (!stateHolder.onStateSuccess(nextStep.name)) {
                 // Bad state change listener
@@ -110,7 +113,7 @@ class Tracker<T : Any> internal constructor(override val uuid: UUID, override va
                 return StepResult(stepResult = null, interrupted = true)
             }
 
-            val attemptResult = doStepAttempt(attempt = i, step = nextStep, input = nextInput)
+            val attemptResult = doStepAttempt(attempt = i, step = nextStep, input = input)
             if (attemptResult.fatalError) break
 
             if (attemptResult.stepResult == null) {
@@ -175,9 +178,6 @@ class Tracker<T : Any> internal constructor(override val uuid: UUID, override va
         }
     }
 
-    override fun compareTo(other: Tracker<T>): Int = position.compareTo(other.position)
-    override fun toString() = "${this::class.java.simpleName}(uuid=$uuid)"
-
     class TrackerInterruptedException internal constructor(tracker: Tracker<*>) : RuntimeException("$tracker prematurely interrupted.")
     class StepOutOfAttemptsException internal constructor(tracker: Tracker<*>, failureStep: StepDescriptor<*>) : RuntimeException("$tracker ran out of the max allowed ${failureStep.step} attempts for step '${failureStep.name}'.")
     class StepFailureException internal constructor(tracker: Tracker<*>, attempt: Long, stepName: String, throwable: Throwable) : RuntimeException("$tracker failed on step '$stepName''s attempt #$attempt.", throwable)
@@ -190,18 +190,16 @@ private inline fun <reified T : State> State.sanityCheck() {
     }
 }
 
-private class Cursor<T : Any>(input: T, private val steps: Iterator<StepDescriptor<T>>) {
-    var nextInput: T = input
-        private set
+private class Cursor<T : Any>(private var input: T, private val steps: Iterator<StepDescriptor<T>>) {
     var nextStep: StepDescriptor<T>? = if (steps.hasNext()) steps.next() else null
         private set
 
     fun move(nextInput: T) {
-        this.nextInput = nextInput
+        this.input = nextInput
         nextStep = if (steps.hasNext()) steps.next() else null
     }
 
-    operator fun component1() = nextInput
+    operator fun component1() = input
     operator fun component2() = nextStep
 }
 

@@ -15,7 +15,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import java.util.UUID
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 @RunWith(JUnit4::class)
@@ -26,24 +25,14 @@ class TrackerTest {
     val repeatRule = RepeatRule()
 
     @Test
-    fun metadataWorks() {
-        val uuid = UUID.randomUUID()
-        val position = 9L
-
-        val tracker = Tracker(uuid, position, "some input", listOf<StepDescriptor<String>>().iterator())
-        assertEquals(uuid, tracker.uuid)
-        assertEquals(position, tracker.position)
-    }
-
-    @Test
     fun startsWithScheduledState() {
-        val tracker = Tracker(UUID.randomUUID(), 0L, "some input", listOf<StepDescriptor<String>>().iterator())
+        val tracker = Tracker("some input", listOf<StepDescriptor<String>>().iterator())
         assertTrue(tracker.state is State.Scheduled)
     }
 
     @Test
     fun goesToCompletionWhenNoSteps() {
-        val tracker = Tracker(UUID.randomUUID(), 0L, "some input", listOf<StepDescriptor<String>>().iterator())
+        val tracker = Tracker("some input", listOf<StepDescriptor<String>>().iterator())
         assertNull(tracker.result)
         tracker.start()
 
@@ -67,7 +56,7 @@ class TrackerTest {
         }
 
 
-        val tracker = Tracker(UUID.randomUUID(), 0L, "in", steps.iterator())
+        val tracker = Tracker("in", steps.iterator())
         assertNull(tracker.result)
 
         var i = 0
@@ -127,7 +116,7 @@ class TrackerTest {
             })
         }
 
-        val tracker = Tracker(UUID.randomUUID(), 0L, "in", steps.iterator())
+        val tracker = Tracker("in", steps.iterator())
         assertNull(tracker.result)
 
         var i = 0
@@ -160,7 +149,7 @@ class TrackerTest {
             }
         }
 
-        val tracker = Tracker(UUID.randomUUID(), 0L, "in", steps.iterator())
+        val tracker = Tracker("in", steps.iterator())
         assertNull(tracker.result)
 
         var i = 0
@@ -204,7 +193,7 @@ class TrackerTest {
         }
 
 
-        val tracker = Tracker(UUID.randomUUID(), 0L, "in", steps.iterator())
+        val tracker = Tracker("in", steps.iterator())
         assertNull(tracker.result)
 
         var i = 0
@@ -292,7 +281,7 @@ class TrackerTest {
             }
         }
 
-        val tracker = Tracker(UUID.randomUUID(), 0L, "in", steps.iterator())
+        val tracker = Tracker("in", steps.iterator())
         assertNull(tracker.result)
 
         var i = 0
@@ -381,7 +370,7 @@ class TrackerTest {
         }
 
 
-        val tracker = Tracker(UUID.randomUUID(), 0L, "in", steps.iterator())
+        val tracker = Tracker("in", steps.iterator())
         assertNull(tracker.result)
 
         var i = 0
@@ -467,7 +456,7 @@ class TrackerTest {
             }
         }
 
-        val tracker = Tracker(UUID.randomUUID(), 0L, "in", steps.iterator())
+        val tracker = Tracker("in", steps.iterator())
         tracker.start()
         Thread.sleep(500)
         tracker.interrupt()
@@ -501,7 +490,7 @@ class TrackerTest {
             }
         }
 
-        val tracker = Tracker(UUID.randomUUID(), 0L, "in", steps.iterator())
+        val tracker = Tracker("in", steps.iterator())
         tracker.start()
         Thread.sleep(500)
         tracker.interrupt()
@@ -537,7 +526,7 @@ class TrackerTest {
             }
         }
 
-        val tracker = Tracker(UUID.randomUUID(), 0L, "in", steps.iterator())
+        val tracker = Tracker("in", steps.iterator())
         tracker.interrupt()
         tracker.start()
         tracker.interrupt()
@@ -571,7 +560,7 @@ class TrackerTest {
             ++callbackCount
         }
 
-        val tracker = Tracker(UUID.randomUUID(), 0L, "in", steps.iterator())
+        val tracker = Tracker("in", steps.iterator())
         tracker.subscribe(listener)
         tracker.subscribe(listener)
         tracker.subscribe(listener)
@@ -591,7 +580,7 @@ class TrackerTest {
 
     @Test(expected = IllegalStateException::class)
     fun cannotStartMultipleTimes() {
-        val tracker = Tracker(UUID.randomUUID(), 0L, "in", listOf<StepDescriptor<String>>().iterator())
+        val tracker = Tracker("in", listOf<StepDescriptor<String>>().iterator())
         tracker.start()
         tracker.start()
     }
@@ -613,7 +602,7 @@ class TrackerTest {
             fail("should not have been called")
         }
 
-        val tracker = Tracker(UUID.randomUUID(), 0L, "in", steps.iterator())
+        val tracker = Tracker("in", steps.iterator())
         tracker.subscribe(listener)
         tracker.subscribe(listener)
         tracker.subscribe(badListener)
@@ -654,7 +643,7 @@ class TrackerTest {
             }
         }
 
-        val tracker = Tracker(UUID.randomUUID(), 0L, "in", steps.iterator())
+        val tracker = Tracker("in", steps.iterator())
 
         tracker.subscribe(listener1)
         tracker.subscribe(listener2)
