@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2018 Udey Rishi. All rights reserved.
  */
-package com.udeyrishi.pipe.steps
+package com.udeyrishi.pipe
 
 import com.udeyrishi.pipe.testutil.Repeat
 import com.udeyrishi.pipe.testutil.RepeatRule
@@ -18,7 +18,7 @@ import org.junit.runners.JUnit4
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 @RunWith(JUnit4::class)
-class BarrierStepTest {
+class BarrierTest {
 
     @Rule
     @JvmField
@@ -27,7 +27,7 @@ class BarrierStepTest {
     @Test
     @Repeat
     fun worksIfLiftedAfterStart() {
-        val barrier = BarrierStep<String>()
+        val barrier = Barrier<String>()
         var result: String? = null
         val job = launch {
             result = barrier.blockUntilLift("input")
@@ -48,7 +48,7 @@ class BarrierStepTest {
     @Test
     @Repeat
     fun worksIfLiftedBeforeStart() {
-        val barrier = BarrierStep<String>()
+        val barrier = Barrier<String>()
         barrier.lift()
 
         var result: String? = null

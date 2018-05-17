@@ -1,14 +1,14 @@
 /**
  * Copyright (c) 2018 Udey Rishi. All rights reserved.
  */
-package com.udeyrishi.pipe.steps
+package com.udeyrishi.pipe
 
 import com.udeyrishi.pipe.util.SortReplayer
 import com.udeyrishi.pipe.util.immutableAfterSet
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
-internal class AggregatorStep<T : Comparable<T>>(private val capacity: Int, private val ordered: Boolean = false, private val aggregationAction: Step<List<T>>) {
-    private val barriers = mutableListOf<Pair<T, BarrierStep<T>>>()
+internal class Aggregator<T : Comparable<T>>(private val capacity: Int, private val ordered: Boolean = false, private val aggregationAction: Step<List<T>>) {
+    private val barriers = mutableListOf<Pair<T, Barrier<T>>>()
     private var outputs: List<T>? by immutableAfterSet(null)
 
     suspend fun push(input: T): T {
@@ -53,8 +53,8 @@ internal class AggregatorStep<T : Comparable<T>>(private val capacity: Int, priv
         // via index for all the inputs. The barrier for the last input is never actually ever blocked. But it's marked as lifted nevertheless (no-op).
     }
 
-    private fun addBarrier(input: T): Pair<BarrierStep<T>, Int> {
-        val barrier = BarrierStep<T>()
+    private fun addBarrier(input: T): Pair<Barrier<T>, Int> {
+        val barrier = Barrier<T>()
         val index = synchronized(this) {
             if (barriers.size == capacity) {
                 throw IllegalStateException("Cannot push another step into the aggregator. It has reached its maximum capacity of $capacity.")

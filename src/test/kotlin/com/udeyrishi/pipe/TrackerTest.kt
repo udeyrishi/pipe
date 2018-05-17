@@ -3,7 +3,6 @@
  */
 package com.udeyrishi.pipe
 
-import com.udeyrishi.pipe.steps.StepDescriptor
 import com.udeyrishi.pipe.testutil.Repeat
 import com.udeyrishi.pipe.testutil.RepeatRule
 import org.junit.Assert.assertEquals
