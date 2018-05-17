@@ -7,7 +7,7 @@ import com.udeyrishi.pipe.util.SortReplayer
 import com.udeyrishi.pipe.util.immutableAfterSet
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
-internal class Aggregator<T : Comparable<T>>(private val capacity: Int, private val ordered: Boolean = false, private val aggregationAction: Step<List<T>>) {
+internal class Aggregator<T : Comparable<T>>(private val capacity: Int, private val ordered: Boolean = true, private val aggregationAction: Step<List<T>>) {
     private val barriers = mutableListOf<Pair<T, Barrier<T>>>()
     private var outputs: List<T>? by immutableAfterSet(null)
 

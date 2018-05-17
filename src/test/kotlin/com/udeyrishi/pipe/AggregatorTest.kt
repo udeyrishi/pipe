@@ -24,7 +24,7 @@ class AggregatorTest {
     // Can verify the exception via the @Test mechanism, because the exception will be thrown in the main thread.
     @Test(expected = IllegalStateException::class)
     fun checksForCapacityOverflow() {
-        val aggregator = Aggregator<String>(capacity = 2) { it }
+        val aggregator = Aggregator<String>(capacity = 2, ordered = false) { it }
         val job1 = launch {
             aggregator.push("apple")
         }
@@ -42,7 +42,7 @@ class AggregatorTest {
     // Cannot verify the exception via the @Test mechanism, because the exception will be thrown in different coroutine.
     @Test
     fun checksForBadAggregatorActions() {
-        val aggregator = Aggregator<String>(capacity = 2) {
+        val aggregator = Aggregator<String>(capacity = 2, ordered = false) {
             listOf("just 1 item in result")
         }
 
@@ -81,7 +81,7 @@ class AggregatorTest {
     @Repeat
     fun worksWhenNoComparatorProvided() {
         var aggregatorArgs: List<Int>? = null
-        val aggregator = Aggregator<Int>(capacity = 5) {
+        val aggregator = Aggregator<Int>(capacity = 5, ordered = false) {
             aggregatorArgs = it
             it.map { it + 1 }
         }
@@ -102,7 +102,7 @@ class AggregatorTest {
 
     @Test
     @Repeat
-    fun worksWhenComparatorProvided() {
+    fun orderedWorks() {
         var aggregatorArgs: List<Int>? = null
         val aggregator = Aggregator<Int>(capacity = 5, ordered = true) {
             aggregatorArgs = it

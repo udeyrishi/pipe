@@ -93,7 +93,7 @@ class Pipeline<T : Any> private constructor(private val steps: List<StepDescript
     }
 }
 
-fun <T : Any> buildPipeline(ordered: Boolean = false, stepDefiner: (Pipeline.Builder<T>.() -> Unit)): Pipeline<T> {
+fun <T : Any> buildPipeline(ordered: Boolean = true, stepDefiner: (Pipeline.Builder<T>.() -> Unit)): Pipeline<T> {
     val builder = Pipeline.Builder<T>(ordered)
     builder.stepDefiner()
     return builder.build()
