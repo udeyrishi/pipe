@@ -17,7 +17,7 @@ import org.junit.runners.JUnit4
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 @RunWith(JUnit4::class)
-class TrackerTest {
+class OrchestratorTest {
 
     @Rule
     @JvmField
@@ -25,13 +25,13 @@ class TrackerTest {
 
     @Test
     fun startsWithScheduledState() {
-        val tracker = Tracker("some input", listOf<StepDescriptor<String>>().iterator())
+        val tracker = Orchestrator("some input", listOf<StepDescriptor<String>>().iterator())
         assertTrue(tracker.state is State.Scheduled)
     }
 
     @Test
     fun goesToCompletionWhenNoSteps() {
-        val tracker = Tracker("some input", listOf<StepDescriptor<String>>().iterator())
+        val tracker = Orchestrator("some input", listOf<StepDescriptor<String>>().iterator())
         assertNull(tracker.result)
         tracker.start()
 
@@ -55,7 +55,7 @@ class TrackerTest {
         }
 
 
-        val tracker = Tracker("in", steps.iterator())
+        val tracker = Orchestrator("in", steps.iterator())
         assertNull(tracker.result)
 
         var i = 0
@@ -115,7 +115,7 @@ class TrackerTest {
             })
         }
 
-        val tracker = Tracker("in", steps.iterator())
+        val tracker = Orchestrator("in", steps.iterator())
         assertNull(tracker.result)
 
         var i = 0
@@ -148,7 +148,7 @@ class TrackerTest {
             }
         }
 
-        val tracker = Tracker("in", steps.iterator())
+        val tracker = Orchestrator("in", steps.iterator())
         assertNull(tracker.result)
 
         var i = 0
@@ -169,7 +169,7 @@ class TrackerTest {
         assertTrue(tracker.state is State.Terminal.Failure)
         assertNull(tracker.result)
         assertEquals(2, (tracker.state as State.Terminal.Failure).causes.size)
-        assertTrue((tracker.state as State.Terminal.Failure).causes[0] is Tracker.StepFailureException)
+        assertTrue((tracker.state as State.Terminal.Failure).causes[0] is Orchestrator.StepFailureException)
         assertTrue(error === (tracker.state as State.Terminal.Failure).causes[0].cause)
         assertTrue(error2 === (tracker.state as State.Terminal.Failure).causes[1])
     }
@@ -192,7 +192,7 @@ class TrackerTest {
         }
 
 
-        val tracker = Tracker("in", steps.iterator())
+        val tracker = Orchestrator("in", steps.iterator())
         assertNull(tracker.result)
 
         var i = 0
@@ -252,9 +252,9 @@ class TrackerTest {
 
         (tracker.state as State.Terminal.Failure).let {
             assertEquals(2, it.causes.size)
-            assertTrue(it.causes[0] is Tracker.StepFailureException)
-            assertTrue((it.causes[0] as Tracker.StepFailureException).cause === error)
-            assertTrue(it.causes[1] is Tracker.StepOutOfAttemptsException)
+            assertTrue(it.causes[0] is Orchestrator.StepFailureException)
+            assertTrue((it.causes[0] as Orchestrator.StepFailureException).cause === error)
+            assertTrue(it.causes[1] is Orchestrator.StepOutOfAttemptsException)
         }
     }
 
@@ -280,7 +280,7 @@ class TrackerTest {
             }
         }
 
-        val tracker = Tracker("in", steps.iterator())
+        val tracker = Orchestrator("in", steps.iterator())
         assertNull(tracker.result)
 
         var i = 0
@@ -313,8 +313,8 @@ class TrackerTest {
                     assertTrue(newState is State.Running.AttemptFailed)
                     assertEquals("step2", (previousState as State.Running).step)
                     assertEquals("step2", (newState as State.Running).step)
-                    assertTrue((newState as State.Running.AttemptFailed).cause is Tracker.StepFailureException)
-                    assertTrue((newState.cause as Tracker.StepFailureException).cause === error)
+                    assertTrue((newState as State.Running.AttemptFailed).cause is Orchestrator.StepFailureException)
+                    assertTrue((newState.cause as Orchestrator.StepFailureException).cause === error)
                 }
                 6 -> {
                     // step 2 retry
@@ -369,7 +369,7 @@ class TrackerTest {
         }
 
 
-        val tracker = Tracker("in", steps.iterator())
+        val tracker = Orchestrator("in", steps.iterator())
         assertNull(tracker.result)
 
         var i = 0
@@ -435,9 +435,9 @@ class TrackerTest {
 
         (tracker.state as State.Terminal.Failure).let {
             assertEquals(2, it.causes.size)
-            assertTrue(it.causes[0] is Tracker.StepFailureException)
-            assertTrue((it.causes[0] as Tracker.StepFailureException).cause === error)
-            assertTrue(it.causes[1] is Tracker.StepOutOfAttemptsException)
+            assertTrue(it.causes[0] is Orchestrator.StepFailureException)
+            assertTrue((it.causes[0] as Orchestrator.StepFailureException).cause === error)
+            assertTrue(it.causes[1] is Orchestrator.StepOutOfAttemptsException)
         }
 
         assertEquals(5, step2Called)
@@ -455,7 +455,7 @@ class TrackerTest {
             }
         }
 
-        val tracker = Tracker("in", steps.iterator())
+        val tracker = Orchestrator("in", steps.iterator())
         tracker.start()
         Thread.sleep(500)
         tracker.interrupt()
@@ -471,8 +471,8 @@ class TrackerTest {
 
         (tracker.state as State.Terminal.Failure).let {
             assertEquals(2, it.causes.size)
-            assertTrue(it.causes[0] is Tracker.StepInterruptedException)
-            assertTrue(it.causes[1] is Tracker.TrackerInterruptedException)
+            assertTrue(it.causes[0] is Orchestrator.StepInterruptedException)
+            assertTrue(it.causes[1] is Orchestrator.TrackerInterruptedException)
         }
         assertNull(tracker.result)
     }
@@ -489,7 +489,7 @@ class TrackerTest {
             }
         }
 
-        val tracker = Tracker("in", steps.iterator())
+        val tracker = Orchestrator("in", steps.iterator())
         tracker.start()
         Thread.sleep(500)
         tracker.interrupt()
@@ -507,8 +507,8 @@ class TrackerTest {
 
         (tracker.state as State.Terminal.Failure).let {
             assertEquals(2, it.causes.size)
-            assertTrue(it.causes[0] is Tracker.StepInterruptedException)
-            assertTrue(it.causes[1] is Tracker.TrackerInterruptedException)
+            assertTrue(it.causes[0] is Orchestrator.StepInterruptedException)
+            assertTrue(it.causes[1] is Orchestrator.TrackerInterruptedException)
         }
         assertNull(tracker.result)
     }
@@ -525,7 +525,7 @@ class TrackerTest {
             }
         }
 
-        val tracker = Tracker("in", steps.iterator())
+        val tracker = Orchestrator("in", steps.iterator())
         tracker.interrupt()
         tracker.start()
         tracker.interrupt()
@@ -540,8 +540,8 @@ class TrackerTest {
 
         (tracker.state as State.Terminal.Failure).let {
             assertEquals(2, it.causes.size)
-            assertTrue(it.causes[0] is Tracker.StepInterruptedException)
-            assertTrue(it.causes[1] is Tracker.TrackerInterruptedException)
+            assertTrue(it.causes[0] is Orchestrator.StepInterruptedException)
+            assertTrue(it.causes[1] is Orchestrator.TrackerInterruptedException)
         }
         assertNull(tracker.result)
     }
@@ -559,7 +559,7 @@ class TrackerTest {
             ++callbackCount
         }
 
-        val tracker = Tracker("in", steps.iterator())
+        val tracker = Orchestrator("in", steps.iterator())
         tracker.subscribe(listener)
         tracker.subscribe(listener)
         tracker.subscribe(listener)
@@ -579,7 +579,7 @@ class TrackerTest {
 
     @Test(expected = IllegalStateException::class)
     fun cannotStartMultipleTimes() {
-        val tracker = Tracker("in", listOf<StepDescriptor<String>>().iterator())
+        val tracker = Orchestrator("in", listOf<StepDescriptor<String>>().iterator())
         tracker.start()
         tracker.start()
     }
@@ -601,7 +601,7 @@ class TrackerTest {
             fail("should not have been called")
         }
 
-        val tracker = Tracker("in", steps.iterator())
+        val tracker = Orchestrator("in", steps.iterator())
         tracker.subscribe(listener)
         tracker.subscribe(listener)
         tracker.subscribe(badListener)
@@ -642,7 +642,7 @@ class TrackerTest {
             }
         }
 
-        val tracker = Tracker("in", steps.iterator())
+        val tracker = Orchestrator("in", steps.iterator())
 
         tracker.subscribe(listener1)
         tracker.subscribe(listener2)

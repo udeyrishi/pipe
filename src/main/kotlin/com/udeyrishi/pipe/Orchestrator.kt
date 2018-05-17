@@ -13,7 +13,7 @@ import kotlinx.coroutines.experimental.launch
  * - updates and monitors its state
  */
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
-class Tracker<T : Any> internal constructor(input: T, steps: Iterator<StepDescriptor<T>>) {
+class Orchestrator<T : Any> internal constructor(input: T, steps: Iterator<StepDescriptor<T>>) {
 
     private var started: Boolean by immutableAfterSet(false)
     private var interrupted: Boolean by immutableAfterSet(false)
@@ -128,7 +128,7 @@ class Tracker<T : Any> internal constructor(input: T, steps: Iterator<StepDescri
 
     private fun checkInterruption(attempt: Long, stepName: String): Boolean {
         return if (interrupted) {
-            if (stateHolder.onStateFailure(StepInterruptedException(tracker = this, attempt = attempt, stepName = stepName))) {
+            if (stateHolder.onStateFailure(StepInterruptedException(orchestrator = this, attempt = attempt, stepName = stepName))) {
                 state.sanityCheck<State.Running.AttemptFailed>()
             } else {
                 // Bad state change listener
@@ -151,7 +151,7 @@ class Tracker<T : Any> internal constructor(input: T, steps: Iterator<StepDescri
                 StepAttemptResult.forFatalError()
             }
         } catch (e: Throwable) {
-            if (stateHolder.onStateFailure(StepFailureException(tracker = this, attempt = attempt, stepName = step.name, throwable = e))) {
+            if (stateHolder.onStateFailure(StepFailureException(orchestrator = this, attempt = attempt, stepName = step.name, throwable = e))) {
                 StepAttemptResult.forFailedStep()
             } else {
                 // Bad state change listener
@@ -177,10 +177,10 @@ class Tracker<T : Any> internal constructor(input: T, steps: Iterator<StepDescri
         }
     }
 
-    class TrackerInterruptedException internal constructor(tracker: Tracker<*>) : RuntimeException("$tracker prematurely interrupted.")
-    class StepOutOfAttemptsException internal constructor(tracker: Tracker<*>, failureStep: StepDescriptor<*>) : RuntimeException("$tracker ran out of the max allowed ${failureStep.step} attempts for step '${failureStep.name}'.")
-    class StepFailureException internal constructor(tracker: Tracker<*>, attempt: Long, stepName: String, throwable: Throwable) : RuntimeException("$tracker failed on step '$stepName''s attempt #$attempt.", throwable)
-    class StepInterruptedException internal constructor(tracker: Tracker<*>, attempt: Long, stepName: String) : RuntimeException("$tracker was interrupted at step '$stepName' on the attempt #$attempt.")
+    class TrackerInterruptedException internal constructor(orchestrator: Orchestrator<*>) : RuntimeException("$orchestrator prematurely interrupted.")
+    class StepOutOfAttemptsException internal constructor(orchestrator: Orchestrator<*>, failureStep: StepDescriptor<*>) : RuntimeException("$orchestrator ran out of the max allowed ${failureStep.step} attempts for step '${failureStep.name}'.")
+    class StepFailureException internal constructor(orchestrator: Orchestrator<*>, attempt: Long, stepName: String, throwable: Throwable) : RuntimeException("$orchestrator failed on step '$stepName''s attempt #$attempt.", throwable)
+    class StepInterruptedException internal constructor(orchestrator: Orchestrator<*>, attempt: Long, stepName: String) : RuntimeException("$orchestrator was interrupted at step '$stepName' on the attempt #$attempt.")
 }
 
 private inline fun <reified T : State> State.sanityCheck() {
