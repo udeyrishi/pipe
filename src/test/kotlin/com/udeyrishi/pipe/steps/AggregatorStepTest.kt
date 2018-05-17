@@ -52,8 +52,8 @@ class AggregatorStepTest {
             try {
                 aggregator.push("apple")
             } catch (e: IllegalStateException) {
-                assertEquals("The action supplied to the ${AggregatorStep::class.java.simpleName} was bad; it didn't return a list of size 2 (i.e., the aggregator capacity).", e.message)
-                synchronized(this) {
+                assertEquals("The aggregationAction supplied to the ${AggregatorStep::class.java.simpleName} was bad; it didn't return a list of size 2 (i.e., the aggregator capacity).", e.message)
+                synchronized(this@AggregatorStepTest) {
                     exceptionCount++
                 }
             }
@@ -62,8 +62,8 @@ class AggregatorStepTest {
             try {
                 aggregator.push("bob")
             } catch (e: IllegalStateException) {
-                assertEquals("The action supplied to the ${AggregatorStep::class.java.simpleName} was bad; it didn't return a list of size 2 (i.e., the aggregator capacity).", e.message)
-                synchronized(this) {
+                assertEquals("The aggregationAction supplied to the ${AggregatorStep::class.java.simpleName} was bad; it didn't return a list of size 2 (i.e., the aggregator capacity).", e.message)
+                synchronized(this@AggregatorStepTest) {
                     exceptionCount++
                 }
             }
@@ -104,7 +104,7 @@ class AggregatorStepTest {
     @Repeat
     fun worksWhenComparatorProvided() {
         var aggregatorArgs: List<Int>? = null
-        val aggregator = AggregatorStep<Int>(capacity = 5, comparator = Comparator { x, y -> x.compareTo(y) }) {
+        val aggregator = AggregatorStep<Int>(capacity = 5, ordered = true) {
             aggregatorArgs = it
             it.map { it + 1 }
         }
