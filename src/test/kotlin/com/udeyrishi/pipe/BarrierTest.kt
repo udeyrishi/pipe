@@ -63,4 +63,32 @@ class BarrierTest {
         assertFalse(job.isActive)
         assertEquals("input", result)
     }
+
+    @Test
+    @Repeat
+    fun worksWithMultipleInputs() {
+        val barrier = Barrier<String>()
+
+        var result1: String? = null
+        var result2: String? = null
+        val job1 = launch {
+            result1 = barrier.blockUntilLift("input1")
+        }
+
+        val job2 = launch {
+            result2 = barrier.blockUntilLift("input2")
+        }
+
+        barrier.lift()
+
+        runBlocking {
+            job1.join()
+            job2.join()
+        }
+
+        assertFalse(job1.isActive)
+        assertFalse(job2.isActive)
+        assertEquals("input1", result1)
+        assertEquals("input2", result2)
+    }
 }

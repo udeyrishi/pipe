@@ -9,12 +9,10 @@ import kotlin.coroutines.experimental.suspendCoroutine
 
 class Barrier<T : Any> internal constructor() {
     private var lifted: Boolean by immutableAfterSet(false)
-    private var continuation: Continuation<T>? by immutableAfterSet(null)
-    private var input: T? by immutableAfterSet(null)
+    private val continuations = mutableListOf<Pair<Continuation<T>, T>>()
 
     @Suppress("EXPERIMENTAL_FEATURE_WARNING")
     internal suspend fun blockUntilLift(input: T): T {
-        this.input = input
         if (lifted) {
             return input
         }
@@ -25,15 +23,13 @@ class Barrier<T : Any> internal constructor() {
          * Else, set the `continuation`. When lift() is indeed called, it will resume the coroutine via the continuation.
          */
         return suspendCoroutine {
-            if (lifted) {
-                it.resume(input)
-            } else {
-                this.continuation = it
+            synchronized(this@Barrier) {
                 if (lifted) {
                     it.resume(input)
+                } else {
+                    continuations.add(it to input)
                 }
             }
-
             // If it.resume(input) isn't called until this point, suspendCoroutine will block the current coroutine
             // until someone calls `resume` (see: lift() below).
         }
@@ -41,8 +37,12 @@ class Barrier<T : Any> internal constructor() {
 
     fun lift() {
         if (!lifted) {
-            lifted = true
-            continuation?.resume(input ?: throw IllegalStateException("Something went wrong. continuation was initialized, but not the input."))
+            synchronized(this) {
+                lifted = true
+                continuations.forEach { (continuation, input) ->
+                    continuation.resume(input)
+                }
+            }
         }
     }
 }
