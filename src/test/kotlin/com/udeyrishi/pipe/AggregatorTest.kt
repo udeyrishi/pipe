@@ -79,7 +79,7 @@ class AggregatorTest {
 
     @Test
     @Repeat
-    fun worksWhenNoComparatorProvided() {
+    fun unorderedWorks() {
         var aggregatorArgs: List<Int>? = null
         val aggregator = Aggregator<Int>(capacity = 5, ordered = false) {
             aggregatorArgs = it
@@ -121,5 +121,150 @@ class AggregatorTest {
         }
         assertEquals((1..5).toList(), incrementedResults)
         assertEquals((0 until 5).toList(), aggregatorArgs)
+    }
+
+    @Test
+    fun canUpdateCapacityToABiggerValueWhenBlocked() {
+        var aggregatorArgs: List<Int>? = null
+        val aggregator = Aggregator<Int>(capacity = 6, ordered = true) {
+            aggregatorArgs = it
+            it.map { it + 1 }
+        }
+        val deferredResults = (0 until 5).map {
+            async {
+                Thread.sleep(it + 5L)
+                aggregator.push(it)
+            }
+        }.toMutableList()
+
+        aggregator.capacity = 7
+
+        (5 until 7).mapTo(deferredResults) {
+            async {
+                Thread.sleep(it + 5L)
+                aggregator.push(it)
+            }
+        }
+
+        val incrementedResults = runBlocking {
+            deferredResults.map {
+                it.await()
+            }
+        }
+        assertEquals((1..7).toList(), incrementedResults)
+        assertEquals((0 until 7).toList(), aggregatorArgs)
+    }
+
+    @Test
+    fun canUpdateCapacityToALowerValueWhenBlocked() {
+        var aggregatorArgs: List<Int>? = null
+        val aggregator = Aggregator<Int>(capacity = 5, ordered = true) {
+            aggregatorArgs = it
+            it.map { it + 1 }
+        }
+        val deferredResults = (0 until 3).map {
+            async {
+                Thread.sleep(it + 5L)
+                aggregator.push(it)
+            }
+        }
+
+        aggregator.capacity = 3
+
+        val incrementedResults = runBlocking {
+            deferredResults.map {
+                it.await()
+            }
+        }
+        assertEquals((1..3).toList(), incrementedResults)
+        assertEquals((0 until 3).toList(), aggregatorArgs)
+    }
+
+    @Test
+    fun canUpdateCapacityToABiggerValueBeforeStart() {
+        var aggregatorArgs: List<Int>? = null
+        val aggregator = Aggregator<Int>(capacity = 3, ordered = true) {
+            aggregatorArgs = it
+            it.map { it + 1 }
+        }
+
+        aggregator.capacity = 5
+
+        val deferredResults = (0 until 5).map {
+            async {
+                Thread.sleep(it + 5L)
+                aggregator.push(it)
+            }
+        }
+        val incrementedResults = runBlocking {
+            deferredResults.map {
+                it.await()
+            }
+        }
+        assertEquals((1..5).toList(), incrementedResults)
+        assertEquals((0 until 5).toList(), aggregatorArgs)
+    }
+
+    @Test
+    fun canUpdateCapacityToALowerValueBeforeStart() {
+        var aggregatorArgs: List<Int>? = null
+        val aggregator = Aggregator<Int>(capacity = 5, ordered = true) {
+            aggregatorArgs = it
+            it.map { it + 1 }
+        }
+
+        aggregator.capacity = 3
+
+        val deferredResults = (0 until 3).map {
+            async {
+                Thread.sleep(it + 5L)
+                aggregator.push(it)
+            }
+        }
+        val incrementedResults = runBlocking {
+            deferredResults.map {
+                it.await()
+            }
+        }
+        assertEquals((1..3).toList(), incrementedResults)
+        assertEquals((0 until 3).toList(), aggregatorArgs)
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun safelyDetectsInabilityToUpdateCapacityToArrivalCount() {
+        val aggregator = Aggregator<Int>(capacity = 7, ordered = true) {
+            it.map { it + 1 }
+        }
+
+        (0 until 5).map {
+            async {
+                aggregator.push(it)
+            }
+        }
+
+        while (aggregator.arrivalCount < 5) {
+            Thread.sleep(50)
+        }
+
+        aggregator.capacity = 5
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun safelyDetectsInabilityToUpdateCapacityToLessThanArrivalCount() {
+        val aggregator = Aggregator<Int>(capacity = 7, ordered = true) {
+            it.map { it + 1 }
+        }
+
+        (0 until 5).map {
+            async {
+                aggregator.push(it)
+            }
+        }
+
+        while (aggregator.arrivalCount < 5) {
+            Thread.sleep(50)
+        }
+
+        aggregator.capacity = 3
     }
 }

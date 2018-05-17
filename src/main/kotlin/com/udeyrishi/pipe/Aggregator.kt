@@ -7,11 +7,24 @@ import com.udeyrishi.pipe.util.SortReplayer
 import com.udeyrishi.pipe.util.immutableAfterSet
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
-internal class Aggregator<T : Comparable<T>>(private val capacity: Int, private val ordered: Boolean = true, private val aggregationAction: Step<List<T>>) {
+class Aggregator<T : Comparable<T>>(capacity: Int, private val ordered: Boolean = true, private val aggregationAction: Step<List<T>>) {
     private val barriers = mutableListOf<Pair<T, Barrier<T>>>()
     private var outputs: List<T>? by immutableAfterSet(null)
 
-    suspend fun push(input: T): T {
+    var capacity: Int = capacity
+        set(value) {
+            synchronized(this) {
+                if (arrivalCount >= value) {
+                    throw IllegalStateException("Cannot change the capacity from $field to $value, because there are already $arrivalCount items in the aggregator.")
+                }
+                field = value
+            }
+        }
+
+    val arrivalCount: Int
+        get() = barriers.size
+
+    internal suspend fun push(input: T): T {
         val (barrier, index) = addBarrier(input)
 
         if (index < capacity - 1) {
@@ -56,7 +69,7 @@ internal class Aggregator<T : Comparable<T>>(private val capacity: Int, private 
     private fun addBarrier(input: T): Pair<Barrier<T>, Int> {
         val barrier = Barrier<T>()
         val index = synchronized(this) {
-            if (barriers.size == capacity) {
+            if (arrivalCount == capacity) {
                 throw IllegalStateException("Cannot push another step into the aggregator. It has reached its maximum capacity of $capacity.")
             }
             barriers.add(input to barrier)
