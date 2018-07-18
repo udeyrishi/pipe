@@ -65,24 +65,24 @@ val pipeline: Pipeline<T> = buildPipeline(fifo = true) {
     }
 } 
 
-val tracker: Tracker<T> = pipeline.push(someInput)
+val orchestrator: Orchestrator<T> = pipeline.push(someInput)
 
-// Each tracker has a UUID and a sequence number. The pipeline can be polled for tracker by the UUID.
+// Each orchestrator has a UUID and a sequence number. The pipeline can be polled for orchestrator by the UUID.
 // The sequence number can be used for sorting the outputs, since it's not a FIFO by default.
 
-val anotherRefToTracker = pipeline[uuid]
-val trackers = pipeline.trackers
+val anotherRefToOrchestrator = pipeline[uuid]
+val orchestrators = pipeline.orchestrators
 
 // Lifts the barrier for all currently blocked, and future arriving items
 pipeline.barriers.forEach { it.lift() }
 ```
 
 
-### Tracker
+### Orchestrator
 ```kt
 
 // Starts asynchronously on a background thread
-tracker.run {
+orchestrator.run {
     // Also optionally attach a state listener.
     // These listeners can be used for reactively gathering the results vs. polling
     println("New State: $it")
@@ -91,18 +91,18 @@ tracker.run {
 // Calling run 2x will call IllegalStateException
 
 // State listener API
-tracker.unsubscribe(listener)
-tracker.unsubscribeAll()
-tracker.subscribe()
+orchestrator.unsubscribe(listener)
+orchestrator.unsubscribeAll()
+orchestrator.subscribe()
 
 // If any of the state listeners above throw an exception, stop executing the steps, and move to the Failure state.
 // That's basically what the "unexpected errors" in the above state diagram are.
 
 // Polling API
-tracker.state
-tracker.result // the result if the state is Success, else null
+orchestrator.state
+orchestrator.result // the result if the state is Success, else null
 
 // Execution API
-tracker.run() // Same as above
-tracker.interrupt() // Will try to quit the current step. Will definitely stop before the next step is run.
+orchestrator.run() // Same as above
+orchestrator.interrupt() // Will try to quit the current step. Will definitely stop before the next step is run.
 ```

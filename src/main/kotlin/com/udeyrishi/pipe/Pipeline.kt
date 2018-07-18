@@ -6,29 +6,29 @@ package com.udeyrishi.pipe
 import java.util.UUID
 
 class Pipeline<T : Any> private constructor(private val steps: List<StepDescriptor<Passenger<T>>>) {
-    private val uuidsToTrackers = mutableMapOf<UUID, Orchestrator<Passenger<T>>>()
+    private val uuidsToOrchestrators = mutableMapOf<UUID, Orchestrator<Passenger<T>>>()
 
     val orchestrators: List<Orchestrator<Passenger<T>>>
-        get() = listOf(*uuidsToTrackers.values.toTypedArray())
+        get() = listOf(*uuidsToOrchestrators.values.toTypedArray())
 
     fun push(input: T): Orchestrator<Passenger<T>> {
         return synchronized(this) {
             val position = orchestrators.size.toLong()
             val uuid = generateUuid()
             val passenger = Passenger(input, uuid, position)
-            val tracker = Orchestrator(passenger, steps.iterator())
-            uuidsToTrackers.put(uuid, tracker)
-            tracker
+            val orchestrator = Orchestrator(passenger, steps.iterator())
+            uuidsToOrchestrators.put(uuid, orchestrator)
+            orchestrator
         }
     }
 
     operator fun get(uuid: UUID): Orchestrator<Passenger<T>>? {
-        return uuidsToTrackers[uuid]
+        return uuidsToOrchestrators[uuid]
     }
 
     private fun generateUuid(): UUID {
         var uuid = UUID.randomUUID()
-        while (uuid in uuidsToTrackers) {
+        while (uuid in uuidsToOrchestrators) {
             uuid = UUID.randomUUID()
         }
         return uuid
@@ -40,7 +40,7 @@ class Pipeline<T : Any> private constructor(private val steps: List<StepDescript
         private var barrierCount = 0
         private var aggregatorCount = 0
 
-        fun addStep(name: String, attempts: Long = 1, step: suspend (T) -> T) {
+        fun addStep(name: String, attempts: Long = 1, step: Step<T>) {
             synchronized(this) {
                 steps.add(StepDescriptor(name, attempts) {
                     val result: T = step(it.data)

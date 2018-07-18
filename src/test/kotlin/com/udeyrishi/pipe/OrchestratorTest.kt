@@ -29,25 +29,25 @@ class OrchestratorTest {
     @Test
     fun startsWithScheduledState() {
         val input = IdentifiableString("some input")
-        val tracker = Orchestrator(input, listOf<StepDescriptor<IdentifiableString>>().iterator())
-        assertTrue(tracker.state is State.Scheduled)
+        val orchestrator = Orchestrator(input, listOf<StepDescriptor<IdentifiableString>>().iterator())
+        assertTrue(orchestrator.state is State.Scheduled)
     }
 
     @Test
     fun goesToCompletionWhenNoSteps() {
         val input = IdentifiableString("some input")
-        val tracker = Orchestrator(input, listOf<StepDescriptor<IdentifiableString>>().iterator())
-        assertNull(tracker.result)
-        tracker.start()
+        val orchestrator = Orchestrator(input, listOf<StepDescriptor<IdentifiableString>>().iterator())
+        assertNull(orchestrator.result)
+        orchestrator.start()
 
         var counter = 0
-        while (tracker.state !is State.Terminal && counter++ < 10) {
-            assertNull(tracker.result)
+        while (orchestrator.state !is State.Terminal && counter++ < 10) {
+            assertNull(orchestrator.result)
             Thread.sleep(10)
         }
 
-        assertTrue(tracker.state is State.Terminal.Success)
-        assertEquals(input, tracker.result)
+        assertTrue(orchestrator.state is State.Terminal.Success)
+        assertEquals(input, orchestrator.result)
     }
 
     @Test
@@ -61,11 +61,11 @@ class OrchestratorTest {
 
 
         val input = IdentifiableString("in")
-        val tracker = Orchestrator(input, steps.iterator())
-        assertNull(tracker.result)
+        val orchestrator = Orchestrator(input, steps.iterator())
+        assertNull(orchestrator.result)
 
         var i = 0
-        tracker.start(StateChangeListener { _, previousState, newState ->
+        orchestrator.start(StateChangeListener { _, previousState, newState ->
             when (i++) {
                 0 -> {
                     // step 0 start
@@ -104,12 +104,12 @@ class OrchestratorTest {
             }
         })
 
-        while (tracker.state !is State.Terminal) {
+        while (orchestrator.state !is State.Terminal) {
             Thread.sleep(100)
         }
 
-        assertTrue(tracker.state is State.Terminal.Success)
-        assertEquals(IdentifiableString("in->0->1->2->3->4->5", input.uuid), tracker.result)
+        assertTrue(orchestrator.state is State.Terminal.Success)
+        assertEquals(IdentifiableString("in->0->1->2->3->4->5", input.uuid), orchestrator.result)
     }
 
     @Test
@@ -121,25 +121,25 @@ class OrchestratorTest {
             })
         }
 
-        val tracker = Orchestrator(IdentifiableString("in"), steps.iterator())
-        assertNull(tracker.result)
+        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator())
+        assertNull(orchestrator.result)
 
         var i = 0
         val error = IllegalAccessException("testing")
-        tracker.start(StateChangeListener { _, _, _ ->
+        orchestrator.start(StateChangeListener { _, _, _ ->
             when (i++) {
                 5 -> throw error
             }
         })
 
-        while (tracker.state !is State.Terminal) {
+        while (orchestrator.state !is State.Terminal) {
             Thread.sleep(100)
         }
 
-        assertTrue(tracker.state is State.Terminal.Failure)
-        assertNull(tracker.result)
-        assertEquals(1, (tracker.state as State.Terminal.Failure).causes.size)
-        assertTrue(error === (tracker.state as State.Terminal.Failure).causes[0])
+        assertTrue(orchestrator.state is State.Terminal.Failure)
+        assertNull(orchestrator.result)
+        assertEquals(1, (orchestrator.state as State.Terminal.Failure).causes.size)
+        assertTrue(error === (orchestrator.state as State.Terminal.Failure).causes[0])
     }
 
     @Test
@@ -154,11 +154,11 @@ class OrchestratorTest {
             }
         }
 
-        val tracker = Orchestrator(IdentifiableString("in"), steps.iterator())
-        assertNull(tracker.result)
+        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator())
+        assertNull(orchestrator.result)
 
         var i = 0
-        tracker.start(StateChangeListener { _, previousState, newState ->
+        orchestrator.start(StateChangeListener { _, previousState, newState ->
             when (i++) {
                 1 -> {
                     assertTrue(previousState is State.Running.Attempting)
@@ -168,16 +168,16 @@ class OrchestratorTest {
             }
         })
 
-        while (tracker.state !is State.Terminal) {
+        while (orchestrator.state !is State.Terminal) {
             Thread.sleep(100)
         }
 
-        assertTrue(tracker.state is State.Terminal.Failure)
-        assertNull(tracker.result)
-        assertEquals(2, (tracker.state as State.Terminal.Failure).causes.size)
-        assertTrue((tracker.state as State.Terminal.Failure).causes[0] is Orchestrator.StepFailureException)
-        assertTrue(error === (tracker.state as State.Terminal.Failure).causes[0].cause)
-        assertTrue(error2 === (tracker.state as State.Terminal.Failure).causes[1])
+        assertTrue(orchestrator.state is State.Terminal.Failure)
+        assertNull(orchestrator.result)
+        assertEquals(2, (orchestrator.state as State.Terminal.Failure).causes.size)
+        assertTrue((orchestrator.state as State.Terminal.Failure).causes[0] is Orchestrator.StepFailureException)
+        assertTrue(error === (orchestrator.state as State.Terminal.Failure).causes[0].cause)
+        assertTrue(error2 === (orchestrator.state as State.Terminal.Failure).causes[1])
     }
 
     @Test
@@ -198,11 +198,11 @@ class OrchestratorTest {
         }
 
 
-        val tracker = Orchestrator(IdentifiableString("in"), steps.iterator())
-        assertNull(tracker.result)
+        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator())
+        assertNull(orchestrator.result)
 
         var i = 0
-        tracker.start(StateChangeListener { _, previousState, newState ->
+        orchestrator.start(StateChangeListener { _, previousState, newState ->
             when (i++) {
                 0 -> {
                     // step 0 start
@@ -249,14 +249,14 @@ class OrchestratorTest {
             }
         })
 
-        while (tracker.state !is State.Terminal) {
+        while (orchestrator.state !is State.Terminal) {
             Thread.sleep(100)
         }
 
-        assertTrue(tracker.state is State.Terminal.Failure)
-        assertNull(tracker.result)
+        assertTrue(orchestrator.state is State.Terminal.Failure)
+        assertNull(orchestrator.result)
 
-        (tracker.state as State.Terminal.Failure).let {
+        (orchestrator.state as State.Terminal.Failure).let {
             assertEquals(2, it.causes.size)
             assertTrue(it.causes[0] is Orchestrator.StepFailureException)
             assertTrue((it.causes[0] as Orchestrator.StepFailureException).cause === error)
@@ -287,11 +287,11 @@ class OrchestratorTest {
         }
 
         val input = IdentifiableString("in")
-        val tracker = Orchestrator(input, steps.iterator())
-        assertNull(tracker.result)
+        val orchestrator = Orchestrator(input, steps.iterator())
+        assertNull(orchestrator.result)
 
         var i = 0
-        tracker.start(StateChangeListener { _, previousState, newState ->
+        orchestrator.start(StateChangeListener { _, previousState, newState ->
             when (i++) {
                 0 -> {
                     // step 0 start
@@ -348,12 +348,12 @@ class OrchestratorTest {
             }
         })
 
-        while (tracker.state !is State.Terminal) {
+        while (orchestrator.state !is State.Terminal) {
             Thread.sleep(100)
         }
 
-        assertTrue(tracker.state is State.Terminal.Success)
-        assertEquals(IdentifiableString("in->0->1->2->3->4->5", input.uuid), tracker.result)
+        assertTrue(orchestrator.state is State.Terminal.Success)
+        assertEquals(IdentifiableString("in->0->1->2->3->4->5", input.uuid), orchestrator.result)
     }
 
     @Test
@@ -376,11 +376,11 @@ class OrchestratorTest {
         }
 
 
-        val tracker = Orchestrator(IdentifiableString("in"), steps.iterator())
-        assertNull(tracker.result)
+        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator())
+        assertNull(orchestrator.result)
 
         var i = 0
-        tracker.start(StateChangeListener { _, previousState, newState ->
+        orchestrator.start(StateChangeListener { _, previousState, newState ->
             when (i++) {
                 0 -> {
                     // step 0 start
@@ -433,14 +433,14 @@ class OrchestratorTest {
             }
         })
 
-        while (tracker.state !is State.Terminal) {
+        while (orchestrator.state !is State.Terminal) {
             Thread.sleep(100)
         }
 
-        assertTrue(tracker.state is State.Terminal.Failure)
-        assertNull(tracker.result)
+        assertTrue(orchestrator.state is State.Terminal.Failure)
+        assertNull(orchestrator.result)
 
-        (tracker.state as State.Terminal.Failure).let {
+        (orchestrator.state as State.Terminal.Failure).let {
             assertEquals(2, it.causes.size)
             assertTrue(it.causes[0] is Orchestrator.StepFailureException)
             assertTrue((it.causes[0] as Orchestrator.StepFailureException).cause === error)
@@ -462,26 +462,26 @@ class OrchestratorTest {
             }
         }
 
-        val tracker = Orchestrator(IdentifiableString("in"), steps.iterator())
-        tracker.start()
+        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator())
+        orchestrator.start()
         Thread.sleep(500)
-        tracker.interrupt()
+        orchestrator.interrupt()
 
-        while (tracker.state !is State.Terminal) {
+        while (orchestrator.state !is State.Terminal) {
             Thread.sleep(100)
         }
 
-        // Ideally, tracker should've completed just the 5th step (index 4).
+        // Ideally, orchestrator should've completed just the 5th step (index 4).
         // But this depends on the OS scheduling. So just check for a sane value
         assertTrue(lastStep < 7)
-        assertTrue(tracker.state is State.Terminal.Failure)
+        assertTrue(orchestrator.state is State.Terminal.Failure)
 
-        (tracker.state as State.Terminal.Failure).let {
+        (orchestrator.state as State.Terminal.Failure).let {
             assertEquals(2, it.causes.size)
             assertTrue(it.causes[0] is Orchestrator.StepInterruptedException)
-            assertTrue(it.causes[1] is Orchestrator.TrackerInterruptedException)
+            assertTrue(it.causes[1] is Orchestrator.OrchestratorInterruptedException)
         }
-        assertNull(tracker.result)
+        assertNull(orchestrator.result)
     }
 
     @Test
@@ -496,28 +496,28 @@ class OrchestratorTest {
             }
         }
 
-        val tracker = Orchestrator(IdentifiableString("in"), steps.iterator())
-        tracker.start()
+        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator())
+        orchestrator.start()
         Thread.sleep(500)
-        tracker.interrupt()
-        tracker.interrupt()
-        tracker.interrupt()
+        orchestrator.interrupt()
+        orchestrator.interrupt()
+        orchestrator.interrupt()
 
-        while (tracker.state !is State.Terminal) {
+        while (orchestrator.state !is State.Terminal) {
             Thread.sleep(100)
         }
 
-        // Ideally, tracker should've completed just the 5th step (index 4).
+        // Ideally, orchestrator should've completed just the 5th step (index 4).
         // But this depends on the OS scheduling. So just check for a sane value
         assertTrue(lastStep < 7)
-        assertTrue(tracker.state is State.Terminal.Failure)
+        assertTrue(orchestrator.state is State.Terminal.Failure)
 
-        (tracker.state as State.Terminal.Failure).let {
+        (orchestrator.state as State.Terminal.Failure).let {
             assertEquals(2, it.causes.size)
             assertTrue(it.causes[0] is Orchestrator.StepInterruptedException)
-            assertTrue(it.causes[1] is Orchestrator.TrackerInterruptedException)
+            assertTrue(it.causes[1] is Orchestrator.OrchestratorInterruptedException)
         }
-        assertNull(tracker.result)
+        assertNull(orchestrator.result)
     }
 
     @Test
@@ -532,25 +532,25 @@ class OrchestratorTest {
             }
         }
 
-        val tracker = Orchestrator(IdentifiableString("in"), steps.iterator())
-        tracker.interrupt()
-        tracker.start()
-        tracker.interrupt()
+        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator())
+        orchestrator.interrupt()
+        orchestrator.start()
+        orchestrator.interrupt()
         Thread.sleep(500)
 
-        while (tracker.state !is State.Terminal) {
+        while (orchestrator.state !is State.Terminal) {
             Thread.sleep(100)
         }
 
         assertEquals(-1, lastStep)
-        assertTrue(tracker.state is State.Terminal.Failure)
+        assertTrue(orchestrator.state is State.Terminal.Failure)
 
-        (tracker.state as State.Terminal.Failure).let {
+        (orchestrator.state as State.Terminal.Failure).let {
             assertEquals(2, it.causes.size)
             assertTrue(it.causes[0] is Orchestrator.StepInterruptedException)
-            assertTrue(it.causes[1] is Orchestrator.TrackerInterruptedException)
+            assertTrue(it.causes[1] is Orchestrator.OrchestratorInterruptedException)
         }
-        assertNull(tracker.result)
+        assertNull(orchestrator.result)
     }
 
     @Test
@@ -567,29 +567,29 @@ class OrchestratorTest {
         }
 
         val input = IdentifiableString("in")
-        val tracker = Orchestrator(input, steps.iterator())
-        tracker.subscribe(listener)
-        tracker.subscribe(listener)
-        tracker.subscribe(listener)
-        tracker.start(listener)
+        val orchestrator = Orchestrator(input, steps.iterator())
+        orchestrator.subscribe(listener)
+        orchestrator.subscribe(listener)
+        orchestrator.subscribe(listener)
+        orchestrator.start(listener)
 
-        while (tracker.state !is State.Terminal) {
+        while (orchestrator.state !is State.Terminal) {
             Thread.sleep(100)
         }
 
         // For every step, a `-> running` and `-> done` transition = step.size * 2
         // +1 for the final completion.
         // * 4, because 4 listeners
-        assertTrue(tracker.state is State.Terminal.Success)
-        assertEquals(IdentifiableString("in", input.uuid), tracker.result)
+        assertTrue(orchestrator.state is State.Terminal.Success)
+        assertEquals(IdentifiableString("in", input.uuid), orchestrator.result)
         assertEquals((steps.size*2 + 1) * 4, callbackCount)
     }
 
     @Test(expected = IllegalStateException::class)
     fun cannotStartMultipleTimes() {
-        val tracker = Orchestrator(IdentifiableString("in"), listOf<StepDescriptor<IdentifiableString>>().iterator())
-        tracker.start()
-        tracker.start()
+        val orchestrator = Orchestrator(IdentifiableString("in"), listOf<StepDescriptor<IdentifiableString>>().iterator())
+        orchestrator.start()
+        orchestrator.start()
     }
 
     @Test
@@ -609,20 +609,20 @@ class OrchestratorTest {
             fail("should not have been called")
         }
 
-        val tracker = Orchestrator(IdentifiableString("in"), steps.iterator())
-        tracker.subscribe(listener)
-        tracker.subscribe(listener)
-        tracker.subscribe(badListener)
-        tracker.subscribe(listener)
-        assertTrue(tracker.unsubscribe(badListener))
-        assertFalse(tracker.unsubscribe(StateChangeListener { _, _, _ ->  }))
-        tracker.start(listener)
+        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator())
+        orchestrator.subscribe(listener)
+        orchestrator.subscribe(listener)
+        orchestrator.subscribe(badListener)
+        orchestrator.subscribe(listener)
+        assertTrue(orchestrator.unsubscribe(badListener))
+        assertFalse(orchestrator.unsubscribe(StateChangeListener { _, _, _ ->  }))
+        orchestrator.start(listener)
 
-        while (tracker.state !is State.Terminal) {
+        while (orchestrator.state !is State.Terminal) {
             Thread.sleep(100)
         }
 
-        assertTrue(tracker.state is State.Terminal.Success)
+        assertTrue(orchestrator.state is State.Terminal.Success)
         assertFalse(called)
     }
 
@@ -650,17 +650,17 @@ class OrchestratorTest {
             }
         }
 
-        val tracker = Orchestrator(IdentifiableString("in"), steps.iterator())
+        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator())
 
-        tracker.subscribe(listener1)
-        tracker.subscribe(listener2)
-        tracker.start(listener3)
+        orchestrator.subscribe(listener1)
+        orchestrator.subscribe(listener2)
+        orchestrator.start(listener3)
 
-        while (tracker.state !is State.Terminal) {
+        while (orchestrator.state !is State.Terminal) {
             Thread.sleep(100)
         }
 
-        assertTrue(tracker.state is State.Terminal.Success)
+        assertTrue(orchestrator.state is State.Terminal.Success)
         assertEquals(0, i)
     }
 }

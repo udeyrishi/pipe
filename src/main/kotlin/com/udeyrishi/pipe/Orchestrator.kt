@@ -63,7 +63,7 @@ class Orchestrator<T : Identifiable> internal constructor(input: T, steps: Itera
             val (input, nextStep) = cursor
 
             if (nextStep == null) {
-                // No more steps. Next input _is the_ result for this tracker
+                // No more steps. Next input _is the_ result for this orchestrator
                 onResultPrepared(result = input)
                 break
             }
@@ -95,7 +95,7 @@ class Orchestrator<T : Identifiable> internal constructor(input: T, steps: Itera
         if (state !is State.Terminal.Failure) {
             // Normal execution: Ran out of attempts or interrupted
             state.sanityCheck<State.Running.AttemptFailed>()
-            stateHolder.onStateFailure(cause = if (dueToInterruption) TrackerInterruptedException(this) else StepOutOfAttemptsException(this, failingStep))
+            stateHolder.onStateFailure(cause = if (dueToInterruption) OrchestratorInterruptedException(this) else StepOutOfAttemptsException(this, failingStep))
             // No need to check the result for ^. Even if it's false, the state is still terminal false
             state.sanityCheck<State.Terminal.Failure>()
         }
@@ -181,7 +181,7 @@ class Orchestrator<T : Identifiable> internal constructor(input: T, steps: Itera
         }
     }
 
-    class TrackerInterruptedException internal constructor(orchestrator: Orchestrator<*>) : RuntimeException("$orchestrator prematurely interrupted.")
+    class OrchestratorInterruptedException internal constructor(orchestrator: Orchestrator<*>) : RuntimeException("$orchestrator prematurely interrupted.")
     class StepOutOfAttemptsException internal constructor(orchestrator: Orchestrator<*>, failureStep: StepDescriptor<*>) : RuntimeException("$orchestrator ran out of the max allowed ${failureStep.step} attempts for step '${failureStep.name}'.")
     class StepFailureException internal constructor(orchestrator: Orchestrator<*>, attempt: Long, stepName: String, throwable: Throwable) : RuntimeException("$orchestrator failed on step '$stepName''s attempt #$attempt.", throwable)
     class StepInterruptedException internal constructor(orchestrator: Orchestrator<*>, attempt: Long, stepName: String) : RuntimeException("$orchestrator was interrupted at step '$stepName' on the attempt #$attempt.")
