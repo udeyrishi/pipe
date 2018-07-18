@@ -9,7 +9,7 @@ buildscript {
         ]
 
         coreVersions = [
-                'pipe': '0.0.1'
+                'pipe': '0.0.1-alpha1'
         ]
 
         depends = [
@@ -35,6 +35,7 @@ version coreVersions.pipe
 
 apply plugin: 'java'
 apply plugin: 'kotlin'
+apply plugin: 'maven-publish'
 
 sourceCompatibility = 1.8
 
@@ -59,7 +60,19 @@ compileKotlin {
     kotlinOptions.jvmTarget = "1.8"
     kotlinOptions.allWarningsAsErrors = true
 }
+
 compileTestKotlin {
     kotlinOptions.jvmTarget = "1.8"
     kotlinOptions.allWarningsAsErrors = true
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = group
+            artifactId = 'pipe'
+            version = coreVersions.pipe
+            from components.java
+        }
+    }
 }
