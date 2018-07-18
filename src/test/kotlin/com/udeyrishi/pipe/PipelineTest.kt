@@ -70,7 +70,7 @@ class PipelineTest {
 
         // Everyone is waiting at the barrier. Now that we know the count, we can safely update the aggregator capacity, and then lift the barrier.
         barrier.lift()
-        aggregator.capacity = 3
+        aggregator.updateCapacity(3)
 
         while (orchestrators.any { it.state !is State.Terminal }) {
             Thread.sleep(100)

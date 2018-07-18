@@ -5,24 +5,31 @@ package com.udeyrishi.pipe.steps
 
 import com.udeyrishi.pipe.util.SortReplayer
 import com.udeyrishi.pipe.util.immutableAfterSet
+import kotlinx.coroutines.experimental.launch
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
-class Aggregator<T : Comparable<T>>(capacity: Int, private val ordered: Boolean = true, private val aggregationAction: Step<List<T>>) {
+class Aggregator<T : Comparable<T>>(private var capacity: Int, private val ordered: Boolean = true, private val aggregationAction: Step<List<T>>) {
     private val barriers = mutableListOf<Pair<T, Barrier<T>>>()
     private var outputs: List<T>? by immutableAfterSet(null)
 
-    var capacity: Int = capacity
-        set(value) {
-            synchronized(this) {
-                if (arrivalCount >= value) {
-                    throw IllegalStateException("Cannot change the capacity from $field to $value, because there are already $arrivalCount items in the aggregator.")
-                }
-                field = value
-            }
-        }
-
     val arrivalCount: Int
         get() = barriers.size
+
+    fun updateCapacity(newCapacity: Int) {
+        synchronized(this) {
+            if (arrivalCount > newCapacity) {
+                throw IllegalStateException("Cannot change the capacity from $capacity to $newCapacity, because there are already $arrivalCount items in the aggregator.")
+            }
+            capacity = newCapacity
+            if (arrivalCount == newCapacity) {
+                // We now need to retroactively mark the last arrived input as the final input. Usually, the last arrival's coroutine can be reused for aggregation purposes, but it's blocked
+                // on the barrier now. So temporarily create a new one to do the aggregation + unblocking work.
+                launch {
+                    onFinalInputPushed()
+                }
+            }
+        }
+    }
 
     internal suspend fun push(input: T): T {
         val (barrier, index) = addBarrier(input)
@@ -63,7 +70,10 @@ class Aggregator<T : Comparable<T>>(capacity: Int, private val ordered: Boolean 
         }
 
         // Note that a barrier for the last input was created, and pushed into `barriers` for consistency. This allows the results to be uniformly accessed
-        // via index for all the inputs. The barrier for the last input is never actually ever blocked. But it's marked as lifted nevertheless (no-op).
+        // via index for all the inputs. The barrier for the last input is rarely actually ever blocked. In such case, it's marked as lifted nevertheless (no-op).
+
+        // The only time last barrier is actually lifted is if the capacity is updated such that the arrivalCount == the new capacity. In that case, we need to
+        // retroactively mark the last arrival as the final item.
     }
 
     private fun addBarrier(input: T): Pair<Barrier<T>, Int> {

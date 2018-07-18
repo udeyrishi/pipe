@@ -137,7 +137,7 @@ class AggregatorTest {
             }
         }.toMutableList()
 
-        aggregator.capacity = 7
+        aggregator.updateCapacity(7)
 
         (5 until 7).mapTo(deferredResults) {
             async {
@@ -169,7 +169,7 @@ class AggregatorTest {
             }
         }
 
-        aggregator.capacity = 3
+        aggregator.updateCapacity(3)
 
         val incrementedResults = runBlocking {
             deferredResults.map {
@@ -188,7 +188,7 @@ class AggregatorTest {
             it.map { it + 1 }
         }
 
-        aggregator.capacity = 5
+        aggregator.updateCapacity(5)
 
         val deferredResults = (0 until 5).map {
             async {
@@ -213,7 +213,7 @@ class AggregatorTest {
             it.map { it + 1 }
         }
 
-        aggregator.capacity = 3
+        aggregator.updateCapacity(3)
 
         val deferredResults = (0 until 3).map {
             async {
@@ -230,13 +230,15 @@ class AggregatorTest {
         assertEquals((0 until 3).toList(), aggregatorArgs)
     }
 
-    @Test(expected = IllegalStateException::class)
-    fun safelyDetectsInabilityToUpdateCapacityToArrivalCount() {
+    @Test
+    fun canUpdateCapacityToArrivalCount() {
+        var aggregatorArgs: List<Int>? = null
         val aggregator = Aggregator<Int>(capacity = 7, ordered = true) {
+            aggregatorArgs = it
             it.map { it + 1 }
         }
 
-        (0 until 5).map {
+        val deferredResults = (0 until 5).map {
             async {
                 aggregator.push(it)
             }
@@ -246,7 +248,15 @@ class AggregatorTest {
             Thread.sleep(50)
         }
 
-        aggregator.capacity = 5
+        aggregator.updateCapacity(5)
+
+        val incrementedResults = runBlocking {
+            deferredResults.map {
+                it.await()
+            }
+        }
+        assertEquals((1..5).toList(), incrementedResults)
+        assertEquals((0 until 5).toList(), aggregatorArgs)
     }
 
     @Test(expected = IllegalStateException::class)
@@ -265,6 +275,6 @@ class AggregatorTest {
             Thread.sleep(50)
         }
 
-        aggregator.capacity = 3
+        aggregator.updateCapacity(3)
     }
 }
