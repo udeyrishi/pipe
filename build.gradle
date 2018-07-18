@@ -66,6 +66,14 @@ compileTestKotlin {
     kotlinOptions.allWarningsAsErrors = true
 }
 
+test {
+    testLogging {
+        showStandardStreams = true
+        exceptionFormat = 'full'
+        events 'PASSED', 'FAILED', 'SKIPPED'
+    }
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {
