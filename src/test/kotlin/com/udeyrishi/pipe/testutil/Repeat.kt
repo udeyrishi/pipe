@@ -9,7 +9,7 @@ import org.junit.runners.model.Statement
 
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class Repeat
+annotation class Repeat(val count: Int = -1)
 
 class RepeatRule : TestRule {
     companion object {
@@ -19,7 +19,7 @@ class RepeatRule : TestRule {
 
     override fun apply(statement: Statement, description: Description): Statement {
         return description.getAnnotation(Repeat::class.java)?.let {
-            RepeatStatement(statement, repeat = System.getenv(ENV_VAR_KEY)?.toInt() ?: DEFAULT_REPEAT)
+            RepeatStatement(statement, repeat = if (it.count >= 0) it.count else (System.getenv(ENV_VAR_KEY)?.toInt() ?: DEFAULT_REPEAT))
         } ?: statement
     }
 
