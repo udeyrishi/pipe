@@ -1,8 +1,9 @@
 /**
  * Copyright (c) 2018 Udey Rishi. All rights reserved.
  */
-package com.udeyrishi.pipe
+package com.udeyrishi.pipe.steps
 
+import com.udeyrishi.pipe.steps.Barrier
 import com.udeyrishi.pipe.testutil.Repeat
 import com.udeyrishi.pipe.testutil.RepeatRule
 import kotlinx.coroutines.experimental.launch
