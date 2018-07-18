@@ -45,22 +45,18 @@ class Pipeline<T : Any> private constructor(private val steps: List<StepDescript
         private var aggregatorCount = 0
 
         fun addStep(name: String, attempts: Long = 1, step: Step<T>) {
-            synchronized(this) {
-                steps.add(StepDescriptor(name, attempts) {
-                    val result: T = step(it.data)
-                    Passenger(result, it.uuid, it.position)
-                })
-            }
+            steps.add(StepDescriptor(name, attempts) {
+                val result: T = step(it.data)
+                Passenger(result, it.uuid, it.position)
+            })
         }
 
         fun addBarrier(): Barrier<T> {
             val barrier = Barrier<T>()
-            synchronized(this) {
-                steps.add(StepDescriptor(name = "Barrier${barrierCount++}", maxAttempts = 1) {
-                    val result: T = barrier.blockUntilLift(it.data)
-                    Passenger(result, it.uuid, it.position)
-                })
-            }
+            steps.add(StepDescriptor(name = "Barrier${barrierCount++}", maxAttempts = 1) {
+                val result: T = barrier.blockUntilLift(it.data)
+                Passenger(result, it.uuid, it.position)
+            })
             return barrier
         }
 
@@ -71,18 +67,14 @@ class Pipeline<T : Any> private constructor(private val steps: List<StepDescript
                     Passenger(result[index], originalPassenger.uuid, originalPassenger.position)
                 }
             }
-            synchronized(this) {
-                steps.add(StepDescriptor(name = "Aggregator${aggregatorCount++}", maxAttempts = attempts) {
-                    aggregator.push(it)
-                })
-            }
+            steps.add(StepDescriptor(name = "Aggregator${aggregatorCount++}", maxAttempts = attempts) {
+                aggregator.push(it)
+            })
             return aggregator
         }
 
         fun build(): Pipeline<T> {
-            return synchronized(this) {
-                Pipeline(steps.map { it })
-            }
+            return Pipeline(steps.map { it })
         }
     }
 
