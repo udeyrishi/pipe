@@ -6,6 +6,7 @@ package com.udeyrishi.pipe
 import com.udeyrishi.pipe.util.immutableAfterSet
 import com.udeyrishi.pipe.util.synchronizedRun
 import kotlinx.coroutines.experimental.launch
+import java.util.UUID
 
 /**
  * An object that:
@@ -13,11 +14,12 @@ import kotlinx.coroutines.experimental.launch
  * - updates and monitors its state
  */
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
-class Orchestrator<T : Any> internal constructor(input: T, steps: Iterator<StepDescriptor<T>>) {
+class Orchestrator<T : Identifiable> internal constructor(input: T, steps: Iterator<StepDescriptor<T>>) : Identifiable {
+    override val uuid: UUID = input.uuid
 
     private var started: Boolean by immutableAfterSet(false)
     private var interrupted: Boolean by immutableAfterSet(false)
-    private val stateHolder = StateHolder()
+    private val stateHolder = StateHolder(uuid)
 
     var result: T? by immutableAfterSet(null)
         private set
@@ -161,6 +163,8 @@ class Orchestrator<T : Any> internal constructor(input: T, steps: Iterator<StepD
         }
     }
 
+    override fun toString() = "${this::class.java.simpleName}(uuid=$uuid)"
+
     private data class StepResult<out T>(val stepResult: T?, val interrupted: Boolean) {
         init {
             if (stepResult != null && interrupted) {
@@ -189,11 +193,14 @@ private inline fun <reified T : State> State.sanityCheck() {
     }
 }
 
-private class Cursor<T : Any>(private var input: T, private val steps: Iterator<StepDescriptor<T>>) {
+private class Cursor<T : Identifiable>(private var input: T, private val steps: Iterator<StepDescriptor<T>>) {
     var nextStep: StepDescriptor<T>? = if (steps.hasNext()) steps.next() else null
         private set
 
     fun move(nextInput: T) {
+        if (nextInput.uuid != this.input.uuid) {
+            throw IllegalArgumentException("The unique identifiers of the inputs and outputs must stay the same.")
+        }
         this.input = nextInput
         nextStep = if (steps.hasNext()) steps.next() else null
     }
@@ -202,7 +209,7 @@ private class Cursor<T : Any>(private var input: T, private val steps: Iterator<
     operator fun component2() = nextStep
 }
 
-private class StateHolder {
+private class StateHolder(override val uuid: UUID) : Identifiable {
     var state: State = State.Scheduled()
         private set
 
@@ -243,7 +250,7 @@ private class StateHolder {
             var allCallbacksCalled = true
             for (it in this) {
                 try {
-                    it.onStateChanged(previousState, state)
+                    it.onStateChanged(uuid, previousState, state)
                 } catch (e: Throwable) {
                     // Bad state change listener callback. Try to stop executing, and move the state to failure
                     state = state.onFailure(e)

@@ -14,24 +14,29 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+import java.util.UUID
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 @RunWith(JUnit4::class)
 class OrchestratorTest {
-
+    
+    private data class IdentifiableString(val data: String, override val uuid: UUID = UUID.randomUUID()) : Identifiable
+    
     @Rule
     @JvmField
     val repeatRule = RepeatRule()
 
     @Test
     fun startsWithScheduledState() {
-        val tracker = Orchestrator("some input", listOf<StepDescriptor<String>>().iterator())
+        val input = IdentifiableString("some input")
+        val tracker = Orchestrator(input, listOf<StepDescriptor<IdentifiableString>>().iterator())
         assertTrue(tracker.state is State.Scheduled)
     }
 
     @Test
     fun goesToCompletionWhenNoSteps() {
-        val tracker = Orchestrator("some input", listOf<StepDescriptor<String>>().iterator())
+        val input = IdentifiableString("some input")
+        val tracker = Orchestrator(input, listOf<StepDescriptor<IdentifiableString>>().iterator())
         assertNull(tracker.result)
         tracker.start()
 
@@ -42,24 +47,25 @@ class OrchestratorTest {
         }
 
         assertTrue(tracker.state is State.Terminal.Success)
-        assertEquals("some input", tracker.result)
+        assertEquals(input, tracker.result)
     }
 
     @Test
     fun executesStepsWithCorrectStateChanges() {
         val steps =  (0..5).map { i ->
-            StepDescriptor<String>("step$i", 1) {
+            StepDescriptor<IdentifiableString>("step$i", 1) {
                 Thread.sleep(100)
-                "$it->$i"
+                IdentifiableString("${it.data}->$i", it.uuid)
             }
         }
 
 
-        val tracker = Orchestrator("in", steps.iterator())
+        val input = IdentifiableString("in")
+        val tracker = Orchestrator(input, steps.iterator())
         assertNull(tracker.result)
 
         var i = 0
-        tracker.start(StateChangeListener { previousState, newState ->
+        tracker.start(StateChangeListener { _, previousState, newState ->
             when (i++) {
                 0 -> {
                     // step 0 start
@@ -103,24 +109,24 @@ class OrchestratorTest {
         }
 
         assertTrue(tracker.state is State.Terminal.Success)
-        assertEquals("in->0->1->2->3->4->5", tracker.result)
+        assertEquals(IdentifiableString("in->0->1->2->3->4->5", input.uuid), tracker.result)
     }
 
     @Test
     fun handlesExceptionsInStateChangeListenersWhenStateIsNotAttemptFailed() {
         val steps =  (0..5).map { i ->
-            StepDescriptor<String>("step$i", 1, {
+            StepDescriptor<IdentifiableString>("step$i", 1, {
                 Thread.sleep(100)
-                "$it->$i"
+                IdentifiableString("${it.data}->$i", it.uuid)
             })
         }
 
-        val tracker = Orchestrator("in", steps.iterator())
+        val tracker = Orchestrator(IdentifiableString("in"), steps.iterator())
         assertNull(tracker.result)
 
         var i = 0
         val error = IllegalAccessException("testing")
-        tracker.start(StateChangeListener { _, _ ->
+        tracker.start(StateChangeListener { _, _, _ ->
             when (i++) {
                 5 -> throw error
             }
@@ -142,17 +148,17 @@ class OrchestratorTest {
         val error2 = IllegalAccessException("testing")
 
         val steps =  (0..5).map { i ->
-            StepDescriptor<String>("step$i", 1) {
+            StepDescriptor<IdentifiableString>("step$i", 1) {
                 Thread.sleep(100)
                 throw error
             }
         }
 
-        val tracker = Orchestrator("in", steps.iterator())
+        val tracker = Orchestrator(IdentifiableString("in"), steps.iterator())
         assertNull(tracker.result)
 
         var i = 0
-        tracker.start(StateChangeListener { previousState, newState ->
+        tracker.start(StateChangeListener { _, previousState, newState ->
             when (i++) {
                 1 -> {
                     assertTrue(previousState is State.Running.Attempting)
@@ -179,24 +185,24 @@ class OrchestratorTest {
         val error = RuntimeException("something went wrong")
         var called = 0
         val steps =  (0..5).map { i ->
-            StepDescriptor<String>("step$i", 1) {
+            StepDescriptor<IdentifiableString>("step$i", 1) {
                 // Should not call this step more than once
                 assertEquals(i, called++)
                 Thread.sleep(100)
                 when {
                     i == 2 -> throw error
                     i > 2 -> throw AssertionError("Step 2 should've been the last one.")
-                    else -> "$it->$i"
+                    else -> IdentifiableString("${it.data}->$i", it.uuid)
                 }
             }
         }
 
 
-        val tracker = Orchestrator("in", steps.iterator())
+        val tracker = Orchestrator(IdentifiableString("in"), steps.iterator())
         assertNull(tracker.result)
 
         var i = 0
-        tracker.start(StateChangeListener { previousState, newState ->
+        tracker.start(StateChangeListener { _, previousState, newState ->
             when (i++) {
                 0 -> {
                     // step 0 start
@@ -264,7 +270,7 @@ class OrchestratorTest {
         var failureCount = 0
         var called = 0
         val steps =  (0..5).map { i ->
-            StepDescriptor<String>("step$i", 2) {
+            StepDescriptor<IdentifiableString>("step$i", 2) {
                 when {
                     i == 2 -> assertTrue(listOf(2, 3).contains(called++))
                     i < 2 -> assertEquals(i, called++)
@@ -276,15 +282,16 @@ class OrchestratorTest {
                 if (i == 2 && failureCount++ < 1) {
                     throw error
                 }
-                "$it->$i"
+                IdentifiableString("${it.data}->$i", it.uuid)
             }
         }
 
-        val tracker = Orchestrator("in", steps.iterator())
+        val input = IdentifiableString("in")
+        val tracker = Orchestrator(input, steps.iterator())
         assertNull(tracker.result)
 
         var i = 0
-        tracker.start(StateChangeListener { previousState, newState ->
+        tracker.start(StateChangeListener { _, previousState, newState ->
             when (i++) {
                 0 -> {
                     // step 0 start
@@ -346,7 +353,7 @@ class OrchestratorTest {
         }
 
         assertTrue(tracker.state is State.Terminal.Success)
-        assertEquals("in->0->1->2->3->4->5", tracker.result)
+        assertEquals(IdentifiableString("in->0->1->2->3->4->5", input.uuid), tracker.result)
     }
 
     @Test
@@ -355,7 +362,7 @@ class OrchestratorTest {
         var step2Called = 0
 
         val steps =  (0..5).map { i ->
-            StepDescriptor<String>("step$i", 5) {
+            StepDescriptor<IdentifiableString>("step$i", 5) {
                 Thread.sleep(100)
                 when {
                     i == 2 -> {
@@ -363,17 +370,17 @@ class OrchestratorTest {
                         throw error
                     }
                     i > 2 -> throw AssertionError("Step 2 should've been the last one.")
-                    else -> "$it->$i"
+                    else -> IdentifiableString("${it.data}->$i", it.uuid)
                 }
             }
         }
 
 
-        val tracker = Orchestrator("in", steps.iterator())
+        val tracker = Orchestrator(IdentifiableString("in"), steps.iterator())
         assertNull(tracker.result)
 
         var i = 0
-        tracker.start(StateChangeListener { previousState, newState ->
+        tracker.start(StateChangeListener { _, previousState, newState ->
             when (i++) {
                 0 -> {
                     // step 0 start
@@ -448,14 +455,14 @@ class OrchestratorTest {
     fun interruptsCorrectly() {
         var lastStep = -1
         val steps =  (0..100).map { i ->
-            StepDescriptor<String>("step$i", 1) {
+            StepDescriptor<IdentifiableString>("step$i", 1) {
                 Thread.sleep(100)
                 lastStep = i
                 it
             }
         }
 
-        val tracker = Orchestrator("in", steps.iterator())
+        val tracker = Orchestrator(IdentifiableString("in"), steps.iterator())
         tracker.start()
         Thread.sleep(500)
         tracker.interrupt()
@@ -482,14 +489,14 @@ class OrchestratorTest {
     fun canInterruptMultipleTimes() {
         var lastStep = -1
         val steps =  (0..100).map { i ->
-            StepDescriptor<String>("step$i", 1) {
+            StepDescriptor<IdentifiableString>("step$i", 1) {
                 Thread.sleep(100)
                 lastStep = i
                 it
             }
         }
 
-        val tracker = Orchestrator("in", steps.iterator())
+        val tracker = Orchestrator(IdentifiableString("in"), steps.iterator())
         tracker.start()
         Thread.sleep(500)
         tracker.interrupt()
@@ -518,14 +525,14 @@ class OrchestratorTest {
     fun canInterruptBeforeStart() {
         var lastStep = -1
         val steps =  (0..100).map { i ->
-            StepDescriptor<String>("step$i", 1) {
+            StepDescriptor<IdentifiableString>("step$i", 1) {
                 Thread.sleep(100)
                 lastStep = i
                 it
             }
         }
 
-        val tracker = Orchestrator("in", steps.iterator())
+        val tracker = Orchestrator(IdentifiableString("in"), steps.iterator())
         tracker.interrupt()
         tracker.start()
         tracker.interrupt()
@@ -549,17 +556,18 @@ class OrchestratorTest {
     @Test
     fun callsStateChangeListeners() {
         val steps =  (0..2).map { i ->
-            StepDescriptor<String>("step$i", 1) {
+            StepDescriptor<IdentifiableString>("step$i", 1) {
                 it
             }
         }
 
         var callbackCount = 0
-        val listener = StateChangeListener { _, _ ->
+        val listener = StateChangeListener { _, _, _ ->
             ++callbackCount
         }
 
-        val tracker = Orchestrator("in", steps.iterator())
+        val input = IdentifiableString("in")
+        val tracker = Orchestrator(input, steps.iterator())
         tracker.subscribe(listener)
         tracker.subscribe(listener)
         tracker.subscribe(listener)
@@ -573,13 +581,13 @@ class OrchestratorTest {
         // +1 for the final completion.
         // * 4, because 4 listeners
         assertTrue(tracker.state is State.Terminal.Success)
-        assertEquals("in", tracker.result)
+        assertEquals(IdentifiableString("in", input.uuid), tracker.result)
         assertEquals((steps.size*2 + 1) * 4, callbackCount)
     }
 
     @Test(expected = IllegalStateException::class)
     fun cannotStartMultipleTimes() {
-        val tracker = Orchestrator("in", listOf<StepDescriptor<String>>().iterator())
+        val tracker = Orchestrator(IdentifiableString("in"), listOf<StepDescriptor<IdentifiableString>>().iterator())
         tracker.start()
         tracker.start()
     }
@@ -587,27 +595,27 @@ class OrchestratorTest {
     @Test
     fun unsubscribeWorks() {
         val steps =  (0..2).map { i ->
-            StepDescriptor<String>("step$i", 1) {
+            StepDescriptor<IdentifiableString>("step$i", 1) {
                 it
             }
         }
 
-        val listener = StateChangeListener { _, _ ->
+        val listener = StateChangeListener { _, _, _ ->
         }
 
         var called = false
-        val badListener = StateChangeListener { _, _ ->
+        val badListener = StateChangeListener { _, _, _ ->
             called = true
             fail("should not have been called")
         }
 
-        val tracker = Orchestrator("in", steps.iterator())
+        val tracker = Orchestrator(IdentifiableString("in"), steps.iterator())
         tracker.subscribe(listener)
         tracker.subscribe(listener)
         tracker.subscribe(badListener)
         tracker.subscribe(listener)
         assertTrue(tracker.unsubscribe(badListener))
-        assertFalse(tracker.unsubscribe(StateChangeListener { _, _ ->  }))
+        assertFalse(tracker.unsubscribe(StateChangeListener { _, _, _ ->  }))
         tracker.start(listener)
 
         while (tracker.state !is State.Terminal) {
@@ -621,28 +629,28 @@ class OrchestratorTest {
     @Test
     fun callbacksAreCalledInTheCorrectOrder() {
         var i = 0
-        val listener1 = StateChangeListener { _, _ ->
+        val listener1 = StateChangeListener { _, _, _ ->
             assertEquals(0, i)
             ++i
         }
 
-        val listener2 = StateChangeListener { _, _ ->
+        val listener2 = StateChangeListener { _, _, _ ->
             assertEquals(1, i)
             ++i
         }
 
-        val listener3 = StateChangeListener { _, _ ->
+        val listener3 = StateChangeListener { _, _, _ ->
             assertEquals(2, i)
             i = (i + 1) % 3
         }
 
         val steps =  (0..2).map { j ->
-            StepDescriptor<String>("step$j", 1) {
+            StepDescriptor<IdentifiableString>("step$j", 1) {
                 it
             }
         }
 
-        val tracker = Orchestrator("in", steps.iterator())
+        val tracker = Orchestrator(IdentifiableString("in"), steps.iterator())
 
         tracker.subscribe(listener1)
         tracker.subscribe(listener2)

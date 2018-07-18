@@ -85,7 +85,7 @@ class Pipeline<T : Any> private constructor(private val steps: List<StepDescript
     /**
      * Represents an object that travels in a pipeline. A Orchestrator helps it navigate the pipeline.
      */
-    class Passenger<T : Any>(val data: T, val uuid: UUID, val position: Long) : Comparable<Passenger<T>> {
+    class Passenger<T : Any>(val data: T, override val uuid: UUID, val position: Long) : Comparable<Passenger<T>>, Identifiable {
         override fun compareTo(other: Passenger<T>): Int = position.compareTo(other.position)
 
         override fun toString(): String {
