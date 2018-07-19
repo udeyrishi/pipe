@@ -3,39 +3,19 @@
  */
 package com.udeyrishi.pipe
 
+import com.udeyrishi.pipe.repository.MutableRepository
 import com.udeyrishi.pipe.steps.Aggregator
 import com.udeyrishi.pipe.steps.Barrier
 import com.udeyrishi.pipe.steps.Step
 import com.udeyrishi.pipe.steps.StepDescriptor
 import java.util.UUID
 
-class Pipeline<T : Any> private constructor(private val steps: List<StepDescriptor<Passenger<T>>>) {
-    private val uuidsToOrchestrators = mutableMapOf<UUID, Orchestrator<Passenger<T>>>()
-
-    val orchestrators: List<Orchestrator<Passenger<T>>>
-        get() = listOf(*uuidsToOrchestrators.values.toTypedArray())
-
-    fun push(input: T): Orchestrator<Passenger<T>> {
-        return synchronized(this) {
-            val position = orchestrators.size.toLong()
-            val uuid = generateUuid()
-            val passenger = Passenger(input, uuid, position)
-            val orchestrator = Orchestrator(passenger, steps.iterator())
-            uuidsToOrchestrators.put(uuid, orchestrator)
-            orchestrator
+class Pipeline<T : Any> private constructor(private val steps: List<StepDescriptor<Passenger<T>>>, private val repository: MutableRepository<Passenger<T>>) {
+    fun push(input: T, tag: String?): Orchestrator<Passenger<T>> {
+        return repository.add(tag) { newUUID, position ->
+            val passenger = Passenger(input, newUUID, position)
+            Orchestrator(passenger, steps.iterator())
         }
-    }
-
-    operator fun get(uuid: UUID): Orchestrator<Passenger<T>>? {
-        return uuidsToOrchestrators[uuid]
-    }
-
-    private fun generateUuid(): UUID {
-        var uuid = UUID.randomUUID()
-        while (uuid in uuidsToOrchestrators) {
-            uuid = UUID.randomUUID()
-        }
-        return uuid
     }
 
     @Suppress("EXPERIMENTAL_FEATURE_WARNING")
@@ -73,8 +53,8 @@ class Pipeline<T : Any> private constructor(private val steps: List<StepDescript
             return aggregator
         }
 
-        fun build(): Pipeline<T> {
-            return Pipeline(steps.map { it })
+        fun build(repository: MutableRepository<Passenger<T>>): Pipeline<T> {
+            return Pipeline(steps.map { it }, repository)
         }
     }
 
@@ -90,8 +70,8 @@ class Pipeline<T : Any> private constructor(private val steps: List<StepDescript
     }
 }
 
-fun <T : Any> buildPipeline(ordered: Boolean = true, stepDefiner: (Pipeline.Builder<T>.() -> Unit)): Pipeline<T> {
+fun <T : Any> buildPipeline(repository: MutableRepository<Pipeline.Passenger<T>>, ordered: Boolean = true, stepDefiner: (Pipeline.Builder<T>.() -> Unit)): Pipeline<T> {
     val builder = Pipeline.Builder<T>(ordered)
     builder.stepDefiner()
-    return builder.build()
+    return builder.build(repository)
 }

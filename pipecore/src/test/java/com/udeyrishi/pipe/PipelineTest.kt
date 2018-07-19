@@ -3,6 +3,7 @@
  */
 package com.udeyrishi.pipe
 
+import com.udeyrishi.pipe.repository.InMemoryRepository
 import com.udeyrishi.pipe.steps.Aggregator
 import com.udeyrishi.pipe.steps.Barrier
 import org.junit.Assert.assertEquals
@@ -22,7 +23,7 @@ class PipelineTest {
 
         var barrierReachedCount = 0
 
-        val pipeline = buildPipeline<Int>(ordered = true) {
+        val pipeline = buildPipeline<Int>(ordered = true, repository = InMemoryRepository()) {
             addStep("step 1") {
                 it + 1
             }
@@ -50,10 +51,11 @@ class PipelineTest {
             }
         }
 
+
         val orchestrators = mutableListOf(
-                pipeline.push(0),
-                pipeline.push(1),
-                pipeline.push(2)
+            pipeline.push(0, null),
+            pipeline.push(1, null),
+            pipeline.push(2, null)
         )
 
         orchestrators.forEach {
