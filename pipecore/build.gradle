@@ -39,7 +39,7 @@ publishing {
         mavenJava(MavenPublication) {
             groupId = group
             artifactId = 'pipe-core'
-            version = coreVersions.pipe
+            version = coreVersions.versionName
             from components.java
         }
     }

@@ -17,7 +17,7 @@ buildscript {
         ]
 
         coreVersions = [
-                'pipe': '0.0.1-alpha1',
+                'buildTools': '27.0.3',
                 'targetSdkVersion': 27,
                 'minSdkVersion': 15,
                 'compileSdkVersion': 27,

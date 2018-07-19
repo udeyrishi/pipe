@@ -3,6 +3,7 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 
 android {
+    buildToolsVersion coreVersions.buildTools
     compileSdkVersion coreVersions.compileSdkVersion
     defaultConfig {
         minSdkVersion coreVersions.minSdkVersion
