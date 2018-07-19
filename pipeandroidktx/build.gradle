@@ -1,0 +1,36 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
+
+android {
+    compileSdkVersion coreVersions.compileSdkVersion
+    defaultConfig {
+        minSdkVersion coreVersions.minSdkVersion
+        targetSdkVersion coreVersions.targetSdkVersion
+        versionCode coreVersions.versionCode
+        versionName coreVersions.versionName
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation project(':pipecore')
+
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation depends.kotlin.stdlib
+    implementation depends.android.support.appcompat7
+    testImplementation depends.junit
+    androidTestImplementation depends.android.support.test_runner
+    androidTestImplementation depends.android.support.espresso
+}
