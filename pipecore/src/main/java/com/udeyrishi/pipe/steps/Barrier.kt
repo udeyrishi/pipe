@@ -11,6 +11,9 @@ class Barrier<T : Any> internal constructor() {
     private var lifted: Boolean by immutableAfterSet(false)
     private val continuations = mutableListOf<Pair<Continuation<T>, T>>()
 
+    val blockedCount: Int
+        get() = continuations.size
+
     @Suppress("EXPERIMENTAL_FEATURE_WARNING")
     internal suspend fun blockUntilLift(input: T): T {
         if (lifted) {
@@ -42,6 +45,7 @@ class Barrier<T : Any> internal constructor() {
                 continuations.forEach { (continuation, input) ->
                     continuation.resume(input)
                 }
+                continuations.clear()
             }
         }
     }

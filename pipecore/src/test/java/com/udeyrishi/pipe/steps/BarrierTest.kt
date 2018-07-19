@@ -14,8 +14,10 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.Timeout
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+import java.util.concurrent.TimeUnit
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 @RunWith(JUnit4::class)
@@ -24,6 +26,10 @@ class BarrierTest {
     @Rule
     @JvmField
     val repeatRule = RepeatRule()
+
+    @Rule
+    @JvmField
+    val rule = Timeout(25, TimeUnit.SECONDS)
 
     @Test
     @Repeat
@@ -91,5 +97,32 @@ class BarrierTest {
         assertFalse(job2.isActive)
         assertEquals("input1", result1)
         assertEquals("input2", result2)
+    }
+
+    @Test
+    fun blockCountIsCorrect() {
+        val barrier = Barrier<String>()
+        assertEquals(0, barrier.blockedCount)
+
+        val job1 = launch {
+            barrier.blockUntilLift("input1")
+        }
+
+        val job2 = launch {
+            barrier.blockUntilLift("input2")
+        }
+
+        while (barrier.blockedCount < 2) {
+            Thread.sleep(100)
+        }
+
+        barrier.lift()
+
+        runBlocking {
+            job1.join()
+            job2.join()
+        }
+
+        assertEquals(0, barrier.blockedCount)
     }
 }
