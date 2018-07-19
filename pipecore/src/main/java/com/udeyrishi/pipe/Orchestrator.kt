@@ -37,16 +37,12 @@ class Orchestrator<T : Identifiable> internal constructor(input: T, steps: Itera
     fun unsubscribe(stateChangeListener: StateChangeListener): Boolean = stateHolder.unsubscribe(stateChangeListener)
     fun unsubscribeAll() = stateHolder.unsubscribeAll()
 
-    fun start(stateChangeListener: StateChangeListener? = null) {
+    fun start() {
         if (started) {
             throw IllegalStateException("Cannot start a ${this.javaClass.simpleName} twice.")
         }
 
         started = true
-
-        stateChangeListener?.let {
-            subscribe(it)
-        }
 
         launch {
             runAllSteps()

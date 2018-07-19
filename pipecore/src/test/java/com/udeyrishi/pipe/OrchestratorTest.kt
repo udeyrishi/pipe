@@ -66,7 +66,7 @@ class OrchestratorTest {
         assertNull(orchestrator.result)
 
         var i = 0
-        orchestrator.start(StateChangeListener { _, previousState, newState ->
+        orchestrator.subscribe(StateChangeListener { _, previousState, newState ->
             when (i++) {
                 0 -> {
                     // step 0 start
@@ -105,6 +105,8 @@ class OrchestratorTest {
             }
         })
 
+        orchestrator.start()
+
         while (orchestrator.state !is State.Terminal) {
             Thread.sleep(100)
         }
@@ -127,11 +129,12 @@ class OrchestratorTest {
 
         var i = 0
         val error = IllegalAccessException("testing")
-        orchestrator.start(StateChangeListener { _, _, _ ->
+        orchestrator.subscribe(StateChangeListener { _, _, _ ->
             when (i++) {
                 5 -> throw error
             }
         })
+        orchestrator.start()
 
         while (orchestrator.state !is State.Terminal) {
             Thread.sleep(100)
@@ -159,7 +162,7 @@ class OrchestratorTest {
         assertNull(orchestrator.result)
 
         var i = 0
-        orchestrator.start(StateChangeListener { _, previousState, newState ->
+        orchestrator.subscribe(StateChangeListener { _, previousState, newState ->
             when (i++) {
                 1 -> {
                     assertTrue(previousState is State.Running.Attempting)
@@ -168,6 +171,7 @@ class OrchestratorTest {
                 }
             }
         })
+        orchestrator.start()
 
         while (orchestrator.state !is State.Terminal) {
             Thread.sleep(100)
@@ -203,7 +207,7 @@ class OrchestratorTest {
         assertNull(orchestrator.result)
 
         var i = 0
-        orchestrator.start(StateChangeListener { _, previousState, newState ->
+        orchestrator.subscribe(StateChangeListener { _, previousState, newState ->
             when (i++) {
                 0 -> {
                     // step 0 start
@@ -249,6 +253,7 @@ class OrchestratorTest {
                 else -> fail("Counter should've never reached $i.")
             }
         })
+        orchestrator.start()
 
         while (orchestrator.state !is State.Terminal) {
             Thread.sleep(100)
@@ -292,7 +297,7 @@ class OrchestratorTest {
         assertNull(orchestrator.result)
 
         var i = 0
-        orchestrator.start(StateChangeListener { _, previousState, newState ->
+        orchestrator.subscribe(StateChangeListener { _, previousState, newState ->
             when (i++) {
                 0 -> {
                     // step 0 start
@@ -348,6 +353,7 @@ class OrchestratorTest {
                 else -> fail("Counter should've never reached $i.")
             }
         })
+        orchestrator.start()
 
         while (orchestrator.state !is State.Terminal) {
             Thread.sleep(100)
@@ -381,7 +387,7 @@ class OrchestratorTest {
         assertNull(orchestrator.result)
 
         var i = 0
-        orchestrator.start(StateChangeListener { _, previousState, newState ->
+        orchestrator.subscribe(StateChangeListener { _, previousState, newState ->
             when (i++) {
                 0 -> {
                     // step 0 start
@@ -433,6 +439,8 @@ class OrchestratorTest {
                 else -> fail("Counter should've never reached $i.")
             }
         })
+
+        orchestrator.start()
 
         while (orchestrator.state !is State.Terminal) {
             Thread.sleep(100)
@@ -572,7 +580,8 @@ class OrchestratorTest {
         orchestrator.subscribe(listener)
         orchestrator.subscribe(listener)
         orchestrator.subscribe(listener)
-        orchestrator.start(listener)
+        orchestrator.subscribe(listener)
+        orchestrator.start()
 
         while (orchestrator.state !is State.Terminal) {
             Thread.sleep(100)
@@ -617,7 +626,8 @@ class OrchestratorTest {
         orchestrator.subscribe(listener)
         assertTrue(orchestrator.unsubscribe(badListener))
         assertFalse(orchestrator.unsubscribe(StateChangeListener { _, _, _ ->  }))
-        orchestrator.start(listener)
+        orchestrator.subscribe(listener)
+        orchestrator.start()
 
         while (orchestrator.state !is State.Terminal) {
             Thread.sleep(100)
@@ -655,7 +665,8 @@ class OrchestratorTest {
 
         orchestrator.subscribe(listener1)
         orchestrator.subscribe(listener2)
-        orchestrator.start(listener3)
+        orchestrator.subscribe(listener3)
+        orchestrator.start()
 
         while (orchestrator.state !is State.Terminal) {
             Thread.sleep(100)
