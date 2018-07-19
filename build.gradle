@@ -38,7 +38,7 @@ buildscript {
                 'kotlin': [
                         'coroutines'   : "org.jetbrains.kotlinx:kotlinx-coroutines-core:${versions.kotlin.coroutines}",
                         'gradle_plugin': "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin.lang}",
-                        'stdlib'       : "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${versions.kotlin.lang}"
+                        'stdlib'       : "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${versions.kotlin.lang}"
                 ]
         ]
     }
@@ -64,4 +64,9 @@ allprojects {
 
 task clean(type: Delete) {
     delete rootProject.buildDir
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.allWarningsAsErrors = true
 }

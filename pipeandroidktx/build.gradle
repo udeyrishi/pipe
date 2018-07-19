@@ -35,3 +35,9 @@ dependencies {
     androidTestImplementation depends.android.support.test_runner
     androidTestImplementation depends.android.support.espresso
 }
+
+kotlin {
+    experimental {
+        coroutines "enable"
+    }
+}
