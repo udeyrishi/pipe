@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2018 Udey Rishi. All rights reserved.
  */
-package com.udeyrishi.pipe
+package com.udeyrishi.pipe.state
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

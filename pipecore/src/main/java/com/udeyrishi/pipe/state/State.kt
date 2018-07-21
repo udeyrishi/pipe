@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2018 Udey Rishi. All rights reserved.
  */
-package com.udeyrishi.pipe
+package com.udeyrishi.pipe.state
 
 sealed class State {
     abstract fun onSuccess(nextStep: String? = null): State
@@ -68,7 +68,7 @@ sealed class State {
                 return this
             }
 
-            override fun onFailure(cause: Throwable): State = Terminal.Failure(listOf(cause))
+            override fun onFailure(cause: Throwable): State = Failure(listOf(cause))
         }
 
         class Failure internal constructor(causes: List<Throwable>) : Terminal() {

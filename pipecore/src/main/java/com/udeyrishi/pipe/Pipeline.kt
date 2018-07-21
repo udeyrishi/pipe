@@ -8,6 +8,7 @@ import com.udeyrishi.pipe.steps.Aggregator
 import com.udeyrishi.pipe.steps.Barrier
 import com.udeyrishi.pipe.steps.Step
 import com.udeyrishi.pipe.steps.StepDescriptor
+import com.udeyrishi.pipe.util.Identifiable
 import java.util.UUID
 
 class Pipeline<T : Any> private constructor(private val steps: List<StepDescriptor<Passenger<T>>>, private val repository: MutableRepository<Passenger<T>>) {

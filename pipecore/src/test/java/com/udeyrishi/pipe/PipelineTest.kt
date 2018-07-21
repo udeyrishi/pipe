@@ -4,6 +4,7 @@
 package com.udeyrishi.pipe
 
 import com.udeyrishi.pipe.repository.InMemoryRepository
+import com.udeyrishi.pipe.state.State
 import com.udeyrishi.pipe.steps.Aggregator
 import com.udeyrishi.pipe.steps.Barrier
 import org.junit.Assert.assertEquals

@@ -3,9 +3,9 @@
  */
 package com.udeyrishi.pipe.repository
 
-import com.udeyrishi.pipe.Identifiable
+import com.udeyrishi.pipe.util.Identifiable
 import com.udeyrishi.pipe.Orchestrator
-import com.udeyrishi.pipe.State
+import com.udeyrishi.pipe.state.State
 import java.util.UUID
 
 private data class InMemoryRepositoryEntry<T : Identifiable>(override val orchestrator: Orchestrator<T>, override val tag: String?) : RepositoryEntry<T>

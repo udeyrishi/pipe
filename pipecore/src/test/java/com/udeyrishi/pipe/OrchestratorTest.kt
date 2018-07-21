@@ -3,9 +3,12 @@
  */
 package com.udeyrishi.pipe
 
+import com.udeyrishi.pipe.state.State
+import com.udeyrishi.pipe.state.StateChangeListener
 import com.udeyrishi.pipe.steps.StepDescriptor
 import com.udeyrishi.pipe.testutil.Repeat
 import com.udeyrishi.pipe.testutil.RepeatRule
+import com.udeyrishi.pipe.util.Identifiable
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -85,15 +88,15 @@ class OrchestratorTest {
                     // steps 1-5 start
                     assertTrue(previousState is State.Running.AttemptSuccessful)
                     assertTrue(newState is State.Running.Attempting)
-                    assertEquals("step${((i-1)/2)-1}", (previousState as State.Running).step)
-                    assertEquals("step${(i-1)/2}", (newState as State.Running).step)
+                    assertEquals("step${((i - 1) / 2) - 1}", (previousState as State.Running).step)
+                    assertEquals("step${(i - 1) / 2}", (newState as State.Running).step)
                 }
                 3, 5, 7, 9, 11 -> {
                     // steps 1-5 end
                     assertTrue(previousState is State.Running.Attempting)
                     assertTrue(newState is State.Running.AttemptSuccessful)
-                    assertEquals("step${(i-2)/2}", (previousState as State.Running).step)
-                    assertEquals("step${(i-2)/2}", (newState as State.Running).step)
+                    assertEquals("step${(i - 2) / 2}", (previousState as State.Running).step)
+                    assertEquals("step${(i - 2) / 2}", (newState as State.Running).step)
                 }
                 12 -> {
                     // pipeline completion
@@ -227,15 +230,15 @@ class OrchestratorTest {
                     assertTrue(previousState is State.Running.AttemptSuccessful)
                     assertTrue(newState is State.Running.Attempting)
                     val j = if (i < 8) i else (i - 2)
-                    assertEquals("step${((j-1)/2)-1}", (previousState as State.Running).step)
-                    assertEquals("step${(j-1)/2}", (newState as State.Running).step)
+                    assertEquals("step${((j - 1) / 2) - 1}", (previousState as State.Running).step)
+                    assertEquals("step${(j - 1) / 2}", (newState as State.Running).step)
                 }
                 3 -> {
                     assertTrue(previousState is State.Running.Attempting)
                     assertTrue(newState is State.Running.AttemptSuccessful)
                     val j = if (i < 7) i else (i - 2)
-                    assertEquals("step${(j-2)/2}", (previousState as State.Running).step)
-                    assertEquals("step${(j-2)/2}", (newState as State.Running).step)
+                    assertEquals("step${(j - 2) / 2}", (previousState as State.Running).step)
+                    assertEquals("step${(j - 2) / 2}", (newState as State.Running).step)
                 }
                 5 -> {
                     // step 2 failure
@@ -317,8 +320,8 @@ class OrchestratorTest {
                     assertTrue(previousState is State.Running.AttemptSuccessful)
                     assertTrue(newState is State.Running.Attempting)
                     val j = if (i < 8) i else (i - 2)
-                    assertEquals("step${((j-1)/2)-1}", (previousState as State.Running).step)
-                    assertEquals("step${(j-1)/2}", (newState as State.Running).step)
+                    assertEquals("step${((j - 1) / 2) - 1}", (previousState as State.Running).step)
+                    assertEquals("step${(j - 1) / 2}", (newState as State.Running).step)
                 }
                 5 -> {
                     // step 2 failure
@@ -341,8 +344,8 @@ class OrchestratorTest {
                     assertTrue(previousState is State.Running.Attempting)
                     assertTrue(newState is State.Running.AttemptSuccessful)
                     val j = if (i < 7) i else (i - 2)
-                    assertEquals("step${(j-2)/2}", (previousState as State.Running).step)
-                    assertEquals("step${(j-2)/2}", (newState as State.Running).step)
+                    assertEquals("step${(j - 2) / 2}", (previousState as State.Running).step)
+                    assertEquals("step${(j - 2) / 2}", (newState as State.Running).step)
                 }
                 14 -> {
                     // pipeline completion
@@ -407,15 +410,15 @@ class OrchestratorTest {
                     assertTrue(previousState is State.Running.AttemptSuccessful)
                     assertTrue(newState is State.Running.Attempting)
                     val j = if (i < 8) i else (i - 2)
-                    assertEquals("step${((j-1)/2)-1}", (previousState as State.Running).step)
-                    assertEquals("step${(j-1)/2}", (newState as State.Running).step)
+                    assertEquals("step${((j - 1) / 2) - 1}", (previousState as State.Running).step)
+                    assertEquals("step${(j - 1) / 2}", (newState as State.Running).step)
                 }
                 3 -> {
                     assertTrue(previousState is State.Running.Attempting)
                     assertTrue(newState is State.Running.AttemptSuccessful)
                     val j = if (i < 7) i else (i - 2)
-                    assertEquals("step${(j-2)/2}", (previousState as State.Running).step)
-                    assertEquals("step${(j-2)/2}", (newState as State.Running).step)
+                    assertEquals("step${(j - 2) / 2}", (previousState as State.Running).step)
+                    assertEquals("step${(j - 2) / 2}", (newState as State.Running).step)
                 }
                 5, 7, 9, 11, 13 -> {
                     // step 2 failure
@@ -625,7 +628,7 @@ class OrchestratorTest {
         orchestrator.subscribe(badListener)
         orchestrator.subscribe(listener)
         assertTrue(orchestrator.unsubscribe(badListener))
-        assertFalse(orchestrator.unsubscribe(StateChangeListener { _, _, _ ->  }))
+        assertFalse(orchestrator.unsubscribe(StateChangeListener { _, _, _ -> }))
         orchestrator.subscribe(listener)
         orchestrator.start()
 

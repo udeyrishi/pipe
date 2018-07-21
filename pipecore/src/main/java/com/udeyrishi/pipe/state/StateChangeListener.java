@@ -1,4 +1,4 @@
-package com.udeyrishi.pipe;
+package com.udeyrishi.pipe.state;
 
 import org.jetbrains.annotations.NotNull;
 

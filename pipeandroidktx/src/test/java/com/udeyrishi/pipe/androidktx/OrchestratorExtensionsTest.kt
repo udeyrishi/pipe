@@ -4,10 +4,10 @@ import android.arch.lifecycle.DefaultLifecycleObserver
 import android.arch.lifecycle.Lifecycle
 import android.arch.lifecycle.LifecycleObserver
 import android.arch.lifecycle.LifecycleOwner
-import com.udeyrishi.pipe.StateChangeListener
+import com.udeyrishi.pipe.state.StateChangeListener
 import com.udeyrishi.pipe.buildPipeline
 import com.udeyrishi.pipe.repository.InMemoryRepository
-import com.udeyrishi.pipe.State
+import com.udeyrishi.pipe.state.State
 import com.udeyrishi.pipe.steps.Barrier
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
