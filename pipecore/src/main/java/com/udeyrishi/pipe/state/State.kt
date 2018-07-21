@@ -4,8 +4,8 @@
 package com.udeyrishi.pipe.state
 
 sealed class State {
-    abstract fun onSuccess(nextStep: String? = null): State
-    abstract fun onFailure(cause: Throwable): State
+    internal abstract fun onSuccess(nextStep: String? = null): State
+    internal abstract fun onFailure(cause: Throwable): State
 
     class Scheduled internal constructor() : State() {
         override fun onSuccess(nextStep: String?): State {
@@ -21,7 +21,7 @@ sealed class State {
         class Attempting internal constructor(step: String) : Running(step) {
             override fun onSuccess(nextStep: String?): State {
                 if (nextStep != null) {
-                    throw IllegalArgumentException("nextStep must be null for ${this::class.java.simpleName}.")
+                    throw IllegalArgumentException("nextStep must be null for ${this::class.java.name}.")
                 }
 
                 return AttemptSuccessful(step)
@@ -35,7 +35,7 @@ sealed class State {
         class AttemptFailed internal constructor(step: String, val cause: Throwable) : Running(step) {
             override fun onSuccess(nextStep: String?): State {
                 if (nextStep != step) {
-                    throw IllegalArgumentException("nextStep must be the same as step for ${this::class.java.simpleName}.")
+                    throw IllegalArgumentException("nextStep must be the same as step for ${this::class.java.name}.")
                 }
 
                 return Attempting(step)
@@ -43,7 +43,7 @@ sealed class State {
 
             override fun onFailure(cause: Throwable): State = Terminal.Failure(listOf(this.cause, cause))
 
-            override fun toString(): String = "${super.toString()}(cause=${cause::class.java.simpleName})"
+            override fun toString(): String = "${super.toString()}(cause=${cause::class.java.name})"
         }
 
         class AttemptSuccessful internal constructor(step: String) : Running(step) {
@@ -63,7 +63,7 @@ sealed class State {
         class Success internal constructor() : Terminal() {
             override fun onSuccess(nextStep: String?): State {
                 if (nextStep != null) {
-                    throw IllegalArgumentException("nextStep must be null for ${this::class.java.simpleName}.")
+                    throw IllegalArgumentException("nextStep must be null for ${this::class.java.name}.")
                 }
                 return this
             }
@@ -77,7 +77,7 @@ sealed class State {
                 get() = _causes.toList()
 
             override fun onSuccess(nextStep: String?): State {
-                throw IllegalStateException("${this::class.java.simpleName} cannot have a success state following it.")
+                throw IllegalStateException("${this::class.java.name} cannot have a success state following it.")
             }
 
             override fun onFailure(cause: Throwable): State {
@@ -89,5 +89,5 @@ sealed class State {
         }
     }
 
-    override fun toString(): String = this.javaClass.simpleName
+    override fun toString(): String = this.javaClass.name
 }

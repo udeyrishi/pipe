@@ -21,8 +21,6 @@ class StateTest {
         assertTrue(running is State.Running.Attempting)
         assertEquals("foo", (running as State.Running.Attempting).step)
 
-        assertEquals("Scheduled", scheduled.toString())
-
         val cause = RuntimeException("Some error")
         val terminal = scheduled.onFailure(cause)
         assertTrue(terminal is State.Terminal.Failure)
@@ -33,7 +31,6 @@ class StateTest {
     @Test
     fun runningStepWorks() {
         val runningStep = State.Running.Attempting("foo")
-        assertEquals("Attempting(step=foo)", runningStep.toString())
 
         val cause = RuntimeException("Some error")
         val attemptFailed = runningStep.onFailure(cause)
@@ -55,7 +52,6 @@ class StateTest {
     @Test
     fun stepSucceededWorks() {
         val stepSucceeded = State.Running.AttemptSuccessful("foo")
-        assertEquals("AttemptSuccessful(step=foo)", stepSucceeded.toString())
         assertTrue(stepSucceeded.onSuccess() is State.Terminal.Success)
 
         val attempting = stepSucceeded.onSuccess("bar")
@@ -100,7 +96,6 @@ class StateTest {
     @Test
     fun terminalSuccessWorks() {
         val terminalSuccess = State.Terminal.Success()
-        assertEquals("Success", terminalSuccess.toString())
         assertTrue(terminalSuccess === terminalSuccess.onSuccess())
 
         val cause = RuntimeException()
@@ -123,7 +118,6 @@ class StateTest {
         assertEquals(2, terminalFailure.causes.size)
         assertEquals(causes[0], terminalFailure.causes[0])
         assertEquals(causes[1], terminalFailure.causes[1])
-        assertEquals("Failure(causes=2)", terminalFailure.toString())
 
         val anotherCause = RuntimeException("hello")
         val anotherRef = terminalFailure.onFailure(anotherCause)
@@ -134,7 +128,6 @@ class StateTest {
         assertEquals(causes[0], terminalFailure.causes[0])
         assertEquals(causes[1], terminalFailure.causes[1])
         assertEquals(anotherCause, terminalFailure.causes[2])
-        assertEquals("Failure(causes=3)", terminalFailure.toString())
     }
 
     @Test(expected = IllegalStateException::class)
