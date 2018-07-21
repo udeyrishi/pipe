@@ -10,7 +10,7 @@ import java.util.UUID
 
 private data class InMemoryRepositoryEntry<T : Identifiable>(override val orchestrator: Orchestrator<T>, override val tag: String?) : RepositoryEntry<T>
 
-internal class InMemoryRepository<T : Identifiable> : MutableRepository<T> {
+class InMemoryRepository<T : Identifiable> : MutableRepository<T> {
     private val entries = arrayListOf<InMemoryRepositoryEntry<T>>()
     private val uuidIndex = hashMapOf<UUID, Int>()
 

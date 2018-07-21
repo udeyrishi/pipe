@@ -29,9 +29,13 @@ dependencies {
     implementation project(':pipecore')
 
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation depends.kotlin.stdlib
+    implementation depends.android.lifecycle.common_java8
     implementation depends.android.support.appcompat7
+    implementation depends.kotlin.stdlib
+
     testImplementation depends.junit
+    testImplementation depends.mockito.core
+
     androidTestImplementation depends.android.support.test_runner
     androidTestImplementation depends.android.support.espresso
 }
