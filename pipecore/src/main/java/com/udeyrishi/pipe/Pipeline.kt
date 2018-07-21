@@ -40,7 +40,7 @@ class Pipeline<T : Any> private constructor(private val steps: List<StepDescript
             return barrier
         }
 
-        fun addAggregator(capacity: Int, attempts: Long = 1, aggregationAction: suspend (List<T>) -> List<T>): Aggregator<Passenger<T>> {
+        fun addAggregator(capacity: Int, attempts: Long = 1, aggregationAction: Step<List<T>>): Aggregator<Passenger<T>> {
             val aggregator = Aggregator<Passenger<T>>(capacity, ordered) {
                 val result: List<T> = aggregationAction(it.map { it.data })
                 it.mapIndexed { index, originalPassenger ->
