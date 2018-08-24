@@ -18,15 +18,16 @@ import java.util.UUID
  * - updates and monitors its state
  */
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
-class Orchestrator<T : Identifiable> internal constructor(input: T, steps: Iterator<StepDescriptor<T>>) : Identifiable {
+class Orchestrator<out T : Identifiable> internal constructor(input: T, steps: Iterator<StepDescriptor<T>>) : Identifiable {
     override val uuid: UUID = input.uuid
 
     private var started: Boolean by immutableAfterSet(false)
     private var interrupted: Boolean by immutableAfterSet(false)
     private val stateHolder = StateHolder(uuid)
 
-    var result: T? by immutableAfterSet(null)
-        private set
+    private var _result: T? by immutableAfterSet(null)
+    val result: T?
+        get() = _result
 
     val state: State
         get() = stateHolder.state
@@ -81,7 +82,7 @@ class Orchestrator<T : Identifiable> internal constructor(input: T, steps: Itera
     }
 
     private fun onResultPrepared(result: T) {
-        this.result = result
+        this._result = result
         if (stateHolder.onStateSuccess()) {
             state.sanityCheck<State.Terminal.Success>()
         } else {
