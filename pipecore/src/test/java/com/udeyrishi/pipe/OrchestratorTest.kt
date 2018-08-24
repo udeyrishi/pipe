@@ -547,7 +547,6 @@ class OrchestratorTest {
         val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator())
         orchestrator.interrupt()
         orchestrator.start()
-        orchestrator.interrupt()
         Thread.sleep(500)
 
         while (orchestrator.state !is State.Terminal) {
@@ -558,9 +557,8 @@ class OrchestratorTest {
         assertTrue(orchestrator.state is State.Terminal.Failure)
 
         (orchestrator.state as State.Terminal.Failure).let {
-            assertEquals(2, it.causes.size)
-            assertTrue(it.causes[0] is Orchestrator.StepInterruptedException)
-            assertTrue(it.causes[1] is Orchestrator.OrchestratorInterruptedException)
+            assertEquals(1, it.causes.size)
+            assertTrue(it.causes[0] is Orchestrator.OrchestratorInterruptedException)
         }
         assertNull(orchestrator.result)
     }

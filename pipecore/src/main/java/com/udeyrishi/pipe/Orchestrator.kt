@@ -60,6 +60,13 @@ class Orchestrator<out T : Identifiable> internal constructor(input: T, steps: I
     }
 
     private suspend fun runAllSteps() {
+        if (interrupted) {
+            state.sanityCheck<State.Scheduled>()
+            stateHolder.onStateFailure(cause = OrchestratorInterruptedException(this))
+            state.sanityCheck<State.Terminal.Failure>()
+            return
+        }
+
         while (true) {
             val (input, nextStep) = cursor
 
