@@ -5,7 +5,7 @@ import com.udeyrishi.pipe.Orchestrator
 import java.io.Closeable
 import java.util.UUID
 
-interface Repository<T : Identifiable> : Closeable {
+interface Repository<out T : Identifiable> : Closeable {
     operator fun get(uuid: UUID): RepositoryEntry<T>?
     operator fun get(tag: String?): List<RepositoryEntry<T>>
 }
