@@ -8,7 +8,6 @@ import com.udeyrishi.pipe.state.StateChangeListener
 import com.udeyrishi.pipe.steps.StepDescriptor
 import com.udeyrishi.pipe.util.Identifiable
 import com.udeyrishi.pipe.util.immutableAfterSet
-import com.udeyrishi.pipe.util.synchronizedRun
 import kotlinx.coroutines.experimental.launch
 import java.util.UUID
 
@@ -222,22 +221,23 @@ private class StateHolder(override val uuid: UUID) : Identifiable {
         private set
 
     private val stateChangeListeners = mutableListOf<StateChangeListener>()
+    private val lock = Any()
 
     fun subscribe(stateChangeListener: StateChangeListener) {
-        stateChangeListeners.synchronizedRun {
-            add(stateChangeListener)
+        synchronized(lock) {
+            stateChangeListeners.add(stateChangeListener)
         }
     }
 
     fun unsubscribe(stateChangeListener: StateChangeListener): Boolean {
-        return stateChangeListeners.synchronizedRun {
-            remove(stateChangeListener)
+        return synchronized(lock) {
+            stateChangeListeners.remove(stateChangeListener)
         }
     }
 
     fun unsubscribeAll() {
-        stateChangeListeners.synchronizedRun {
-            clear()
+        synchronized(lock) {
+            stateChangeListeners.clear()
         }
     }
 
@@ -254,9 +254,9 @@ private class StateHolder(override val uuid: UUID) : Identifiable {
     }
 
     private fun notifyStateChangeListeners(previousState: State): Boolean {
-        return stateChangeListeners.synchronizedRun {
+        return synchronized(lock) {
             var allCallbacksCalled = true
-            for (it in this) {
+            for (it in stateChangeListeners) {
                 try {
                     it.onStateChanged(uuid, previousState, state)
                 } catch (e: Throwable) {

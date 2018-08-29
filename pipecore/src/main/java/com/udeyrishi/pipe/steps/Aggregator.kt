@@ -11,12 +11,13 @@ import kotlinx.coroutines.experimental.launch
 class Aggregator<T : Comparable<T>>(private var capacity: Int, private val ordered: Boolean = true, private val aggregationAction: Step<List<T>>) {
     private val barriers = mutableListOf<Pair<T, Barrier<T>>>()
     private var outputs: List<T>? by immutableAfterSet(null)
+    private val lock = Any()
 
     val arrivalCount: Int
         get() = barriers.size
 
     fun updateCapacity(newCapacity: Int) {
-        synchronized(this) {
+        synchronized(lock) {
             if (arrivalCount > newCapacity) {
                 throw IllegalStateException("Cannot change the capacity from $capacity to $newCapacity, because there are already $arrivalCount items in the aggregator.")
             }
@@ -78,7 +79,7 @@ class Aggregator<T : Comparable<T>>(private var capacity: Int, private val order
 
     private fun addBarrier(input: T): Pair<Barrier<T>, Int> {
         val barrier = Barrier<T>()
-        val index = synchronized(this) {
+        val index = synchronized(lock) {
             if (arrivalCount == capacity) {
                 throw IllegalStateException("Cannot push another step into the aggregator. It has reached its maximum capacity of $capacity.")
             }

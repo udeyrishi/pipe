@@ -10,6 +10,7 @@ import kotlin.coroutines.experimental.suspendCoroutine
 class Barrier<T : Any> internal constructor() {
     private var lifted: Boolean by immutableAfterSet(false)
     private val continuations = mutableListOf<Pair<Continuation<T>, T>>()
+    private val lock = Any()
 
     val blockedCount: Int
         get() = continuations.size
@@ -26,7 +27,7 @@ class Barrier<T : Any> internal constructor() {
          * Else, set the `continuation`. When lift() is indeed called, it will resume the coroutine via the continuation.
          */
         return suspendCoroutine {
-            synchronized(this@Barrier) {
+            synchronized(lock) {
                 if (lifted) {
                     it.resume(input)
                 } else {
@@ -40,7 +41,7 @@ class Barrier<T : Any> internal constructor() {
 
     fun lift() {
         if (!lifted) {
-            synchronized(this) {
+            synchronized(lock) {
                 lifted = true
                 continuations.forEach { (continuation, input) ->
                     continuation.resume(input)

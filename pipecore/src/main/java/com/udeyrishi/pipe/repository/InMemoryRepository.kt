@@ -13,9 +13,10 @@ private data class InMemoryRepositoryEntry<T : Identifiable>(override val orches
 class InMemoryRepository<T : Identifiable> : MutableRepository<T> {
     private val entries = arrayListOf<InMemoryRepositoryEntry<T>>()
     private val uuidIndex = hashMapOf<UUID, Int>()
+    private val lock = Any()
 
     override fun add(tag: String?, orchestratorBuilder: (newUUID: UUID, position: Long) -> Orchestrator<T>): Orchestrator<T> {
-        return synchronized(this) {
+        return synchronized(lock) {
             val orchestrator = orchestratorBuilder(generateUuid(), entries.size.toLong())
             val entry = InMemoryRepositoryEntry(orchestrator, tag)
             entries.add(entry)
@@ -33,7 +34,7 @@ class InMemoryRepository<T : Identifiable> : MutableRepository<T> {
     }
 
     override fun get(uuid: UUID): RepositoryEntry<T>? {
-        return synchronized(this) {
+        return synchronized(lock) {
             uuidIndex[uuid]?.let {
                 entries[it]
             }
@@ -41,7 +42,7 @@ class InMemoryRepository<T : Identifiable> : MutableRepository<T> {
     }
 
     override fun get(tag: String?): List<RepositoryEntry<T>> {
-        return synchronized(this) {
+        return synchronized(lock) {
             entries.filter {
                 it.tag == tag
             }
@@ -49,7 +50,7 @@ class InMemoryRepository<T : Identifiable> : MutableRepository<T> {
     }
 
     override fun prune(removeFailures: Boolean) {
-        synchronized(this) {
+        synchronized(lock) {
             val iterator = entries.iterator()
             while (iterator.hasNext()) {
                 val item = iterator.next()

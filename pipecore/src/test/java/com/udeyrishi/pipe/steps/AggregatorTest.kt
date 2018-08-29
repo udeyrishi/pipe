@@ -42,6 +42,8 @@ class AggregatorTest {
     // Cannot verify the exception via the @Test mechanism, because the exception will be thrown in different coroutine.
     @Test
     fun checksForBadAggregatorActions() {
+        val lock = Any()
+
         val aggregator = Aggregator<String>(capacity = 2, ordered = false) {
             listOf("just 1 item in result")
         }
@@ -53,7 +55,7 @@ class AggregatorTest {
                 aggregator.push("apple")
             } catch (e: IllegalStateException) {
                 assertEquals("The aggregationAction supplied to the ${Aggregator::class.java.simpleName} was bad; it didn't return a list of size 2 (i.e., the aggregator capacity).", e.message)
-                synchronized(this@AggregatorTest) {
+                synchronized(lock) {
                     exceptionCount++
                 }
             }
@@ -63,7 +65,7 @@ class AggregatorTest {
                 aggregator.push("bob")
             } catch (e: IllegalStateException) {
                 assertEquals("The aggregationAction supplied to the ${Aggregator::class.java.simpleName} was bad; it didn't return a list of size 2 (i.e., the aggregator capacity).", e.message)
-                synchronized(this@AggregatorTest) {
+                synchronized(lock) {
                     exceptionCount++
                 }
             }

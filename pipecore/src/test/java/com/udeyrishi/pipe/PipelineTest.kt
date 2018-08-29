@@ -18,6 +18,7 @@ import org.junit.runners.JUnit4
 class PipelineTest {
     @Test
     fun works() {
+        val lock = Any()
         lateinit var barrier: Barrier<Int>
         lateinit var aggregator: Aggregator<Pipeline.Passenger<Int>>
         lateinit var aggregated: List<Int>
@@ -30,7 +31,7 @@ class PipelineTest {
             }
 
             addStep("Step 2") {
-                synchronized(this@PipelineTest) {
+                synchronized(lock) {
                     barrierReachedCount++
                 }
                 it + 2
