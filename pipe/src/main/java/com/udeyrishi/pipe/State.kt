@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2018 Udey Rishi. All rights reserved.
  */
-package com.udeyrishi.pipe.state
+package com.udeyrishi.pipe
 
 sealed class State {
     internal abstract fun onSuccess(nextStep: String? = null): State

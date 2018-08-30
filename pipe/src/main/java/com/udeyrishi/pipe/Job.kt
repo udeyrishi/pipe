@@ -3,8 +3,7 @@
  */
 package com.udeyrishi.pipe
 
-import com.udeyrishi.pipe.state.State
-import com.udeyrishi.pipe.state.StateChangeListener
+import android.arch.lifecycle.LiveData
 import com.udeyrishi.pipe.util.Identifiable
 import java.util.UUID
 
@@ -12,7 +11,7 @@ class Job<T : Any> internal constructor(private val orchestrator: Orchestrator<P
     override val uuid: UUID
         get() = orchestrator.uuid
 
-    val state: State
+    val state: LiveData<State>
         get() = orchestrator.state
 
     val result: T?
@@ -25,7 +24,4 @@ class Job<T : Any> internal constructor(private val orchestrator: Orchestrator<P
     fun interrupt() {
         orchestrator.interrupt()
     }
-
-    fun subscribe(stateChangeListener: StateChangeListener) = orchestrator.subscribe(stateChangeListener)
-    fun unsubscribe(stateChangeListener: StateChangeListener) = orchestrator.unsubscribe(stateChangeListener)
 }

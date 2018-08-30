@@ -3,8 +3,8 @@
  */
 package com.udeyrishi.pipe
 
-import com.udeyrishi.pipe.state.State
-import com.udeyrishi.pipe.state.StateChangeListener
+import android.arch.lifecycle.LiveData
+import android.arch.lifecycle.MutableLiveData
 import com.udeyrishi.pipe.steps.StepDescriptor
 import com.udeyrishi.pipe.util.Identifiable
 import com.udeyrishi.pipe.util.immutableAfterSet
@@ -16,28 +16,25 @@ import java.util.UUID
  * - guides the provided input through the provided steps
  * - updates and monitors its state
  */
-@Suppress("EXPERIMENTAL_FEATURE_WARNING")
 internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<StepDescriptor<T>>) : Identifiable {
     override val uuid: UUID = input.uuid
 
     private var started: Boolean by immutableAfterSet(false)
     private var interrupted: Boolean by immutableAfterSet(false)
-    private val stateHolder = StateHolder(uuid)
+
+    private val _state = MutableLiveData<State>()
+    val state: LiveData<State>
+        get() = _state
 
     private var _result: T? by immutableAfterSet(null)
     val result: T?
         get() = _result
 
-    val state: State
-        get() = stateHolder.state
-
     private val cursor = Cursor(input, steps)
-
-    /**
-     * If the StateChangeListener throws an exception, the execution will be stopped, and state will be State.Terminal.Failure.
-     */
-    fun subscribe(stateChangeListener: StateChangeListener) = stateHolder.subscribe(stateChangeListener)
-    fun unsubscribe(stateChangeListener: StateChangeListener): Boolean = stateHolder.unsubscribe(stateChangeListener)
+    
+    init {
+        _state.postValue(State.Scheduled)
+    }
 
     fun start() {
         if (started) {
@@ -60,7 +57,7 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
     private suspend fun runAllSteps() {
         if (interrupted) {
             state.sanityCheck<State.Scheduled>()
-            stateHolder.onStateFailure(cause = OrchestratorInterruptedException(this))
+            onStateFailure(cause = OrchestratorInterruptedException(this))
             state.sanityCheck<State.Terminal.Failure>()
             return
         }
@@ -88,20 +85,16 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
 
     private fun onResultPrepared(result: T) {
         this._result = result
-        if (stateHolder.onStateSuccess()) {
-            state.sanityCheck<State.Terminal.Success>()
-        } else {
-            // Bad state change listener callback
-            state.sanityCheck<State.Terminal.Failure>()
-        }
+        onStateSuccess()
+        state.sanityCheck<State.Terminal.Success>()
     }
 
     private fun onStepResultNull(failingStep: StepDescriptor<T>, dueToInterruption: Boolean) {
         // Ran out of attempts or interrupted, or a bad state changed callback
-        if (state !is State.Terminal.Failure) {
+        if (state.value !is State.Terminal.Failure) {
             // Normal execution: Ran out of attempts or interrupted
             state.sanityCheck<State.Running.AttemptFailed>()
-            stateHolder.onStateFailure(cause = if (dueToInterruption) OrchestratorInterruptedException(this) else StepOutOfAttemptsException(this, failingStep))
+            onStateFailure(cause = if (dueToInterruption) OrchestratorInterruptedException(this) else StepOutOfAttemptsException(this, failingStep))
             // No need to check the result for ^. Even if it's false, the state is still terminal false
             state.sanityCheck<State.Terminal.Failure>()
         }
@@ -109,11 +102,7 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
 
     private suspend fun runStep(input: T, nextStep: StepDescriptor<T>): StepResult<T> {
         for (i in 0L until nextStep.maxAttempts) {
-            if (!stateHolder.onStateSuccess(nextStep.name)) {
-                // Bad state change listener
-                state.sanityCheck<State.Terminal.Failure>()
-                break
-            }
+            onStateSuccess(nextStep.name)
             state.sanityCheck<State.Running.Attempting>()
 
             if (checkInterruption(attempt = i, stepName = nextStep.name)) {
@@ -136,12 +125,8 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
 
     private fun checkInterruption(attempt: Long, stepName: String): Boolean {
         return if (interrupted) {
-            if (stateHolder.onStateFailure(StepInterruptedException(orchestrator = this, attempt = attempt, stepName = stepName))) {
-                state.sanityCheck<State.Running.AttemptFailed>()
-            } else {
-                // Bad state change listener
-                state.sanityCheck<State.Terminal.Failure>()
-            }
+            onStateFailure(StepInterruptedException(orchestrator = this, attempt = attempt, stepName = stepName))
+            state.sanityCheck<State.Running.AttemptFailed>()
             true
         } else {
             false
@@ -151,21 +136,11 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
     private suspend fun doStepAttempt(attempt: Long, step: StepDescriptor<T>, input: T): StepAttemptResult<T> {
         return try {
             val result: T = step.step(input)
-            if (stateHolder.onStateSuccess()) {
-                StepAttemptResult.forSuccess(result)
-            } else {
-                // Bad state change listener
-                state.sanityCheck<State.Terminal.Failure>()
-                StepAttemptResult.forFatalError()
-            }
+            onStateSuccess()
+            StepAttemptResult.forSuccess(result)
         } catch (e: Throwable) {
-            if (stateHolder.onStateFailure(StepFailureException(orchestrator = this, attempt = attempt, stepName = step.name, throwable = e))) {
-                StepAttemptResult.forFailedStep()
-            } else {
-                // Bad state change listener
-                state.sanityCheck<State.Terminal.Failure>()
-                StepAttemptResult.forFatalError()
-            }
+            onStateFailure(StepFailureException(orchestrator = this, attempt = attempt, stepName = step.name, throwable = e))
+            StepAttemptResult.forFailedStep()
         }
     }
 
@@ -179,9 +154,18 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
         }
     }
 
+    private fun onStateSuccess(nextStep: String? = null) {
+        val newState = state.value?.onSuccess(nextStep) ?: throw IllegalStateException("State must never be null")
+        _state.postValue(newState)
+    }
+
+    private fun onStateFailure(cause: Throwable) {
+        val newState = state.value?.onFailure(cause) ?: throw IllegalStateException("State must never be null")
+        _state.postValue(newState)
+    }
+
     private class StepAttemptResult<out T> private constructor(val stepResult: T?, val fatalError: Boolean) {
         companion object {
-            fun forFatalError() = StepAttemptResult(null, true)
             fun forFailedStep() = StepAttemptResult(null, false)
             fun <T> forSuccess(result: T) = StepAttemptResult(result, false)
         }
@@ -193,8 +177,8 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
     class StepInterruptedException internal constructor(orchestrator: Orchestrator<*>, attempt: Long, stepName: String) : RuntimeException("$orchestrator was interrupted at step '$stepName' on the attempt #$attempt.")
 }
 
-private inline fun <reified T : State> State.sanityCheck() {
-    if (this !is T) {
+private inline fun <reified T : State> LiveData<State>.sanityCheck() {
+    if (this.value !is T) {
         throw IllegalStateException("Something went wrong. State must've been ${T::class.java.simpleName}, but was ${this::class.java.simpleName}.")
     }
 }
@@ -213,66 +197,4 @@ private class Cursor<T : Identifiable>(private var input: T, private val steps: 
 
     operator fun component1() = input
     operator fun component2() = nextStep
-}
-
-private class StateHolder(override val uuid: UUID) : Identifiable {
-    var state: State = State.Scheduled
-        private set
-
-    private val stateChangeListeners = mutableListOf<StateChangeListener>()
-    private val lock = Any()
-
-    fun subscribe(stateChangeListener: StateChangeListener) {
-        synchronized(lock) {
-            stateChangeListeners.add(stateChangeListener)
-        }
-    }
-
-    fun unsubscribe(stateChangeListener: StateChangeListener): Boolean {
-        return synchronized(lock) {
-            stateChangeListeners.remove(stateChangeListener)
-        }
-    }
-
-    fun unsubscribeAll() {
-        synchronized(lock) {
-            stateChangeListeners.clear()
-        }
-    }
-
-    fun onStateSuccess(nextStep: String? = null): Boolean {
-        val previousState = state
-        state = state.onSuccess(nextStep)
-        return notifyStateChangeListeners(previousState)
-    }
-
-    fun onStateFailure(cause: Throwable): Boolean {
-        val previousState = state
-        state = state.onFailure(cause)
-        return notifyStateChangeListeners(previousState)
-    }
-
-    private fun notifyStateChangeListeners(previousState: State): Boolean {
-        return synchronized(lock) {
-            var allCallbacksCalled = true
-            for (it in stateChangeListeners) {
-                try {
-                    it.onStateChanged(uuid, previousState, state)
-                } catch (e: Throwable) {
-                    // Bad state change listener callback. Try to stop executing, and move the state to failure
-                    state = state.onFailure(e)
-                    if (state !is State.Terminal.Failure) {
-                        state = state.onFailure(e)
-                    }
-                    if (state !is State.Terminal.Failure) {
-                        // Terminal Failure should not be more than 2 steps away. No clue what happened
-                        throw e
-                    }
-                    allCallbacksCalled = false
-                    break
-                }
-            }
-            allCallbacksCalled
-        }
-    }
 }

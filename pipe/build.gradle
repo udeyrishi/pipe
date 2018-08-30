@@ -30,7 +30,11 @@ android {
 dependencies {
     implementation depends.kotlin.stdlib
     implementation depends.kotlin.coroutines
+    implementation depends.android.lifecycle.livedata
+
     testImplementation depends.junit
+    testImplementation depends.android.lifecycle.runtime
+    testImplementation depends.android.lifecycle.testing
 }
 
 kotlin {

@@ -3,12 +3,13 @@
  */
 package com.udeyrishi.pipe
 
+import android.arch.core.executor.testing.InstantTaskExecutorRule
 import com.udeyrishi.pipe.repository.InMemoryRepository
-import com.udeyrishi.pipe.state.State
 import com.udeyrishi.pipe.steps.Aggregator
 import com.udeyrishi.pipe.steps.Barrier
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -16,6 +17,9 @@ import org.junit.runners.JUnit4
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 @RunWith(JUnit4::class)
 class PipelineTest {
+    @get:Rule
+    val instantExecutionRule = InstantTaskExecutorRule()
+
     @Test
     fun works() {
         val lock = Any()
@@ -69,21 +73,21 @@ class PipelineTest {
         }
 
         jobs.forEach {
-            assertTrue(it.state is State.Running.Attempting)
+            assertTrue(it.state.value is State.Running.Attempting)
         }
 
         // Everyone is waiting at the barrier. Now that we know the count, we can safely update the aggregator capacity, and then lift the barrier.
         barrier.lift()
         aggregator.updateCapacity(3)
 
-        while (jobs.any { it.state !is State.Terminal }) {
+        while (jobs.any { it.state.value !is State.Terminal }) {
             Thread.sleep(100)
         }
 
         // Everyone is done
 
         jobs.forEach {
-            assertTrue(it.state is State.Terminal.Success)
+            assertTrue(it.state.value is State.Terminal.Success)
         }
 
         jobs.forEachIndexed { index, job ->
