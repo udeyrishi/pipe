@@ -1,6 +1,8 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
+apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'com.jfrog.bintray'
 apply from: '../ktlint.gradle'
 
 sourceCompatibility = 1.8
@@ -54,3 +56,29 @@ kotlin {
         coroutines 'enable'
     }
 }
+
+ext {
+    bintrayRepo = 'pipe'
+    bintrayName = 'pipe'
+
+    publishedGroupId = 'com.udeyrishi'
+    libraryName = 'Pipe'
+    artifact = 'pipe'
+
+    libraryDescription = 'General purpose pipeline builder and runner for Android'
+
+    siteUrl = 'https://github.com/udeyrishi/Pipe'
+    gitUrl = 'https://github.com/udeyrishi/pipe.git'
+
+    libraryVersion = coreVersions.versionName
+
+    developerId = 'udeyrishi'
+    developerName = 'Udey Rishi'
+    developerEmail = 'me@udeyrishi.com'
+
+    licenseName = 'MIT License'
+    licenseUrl = 'https://github.com/udeyrishi/pipe/blob/master/LICENSE'
+    allLicenses = ["MIT"]
+}
+
+apply from: '../bintray.gradle'

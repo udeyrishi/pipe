@@ -10,6 +10,10 @@ buildscript {
                         'coroutines': '0.25.0',
                         'lang': '1.2.61'
                 ],
+                'publish': [
+                        'maven_plugin': '2.1',
+                        'bintray_plugin': '1.8.4'
+                ],
                 'static_analysis': [
                         'ktlint': '0.27.0',
                 ]
@@ -39,6 +43,10 @@ buildscript {
                         'gradle_plugin': "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin.lang}",
                         'stdlib'       : "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${versions.kotlin.lang}"
                 ],
+                'publish': [
+                        'maven_plugin': "com.github.dcendents:android-maven-gradle-plugin:${versions.publish.maven_plugin}",
+                        'bintray_plugin': "com.jfrog.bintray.gradle:gradle-bintray-plugin:${versions.publish.bintray_plugin}"
+                ],
                 'static_analysis': [
                         'ktlint': "com.github.shyiko:ktlint:${versions.static_analysis.ktlint}",
                 ]
@@ -53,6 +61,8 @@ buildscript {
     dependencies {
         classpath depends.kotlin.gradle_plugin
         classpath depends.android.gradle_plugin
+        classpath depends.publish.maven_plugin
+        classpath depends.publish.bintray_plugin
     }
 }
 
