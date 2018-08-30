@@ -6,7 +6,7 @@ sourceCompatibility = 1.8
 
 dependencies {
     implementation depends.kotlin.stdlib
-    implementation depends.kotlin.coroutines
+    compile depends.kotlin.coroutines
     testImplementation depends.junit
 }
 

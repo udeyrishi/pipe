@@ -26,7 +26,7 @@ android {
 }
 
 dependencies {
-    implementation project(':pipecore')
+    api project(':pipecore')
 
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation depends.android.lifecycle.common_java8
