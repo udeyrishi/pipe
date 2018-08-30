@@ -39,6 +39,9 @@ buildscript {
                         'runtime': "android.arch.lifecycle:runtime:${versions.android.lifecycle}",
                         'testing': "android.arch.core:core-testing:${versions.android.lifecycle}"
                     ],
+                    'support': [
+                        'appcompat7': "com.android.support:appcompat-v7:${versions.android.support.appcompat7}"
+                    ]
                 ],
                 'junit' : "junit:junit:${versions.junit}",
                 'kotlin': [

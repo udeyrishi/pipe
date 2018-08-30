@@ -9,6 +9,7 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/pipe" />
+            <option value="$PROJECT_DIR$/pipesample" />
           </set>
         </option>
         <option name="resolveModulePerSourceSet" value="false" />

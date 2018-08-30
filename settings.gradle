@@ -1,1 +1,1 @@
-include ':pipe'
+include ':pipe', ':pipesample'
