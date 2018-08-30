@@ -30,7 +30,7 @@ class SortReplayerTest {
         val sortReplayer = SortReplayer(original = original, sorted = sorted)
 
         val sortedStrings = listOf("zero", "one", "two", "three", "four")
-        val originalStrings  = sortReplayer.reverseApplySortTransformations(sortedStrings)
+        val originalStrings = sortReplayer.reverseApplySortTransformations(sortedStrings)
         assertEquals(listOf("four", "zero", "two", "three", "one"), originalStrings)
     }
 }

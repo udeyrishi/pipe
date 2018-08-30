@@ -56,4 +56,3 @@ internal class BarrierImpl<T : Any> : Barrier {
         }
     }
 }
-

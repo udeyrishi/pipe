@@ -18,7 +18,8 @@ internal class SortReplayer<T : Any>(original: List<T>, sorted: List<T>) {
             val positionMapSorted = sorted.mapIndexed { index, item -> Pair(item, index) }.toMap()
 
             original.mapIndexed { unsortedIndex, item ->
-                unsortedIndex to (positionMapSorted[item] ?: throw IllegalArgumentException("original and sorted must be lists of the same size and same elements, just in different orders."))
+                unsortedIndex to (positionMapSorted[item]
+                        ?: throw IllegalArgumentException("original and sorted must be lists of the same size and same elements, just in different orders."))
             }.toMap()
         }
 
@@ -51,7 +52,8 @@ internal class SortReplayer<T : Any>(original: List<T>, sorted: List<T>) {
         }
 
         return List(sorted.size) { unsortedIndex ->
-            val sortedIndex = transformations[unsortedIndex] ?: throw IllegalStateException("Something went wrong. Unsorted index $unsortedIndex not found in the sortMap.")
+            val sortedIndex = transformations[unsortedIndex]
+                    ?: throw IllegalStateException("Something went wrong. Unsorted index $unsortedIndex not found in the sortMap.")
             sorted[sortedIndex]
         }
     }

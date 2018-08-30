@@ -58,5 +58,5 @@ class InMemoryRepository<T : Identifiable> : MutableRepository<T> {
         }
     }
 
-    override fun close() { }
+    override fun close() {}
 }

@@ -31,7 +31,7 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
         get() = _result
 
     private val cursor = Cursor(input, steps)
-    
+
     init {
         _state.postValue(State.Scheduled)
     }
@@ -155,12 +155,14 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
     }
 
     private fun onStateSuccess(nextStep: String? = null) {
-        val newState = state.value?.onSuccess(nextStep) ?: throw IllegalStateException("State must never be null")
+        val newState = state.value?.onSuccess(nextStep)
+                ?: throw IllegalStateException("State must never be null")
         _state.postValue(newState)
     }
 
     private fun onStateFailure(cause: Throwable) {
-        val newState = state.value?.onFailure(cause) ?: throw IllegalStateException("State must never be null")
+        val newState = state.value?.onFailure(cause)
+                ?: throw IllegalStateException("State must never be null")
         _state.postValue(newState)
     }
 

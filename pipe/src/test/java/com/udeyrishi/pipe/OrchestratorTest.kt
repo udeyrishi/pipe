@@ -23,9 +23,9 @@ import java.util.UUID
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 @RunWith(JUnit4::class)
 class OrchestratorTest {
-    
+
     private data class IdentifiableString(val data: String, override val uuid: UUID = UUID.randomUUID()) : Identifiable
-    
+
     @get:Rule
     val repeatRule = RepeatRule()
 
@@ -58,20 +58,19 @@ class OrchestratorTest {
 
     @Test
     fun executesStepsWithCorrectStateChanges() {
-        val steps =  (0..5).map { i ->
+        val steps = (0..5).map { i ->
             StepDescriptor<IdentifiableString>("step$i", 1) {
                 Thread.sleep(100)
                 IdentifiableString("${it.data}->$i", it.uuid)
             }
         }
 
-
         val input = IdentifiableString("in")
         val orchestrator = Orchestrator(input, steps.iterator())
         assertNull(orchestrator.result)
 
         var i = 0
-        orchestrator.state.observe(createMockLifecycleOwner() , Observer { newState ->
+        orchestrator.state.observe(createMockLifecycleOwner(), Observer { newState ->
             when (i++) {
                 0 -> assertTrue(orchestrator.state.value is State.Scheduled)
                 1 -> {
@@ -101,7 +100,6 @@ class OrchestratorTest {
                 else -> fail("Counter should've never reached $i.")
             }
         })
-        
 
         orchestrator.start()
 
@@ -117,7 +115,7 @@ class OrchestratorTest {
     fun handlesFailuresCorrectly() {
         val error = RuntimeException("something went wrong")
         var called = 0
-        val steps =  (0..5).map { i ->
+        val steps = (0..5).map { i ->
             StepDescriptor<IdentifiableString>("step$i", 1) {
                 // Should not call this step more than once
                 assertEquals(i, called++)
@@ -130,12 +128,11 @@ class OrchestratorTest {
             }
         }
 
-
         val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator())
         assertNull(orchestrator.result)
 
         var i = 0
-        orchestrator.state.observe(createMockLifecycleOwner() , Observer { newState ->
+        orchestrator.state.observe(createMockLifecycleOwner(), Observer { newState ->
             when (i++) {
                 0 -> assertTrue(orchestrator.state.value is State.Scheduled)
                 1 -> {
@@ -193,7 +190,7 @@ class OrchestratorTest {
         val error = RuntimeException("something went wrong")
         var failureCount = 0
         var called = 0
-        val steps =  (0..5).map { i ->
+        val steps = (0..5).map { i ->
             StepDescriptor<IdentifiableString>("step$i", 2) {
                 when {
                     i == 2 -> assertTrue(listOf(2, 3).contains(called++))
@@ -215,7 +212,7 @@ class OrchestratorTest {
         assertNull(orchestrator.result)
 
         var i = 0
-        orchestrator.state.observe(createMockLifecycleOwner() , Observer { newState ->
+        orchestrator.state.observe(createMockLifecycleOwner(), Observer { newState ->
             when (i++) {
                 0 -> assertTrue(orchestrator.state.value is State.Scheduled)
                 1 -> {
@@ -274,7 +271,7 @@ class OrchestratorTest {
         val error = RuntimeException("something went wrong")
         var step2Called = 0
 
-        val steps =  (0..5).map { i ->
+        val steps = (0..5).map { i ->
             StepDescriptor<IdentifiableString>("step$i", 5) {
                 Thread.sleep(100)
                 when {
@@ -288,12 +285,11 @@ class OrchestratorTest {
             }
         }
 
-
         val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator())
         assertNull(orchestrator.result)
 
         var i = 0
-        orchestrator.state.observe(createMockLifecycleOwner() , Observer { newState ->
+        orchestrator.state.observe(createMockLifecycleOwner(), Observer { newState ->
             when (i++) {
                 0 -> assertTrue(orchestrator.state.value is State.Scheduled)
                 1 -> {
@@ -357,7 +353,7 @@ class OrchestratorTest {
     @Repeat
     fun interruptsCorrectly() {
         var lastStep = -1
-        val steps =  (0..100).map { i ->
+        val steps = (0..100).map { i ->
             StepDescriptor<IdentifiableString>("step$i", 1) {
                 Thread.sleep(100)
                 lastStep = i
@@ -391,7 +387,7 @@ class OrchestratorTest {
     @Repeat
     fun canInterruptMultipleTimes() {
         var lastStep = -1
-        val steps =  (0..100).map { i ->
+        val steps = (0..100).map { i ->
             StepDescriptor<IdentifiableString>("step$i", 1) {
                 Thread.sleep(100)
                 lastStep = i
@@ -427,7 +423,7 @@ class OrchestratorTest {
     @Repeat
     fun canInterruptBeforeStart() {
         var lastStep = -1
-        val steps =  (0..100).map { i ->
+        val steps = (0..100).map { i ->
             StepDescriptor<IdentifiableString>("step$i", 1) {
                 Thread.sleep(100)
                 lastStep = i

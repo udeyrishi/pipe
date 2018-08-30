@@ -9,6 +9,9 @@ buildscript {
                 'kotlin': [
                         'coroutines': '0.25.0',
                         'lang': '1.2.61'
+                ],
+                'static_analysis': [
+                        'ktlint': '0.27.0',
                 ]
         ]
 
@@ -35,6 +38,9 @@ buildscript {
                         'coroutines'   : "org.jetbrains.kotlinx:kotlinx-coroutines-core:${versions.kotlin.coroutines}",
                         'gradle_plugin': "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin.lang}",
                         'stdlib'       : "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${versions.kotlin.lang}"
+                ],
+                'static_analysis': [
+                        'ktlint': "com.github.shyiko:ktlint:${versions.static_analysis.ktlint}",
                 ]
         ]
     }

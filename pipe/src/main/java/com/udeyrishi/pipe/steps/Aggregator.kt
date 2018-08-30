@@ -50,7 +50,8 @@ internal class AggregatorImpl<T : Comparable<T>>(private var capacity: Int, priv
         // By the time each coroutine reaches this, the outputs should've been prepared (under normal situations).
         return outputs?.let {
             it[index]
-        } ?: throw IllegalStateException("The aggregationAction supplied to the ${this::class.java.simpleName} was bad; it didn't return a list of size $capacity (i.e., the aggregator capacity).")
+        }
+                ?: throw IllegalStateException("The aggregationAction supplied to the ${this::class.java.simpleName} was bad; it didn't return a list of size $capacity (i.e., the aggregator capacity).")
     }
 
     private suspend fun onFinalInputPushed() {

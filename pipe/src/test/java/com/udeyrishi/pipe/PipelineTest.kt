@@ -57,11 +57,10 @@ class PipelineTest {
             }
         }
 
-
         val jobs = mutableListOf(
-            pipeline.push(0, null),
-            pipeline.push(1, null),
-            pipeline.push(2, null)
+                pipeline.push(0, null),
+                pipeline.push(1, null),
+                pipeline.push(2, null)
         )
 
         jobs.forEach {

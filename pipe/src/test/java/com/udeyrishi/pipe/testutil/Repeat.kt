@@ -19,7 +19,8 @@ class RepeatRule : TestRule {
 
     override fun apply(statement: Statement, description: Description): Statement {
         return description.getAnnotation(Repeat::class.java)?.let {
-            RepeatStatement(statement, repeat = if (it.count >= 0) it.count else (System.getenv(ENV_VAR_KEY)?.toInt() ?: DEFAULT_REPEAT))
+            RepeatStatement(statement, repeat = if (it.count >= 0) it.count else (System.getenv(ENV_VAR_KEY)?.toInt()
+                    ?: DEFAULT_REPEAT))
         } ?: statement
     }
 
