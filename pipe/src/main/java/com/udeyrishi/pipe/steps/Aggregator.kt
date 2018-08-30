@@ -9,11 +9,11 @@ import kotlinx.coroutines.experimental.launch
 
 interface Aggregator {
     val arrivalCount: Int
-    fun updateCapacity(newCapacity: Int)
+    var capacity: Int
 }
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
-internal class AggregatorImpl<T : Comparable<T>>(private var capacity: Int, private val ordered: Boolean = true, private val aggregationAction: Step<List<T>>) : Aggregator {
+internal class AggregatorImpl<T : Comparable<T>>(capacity: Int, private val ordered: Boolean = true, private val aggregationAction: Step<List<T>>) : Aggregator {
     private val barriers = mutableListOf<Pair<T, BarrierImpl<T>>>()
     private var outputs: List<T>? by immutableAfterSet(null)
     private val lock = Any()
@@ -21,21 +21,22 @@ internal class AggregatorImpl<T : Comparable<T>>(private var capacity: Int, priv
     override val arrivalCount: Int
         get() = barriers.size
 
-    override fun updateCapacity(newCapacity: Int) {
-        synchronized(lock) {
-            if (arrivalCount > newCapacity) {
-                throw IllegalStateException("Cannot change the capacity from $capacity to $newCapacity, because there are already $arrivalCount items in the aggregator.")
-            }
-            capacity = newCapacity
-            if (arrivalCount == newCapacity) {
-                // We now need to retroactively mark the last arrived input as the final input. Usually, the last arrival's coroutine can be reused for aggregation purposes, but it's blocked
-                // on the barrier now. So temporarily create a new one to do the aggregation + unblocking work.
-                launch {
-                    onFinalInputPushed()
+    override var capacity: Int = capacity
+        set(value) {
+            synchronized(lock) {
+                if (arrivalCount > value) {
+                    throw IllegalStateException("Cannot change the capacity from $capacity to $value, because there are already $arrivalCount items in the aggregator.")
+                }
+                field = value
+                if (arrivalCount == value) {
+                    // We now need to retroactively mark the last arrived input as the final input. Usually, the last arrival's coroutine can be reused for aggregation purposes, but it's blocked
+                    // on the barrier now. So temporarily create a new one to do the aggregation + unblocking work.
+                    launch {
+                        onFinalInputPushed()
+                    }
                 }
             }
         }
-    }
 
     suspend fun push(input: T): T {
         val (barrier, index) = addBarrier(input)

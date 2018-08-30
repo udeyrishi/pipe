@@ -139,7 +139,7 @@ class AggregatorTest {
             }
         }.toMutableList()
 
-        aggregator.updateCapacity(7)
+        aggregator.capacity = 7
 
         (5 until 7).mapTo(deferredResults) {
             async {
@@ -171,7 +171,7 @@ class AggregatorTest {
             }
         }
 
-        aggregator.updateCapacity(3)
+        aggregator.capacity = 3
 
         val incrementedResults = runBlocking {
             deferredResults.map {
@@ -190,7 +190,7 @@ class AggregatorTest {
             it.map { it + 1 }
         }
 
-        aggregator.updateCapacity(5)
+        aggregator.capacity = 5
 
         val deferredResults = (0 until 5).map {
             async {
@@ -215,7 +215,7 @@ class AggregatorTest {
             it.map { it + 1 }
         }
 
-        aggregator.updateCapacity(3)
+        aggregator.capacity = 3
 
         val deferredResults = (0 until 3).map {
             async {
@@ -250,7 +250,7 @@ class AggregatorTest {
             Thread.sleep(50)
         }
 
-        aggregator.updateCapacity(5)
+        aggregator.capacity = 5
 
         val incrementedResults = runBlocking {
             deferredResults.map {
@@ -277,6 +277,6 @@ class AggregatorTest {
             Thread.sleep(50)
         }
 
-        aggregator.updateCapacity(3)
+        aggregator.capacity = 3
     }
 }
