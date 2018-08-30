@@ -2,6 +2,8 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 
+sourceCompatibility = 1.8
+
 android {
     buildToolsVersion coreVersions.buildTools
     compileSdkVersion coreVersions.compileSdkVersion
@@ -26,22 +28,13 @@ android {
 }
 
 dependencies {
-    api project(':pipecore')
-
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation depends.android.lifecycle.common_java8
-    implementation depends.android.support.appcompat7
     implementation depends.kotlin.stdlib
-
+    implementation depends.kotlin.coroutines
     testImplementation depends.junit
-    testImplementation depends.mockito.core
-
-    androidTestImplementation depends.android.support.test_runner
-    androidTestImplementation depends.android.support.espresso
 }
 
 kotlin {
     experimental {
-        coroutines "enable"
+        coroutines 'enable'
     }
 }

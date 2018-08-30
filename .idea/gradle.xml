@@ -8,8 +8,7 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
-            <option value="$PROJECT_DIR$/pipeandroidktx" />
-            <option value="$PROJECT_DIR$/pipecore" />
+            <option value="$PROJECT_DIR$/pipe" />
           </set>
         </option>
         <option name="resolveModulePerSourceSet" value="false" />

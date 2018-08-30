@@ -1,2 +1,1 @@
-include ':pipecore'
-include ':pipeandroidktx'
+include ':pipe'
