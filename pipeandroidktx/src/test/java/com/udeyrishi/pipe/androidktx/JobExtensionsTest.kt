@@ -4,10 +4,10 @@ import android.arch.lifecycle.DefaultLifecycleObserver
 import android.arch.lifecycle.Lifecycle
 import android.arch.lifecycle.LifecycleObserver
 import android.arch.lifecycle.LifecycleOwner
-import com.udeyrishi.pipe.state.StateChangeListener
 import com.udeyrishi.pipe.buildPipeline
 import com.udeyrishi.pipe.repository.InMemoryRepository
 import com.udeyrishi.pipe.state.State
+import com.udeyrishi.pipe.state.StateChangeListener
 import com.udeyrishi.pipe.steps.Barrier
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -22,7 +22,7 @@ import org.mockito.Mockito.mock
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 @RunWith(JUnit4::class)
-class OrchestratorExtensionsTest {
+class JobExtensionsTest {
     private val observers = mutableListOf<LifecycleObserver>()
 
     @Before
@@ -60,14 +60,14 @@ class OrchestratorExtensionsTest {
             }
         }
 
-        val orchestrator = pipeline.push(-3, null)
+        val job = pipeline.push(-3, null)
 
         assertEquals(0, observers.size)
 
         var lastSetPrevState: State? = null
         var lastSetNewState: State? = null
-        orchestrator.subscribe(mockOwner, StateChangeListener { uuid, previousState, newState ->
-            assertEquals(orchestrator.uuid, uuid)
+        job.subscribe(mockOwner, StateChangeListener { uuid, previousState, newState ->
+            assertEquals(job.uuid, uuid)
             assertEquals(Lifecycle.State.RESUMED, currentState)
             lastSetPrevState = previousState
             lastSetNewState = newState
@@ -79,7 +79,7 @@ class OrchestratorExtensionsTest {
         assertNull(lastSetPrevState)
         assertNull(lastSetNewState)
 
-        orchestrator.start()
+        job.start()
 
         while (barrier.blockedCount < 1) {
             Thread.sleep(100)
@@ -103,13 +103,13 @@ class OrchestratorExtensionsTest {
 
         barrier.lift()
 
-        while (orchestrator.state !is State.Terminal) {
+        while (job.state !is State.Terminal) {
             Thread.sleep(100)
         }
 
         assertTrue(lastSetPrevState is State.Running.AttemptSuccessful)
         assertTrue(lastSetNewState is State.Terminal.Success)
-        assertEquals(0, orchestrator.result?.data)
+        assertEquals(0, job.result)
     }
 
     @Test
@@ -142,14 +142,14 @@ class OrchestratorExtensionsTest {
             }
         }
 
-        val orchestrator = pipeline.push(-3, null)
+        val job = pipeline.push(-3, null)
 
         assertEquals(0, observers.size)
 
         var lastSetPrevState: State? = null
         var lastSetNewState: State? = null
-        orchestrator.subscribe(mockOwner, StateChangeListener { uuid, previousState, newState ->
-            assertEquals(orchestrator.uuid, uuid)
+        job.subscribe(mockOwner, StateChangeListener { uuid, previousState, newState ->
+            assertEquals(job.uuid, uuid)
             assertEquals(Lifecycle.State.RESUMED, currentState)
             lastSetPrevState = previousState
             lastSetNewState = newState
@@ -161,7 +161,7 @@ class OrchestratorExtensionsTest {
         currentState = Lifecycle.State.RESUMED
         observers.forEach { (it as DefaultLifecycleObserver).onResume(mockOwner) }
 
-        orchestrator.start()
+        job.start()
 
         while (barrier.blockedCount < 1) {
             Thread.sleep(100)
@@ -180,7 +180,7 @@ class OrchestratorExtensionsTest {
 
         barrier.lift()
 
-        while (orchestrator.state !is State.Terminal) {
+        while (job.state !is State.Terminal) {
             Thread.sleep(100)
         }
 
@@ -188,6 +188,6 @@ class OrchestratorExtensionsTest {
         assertNull(lastSetPrevState)
         assertNull(lastSetNewState)
 
-        assertEquals(0, orchestrator.result?.data)
+        assertEquals(0, job.result)
     }
 }

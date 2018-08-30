@@ -17,7 +17,7 @@ import java.util.UUID
  * - updates and monitors its state
  */
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
-class Orchestrator<out T : Identifiable> internal constructor(input: T, steps: Iterator<StepDescriptor<T>>) : Identifiable {
+internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<StepDescriptor<T>>) : Identifiable {
     override val uuid: UUID = input.uuid
 
     private var started: Boolean by immutableAfterSet(false)
@@ -38,7 +38,6 @@ class Orchestrator<out T : Identifiable> internal constructor(input: T, steps: I
      */
     fun subscribe(stateChangeListener: StateChangeListener) = stateHolder.subscribe(stateChangeListener)
     fun unsubscribe(stateChangeListener: StateChangeListener): Boolean = stateHolder.unsubscribe(stateChangeListener)
-    fun unsubscribeAll() = stateHolder.unsubscribeAll()
 
     fun start() {
         if (started) {

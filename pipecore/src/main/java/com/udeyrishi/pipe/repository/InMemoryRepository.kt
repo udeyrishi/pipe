@@ -4,8 +4,6 @@
 package com.udeyrishi.pipe.repository
 
 import com.udeyrishi.pipe.util.Identifiable
-import com.udeyrishi.pipe.Orchestrator
-import com.udeyrishi.pipe.state.State
 import java.util.UUID
 
 private data class InMemoryRepositoryEntry<T : Identifiable>(override val identifiableObject: T, override val tag: String?) : RepositoryEntry<T>
@@ -17,11 +15,11 @@ class InMemoryRepository<T : Identifiable> : MutableRepository<T> {
 
     override fun add(tag: String?, identifiableObjectBuilder: (newUUID: UUID, position: Long) -> T): T {
         return synchronized(lock) {
-            val orchestrator = identifiableObjectBuilder(generateUuid(), entries.size.toLong())
-            val entry = InMemoryRepositoryEntry(orchestrator, tag)
+            val identifiableObject = identifiableObjectBuilder(generateUuid(), entries.size.toLong())
+            val entry = InMemoryRepositoryEntry(identifiableObject, tag)
             entries.add(entry)
             uuidIndex[entry.uuid] = entries.lastIndex
-            orchestrator
+            identifiableObject
         }
     }
 

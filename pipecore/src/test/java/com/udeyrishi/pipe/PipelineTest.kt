@@ -54,13 +54,13 @@ class PipelineTest {
         }
 
 
-        val orchestrators = mutableListOf(
+        val jobs = mutableListOf(
             pipeline.push(0, null),
             pipeline.push(1, null),
             pipeline.push(2, null)
         )
 
-        orchestrators.forEach {
+        jobs.forEach {
             it.start()
         }
 
@@ -68,7 +68,7 @@ class PipelineTest {
             Thread.sleep(100)
         }
 
-        orchestrators.forEach {
+        jobs.forEach {
             assertTrue(it.state is State.Running.Attempting)
         }
 
@@ -76,18 +76,18 @@ class PipelineTest {
         barrier.lift()
         aggregator.updateCapacity(3)
 
-        while (orchestrators.any { it.state !is State.Terminal }) {
+        while (jobs.any { it.state !is State.Terminal }) {
             Thread.sleep(100)
         }
 
         // Everyone is done
 
-        orchestrators.forEach {
+        jobs.forEach {
             assertTrue(it.state is State.Terminal.Success)
         }
 
-        orchestrators.forEachIndexed { index, orchestrator ->
-            assertEquals(index + 1 + 2 + 3 + 1 + 4, orchestrator.result?.data)
+        jobs.forEachIndexed { index, job ->
+            assertEquals(index + 1 + 2 + 3 + 1 + 4, job.result)
         }
 
         assertEquals(listOf(6, 7, 8), aggregated)
