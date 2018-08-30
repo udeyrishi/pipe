@@ -11,7 +11,7 @@ import com.udeyrishi.pipe.steps.StepDescriptor
 import com.udeyrishi.pipe.util.Identifiable
 import java.util.UUID
 
-class Pipeline<T : Any> private constructor(private val steps: List<StepDescriptor<Passenger<T>>>, private val repository: MutableRepository<Passenger<T>>) {
+class Pipeline<T : Any> private constructor(private val steps: List<StepDescriptor<Passenger<T>>>, private val repository: MutableRepository<Orchestrator<Passenger<T>>>) {
     fun push(input: T, tag: String?): Orchestrator<Passenger<T>> {
         return repository.add(tag) { newUUID, position ->
             val passenger = Passenger(input, newUUID, position)
@@ -54,7 +54,7 @@ class Pipeline<T : Any> private constructor(private val steps: List<StepDescript
             return aggregator
         }
 
-        fun build(repository: MutableRepository<Passenger<T>>): Pipeline<T> {
+        fun build(repository: MutableRepository<Orchestrator<Passenger<T>>>): Pipeline<T> {
             return Pipeline(steps.map { it }, repository)
         }
     }
@@ -71,7 +71,7 @@ class Pipeline<T : Any> private constructor(private val steps: List<StepDescript
     }
 }
 
-fun <T : Any> buildPipeline(repository: MutableRepository<Pipeline.Passenger<T>>, ordered: Boolean = true, stepDefiner: (Pipeline.Builder<T>.() -> Unit)): Pipeline<T> {
+fun <T : Any> buildPipeline(repository: MutableRepository<Orchestrator<Pipeline.Passenger<T>>>, ordered: Boolean = true, stepDefiner: (Pipeline.Builder<T>.() -> Unit)): Pipeline<T> {
     val builder = Pipeline.Builder<T>(ordered)
     builder.stepDefiner()
     return builder.build(repository)

@@ -11,6 +11,6 @@ interface Repository<out T : Identifiable> : Closeable {
 }
 
 interface MutableRepository<T : Identifiable> : Repository<T> {
-    fun add(tag: String?, orchestratorBuilder: (newUUID: UUID, position: Long) -> Orchestrator<T>): Orchestrator<T>
-    fun prune(removeFailures: Boolean)
+    fun add(tag: String?, identifiableObjectBuilder: (newUUID: UUID, position: Long) -> T): T
+    fun removeIf(predicate: (RepositoryEntry<T>) -> Boolean)
 }
