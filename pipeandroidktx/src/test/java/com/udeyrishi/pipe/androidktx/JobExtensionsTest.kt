@@ -47,7 +47,7 @@ class JobExtensionsTest {
         val mockOwner = mock(LifecycleOwner::class.java)
         `when`(mockOwner.lifecycle).thenReturn(mockLifecycle)
 
-        lateinit var barrier: Barrier<Int>
+        lateinit var barrier: Barrier
         val pipeline = buildPipeline<Int>(InMemoryRepository()) {
             addStep("Step 1") {
                 it + 1
@@ -129,7 +129,7 @@ class JobExtensionsTest {
         val mockOwner = mock(LifecycleOwner::class.java)
         `when`(mockOwner.lifecycle).thenReturn(mockLifecycle)
 
-        lateinit var barrier: Barrier<Int>
+        lateinit var barrier: Barrier
         val pipeline = buildPipeline<Int>(InMemoryRepository()) {
             addStep("Step 1") {
                 it + 1

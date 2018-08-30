@@ -24,7 +24,7 @@ class AggregatorTest {
     // Can verify the exception via the @Test mechanism, because the exception will be thrown in the main thread.
     @Test(expected = IllegalStateException::class)
     fun checksForCapacityOverflow() {
-        val aggregator = Aggregator<String>(capacity = 2, ordered = false) { it }
+        val aggregator = AggregatorImpl<String>(capacity = 2, ordered = false) { it }
         val job1 = launch {
             aggregator.push("apple")
         }
@@ -44,7 +44,7 @@ class AggregatorTest {
     fun checksForBadAggregatorActions() {
         val lock = Any()
 
-        val aggregator = Aggregator<String>(capacity = 2, ordered = false) {
+        val aggregator = AggregatorImpl<String>(capacity = 2, ordered = false) {
             listOf("just 1 item in result")
         }
 
@@ -54,7 +54,7 @@ class AggregatorTest {
             try {
                 aggregator.push("apple")
             } catch (e: IllegalStateException) {
-                assertEquals("The aggregationAction supplied to the ${Aggregator::class.java.simpleName} was bad; it didn't return a list of size 2 (i.e., the aggregator capacity).", e.message)
+                assertEquals("The aggregationAction supplied to the ${AggregatorImpl::class.java.simpleName} was bad; it didn't return a list of size 2 (i.e., the aggregator capacity).", e.message)
                 synchronized(lock) {
                     exceptionCount++
                 }
@@ -64,7 +64,7 @@ class AggregatorTest {
             try {
                 aggregator.push("bob")
             } catch (e: IllegalStateException) {
-                assertEquals("The aggregationAction supplied to the ${Aggregator::class.java.simpleName} was bad; it didn't return a list of size 2 (i.e., the aggregator capacity).", e.message)
+                assertEquals("The aggregationAction supplied to the ${AggregatorImpl::class.java.simpleName} was bad; it didn't return a list of size 2 (i.e., the aggregator capacity).", e.message)
                 synchronized(lock) {
                     exceptionCount++
                 }
@@ -83,7 +83,7 @@ class AggregatorTest {
     @Repeat
     fun unorderedWorks() {
         var aggregatorArgs: List<Int>? = null
-        val aggregator = Aggregator<Int>(capacity = 5, ordered = false) {
+        val aggregator = AggregatorImpl<Int>(capacity = 5, ordered = false) {
             aggregatorArgs = it
             it.map { it + 1 }
         }
@@ -106,7 +106,7 @@ class AggregatorTest {
     @Repeat
     fun orderedWorks() {
         var aggregatorArgs: List<Int>? = null
-        val aggregator = Aggregator<Int>(capacity = 5, ordered = true) {
+        val aggregator = AggregatorImpl<Int>(capacity = 5, ordered = true) {
             aggregatorArgs = it
             it.map { it + 1 }
         }
@@ -128,7 +128,7 @@ class AggregatorTest {
     @Test
     fun canUpdateCapacityToABiggerValueWhenBlocked() {
         var aggregatorArgs: List<Int>? = null
-        val aggregator = Aggregator<Int>(capacity = 6, ordered = true) {
+        val aggregator = AggregatorImpl<Int>(capacity = 6, ordered = true) {
             aggregatorArgs = it
             it.map { it + 1 }
         }
@@ -160,7 +160,7 @@ class AggregatorTest {
     @Test
     fun canUpdateCapacityToALowerValueWhenBlocked() {
         var aggregatorArgs: List<Int>? = null
-        val aggregator = Aggregator<Int>(capacity = 5, ordered = true) {
+        val aggregator = AggregatorImpl<Int>(capacity = 5, ordered = true) {
             aggregatorArgs = it
             it.map { it + 1 }
         }
@@ -185,7 +185,7 @@ class AggregatorTest {
     @Test
     fun canUpdateCapacityToABiggerValueBeforeStart() {
         var aggregatorArgs: List<Int>? = null
-        val aggregator = Aggregator<Int>(capacity = 3, ordered = true) {
+        val aggregator = AggregatorImpl<Int>(capacity = 3, ordered = true) {
             aggregatorArgs = it
             it.map { it + 1 }
         }
@@ -210,7 +210,7 @@ class AggregatorTest {
     @Test
     fun canUpdateCapacityToALowerValueBeforeStart() {
         var aggregatorArgs: List<Int>? = null
-        val aggregator = Aggregator<Int>(capacity = 5, ordered = true) {
+        val aggregator = AggregatorImpl<Int>(capacity = 5, ordered = true) {
             aggregatorArgs = it
             it.map { it + 1 }
         }
@@ -235,7 +235,7 @@ class AggregatorTest {
     @Test
     fun canUpdateCapacityToArrivalCount() {
         var aggregatorArgs: List<Int>? = null
-        val aggregator = Aggregator<Int>(capacity = 7, ordered = true) {
+        val aggregator = AggregatorImpl<Int>(capacity = 7, ordered = true) {
             aggregatorArgs = it
             it.map { it + 1 }
         }
@@ -263,7 +263,7 @@ class AggregatorTest {
 
     @Test(expected = IllegalStateException::class)
     fun safelyDetectsInabilityToUpdateCapacityToLessThanArrivalCount() {
-        val aggregator = Aggregator<Int>(capacity = 7, ordered = true) {
+        val aggregator = AggregatorImpl<Int>(capacity = 7, ordered = true) {
             it.map { it + 1 }
         }
 

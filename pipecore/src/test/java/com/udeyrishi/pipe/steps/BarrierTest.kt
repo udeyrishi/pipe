@@ -3,7 +3,6 @@
  */
 package com.udeyrishi.pipe.steps
 
-import com.udeyrishi.pipe.steps.Barrier
 import com.udeyrishi.pipe.testutil.Repeat
 import com.udeyrishi.pipe.testutil.RepeatRule
 import kotlinx.coroutines.experimental.launch
@@ -34,7 +33,7 @@ class BarrierTest {
     @Test
     @Repeat
     fun worksIfLiftedAfterStart() {
-        val barrier = Barrier<String>()
+        val barrier = BarrierImpl<String>()
         var result: String? = null
         val job = launch {
             result = barrier.blockUntilLift("input")
@@ -55,7 +54,7 @@ class BarrierTest {
     @Test
     @Repeat
     fun worksIfLiftedBeforeStart() {
-        val barrier = Barrier<String>()
+        val barrier = BarrierImpl<String>()
         barrier.lift()
 
         var result: String? = null
@@ -74,7 +73,7 @@ class BarrierTest {
     @Test
     @Repeat
     fun worksWithMultipleInputs() {
-        val barrier = Barrier<String>()
+        val barrier = BarrierImpl<String>()
 
         var result1: String? = null
         var result2: String? = null
@@ -101,7 +100,7 @@ class BarrierTest {
 
     @Test
     fun blockCountIsCorrect() {
-        val barrier = Barrier<String>()
+        val barrier = BarrierImpl<String>()
         assertEquals(0, barrier.blockedCount)
 
         val job1 = launch {

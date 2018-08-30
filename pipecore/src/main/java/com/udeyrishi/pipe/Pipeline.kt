@@ -5,7 +5,9 @@ package com.udeyrishi.pipe
 
 import com.udeyrishi.pipe.repository.MutableRepository
 import com.udeyrishi.pipe.steps.Aggregator
+import com.udeyrishi.pipe.steps.AggregatorImpl
 import com.udeyrishi.pipe.steps.Barrier
+import com.udeyrishi.pipe.steps.BarrierImpl
 import com.udeyrishi.pipe.steps.Step
 import com.udeyrishi.pipe.steps.StepDescriptor
 import com.udeyrishi.pipe.util.Identifiable
@@ -33,8 +35,8 @@ class Pipeline<T : Any> private constructor(private val steps: List<StepDescript
             })
         }
 
-        fun addBarrier(): Barrier<T> {
-            val barrier = Barrier<T>()
+        fun addBarrier(): Barrier {
+            val barrier = BarrierImpl<T>()
             steps.add(StepDescriptor(name = "Barrier${barrierCount++}", maxAttempts = 1) {
                 val result: T = barrier.blockUntilLift(it.data)
                 Passenger(result, it.uuid, it.position)
@@ -42,8 +44,8 @@ class Pipeline<T : Any> private constructor(private val steps: List<StepDescript
             return barrier
         }
 
-        fun addAggregator(capacity: Int, attempts: Long = 1, aggregationAction: Step<List<T>>): Aggregator<Passenger<T>> {
-            val aggregator = Aggregator<Passenger<T>>(capacity, ordered) { input ->
+        fun addAggregator(capacity: Int, attempts: Long = 1, aggregationAction: Step<List<T>>): Aggregator {
+            val aggregator = AggregatorImpl<Passenger<T>>(capacity, ordered) { input ->
                 val result: List<T> = aggregationAction(input.map { it.data })
                 input.mapIndexed { index, originalPassenger ->
                     Passenger(result[index], originalPassenger.uuid, originalPassenger.position)
@@ -63,7 +65,7 @@ class Pipeline<T : Any> private constructor(private val steps: List<StepDescript
     /**
      * Represents an object that travels in a pipeline. A Orchestrator helps it navigate the pipeline.
      */
-    class Passenger<T : Any>(val data: T, override val uuid: UUID, val position: Long) : Comparable<Passenger<T>>, Identifiable {
+    internal class Passenger<T : Any>(val data: T, override val uuid: UUID, val position: Long) : Comparable<Passenger<T>>, Identifiable {
         override fun compareTo(other: Passenger<T>): Int = position.compareTo(other.position)
 
         override fun toString(): String {

@@ -7,16 +7,21 @@ import com.udeyrishi.pipe.util.SortReplayer
 import com.udeyrishi.pipe.util.immutableAfterSet
 import kotlinx.coroutines.experimental.launch
 
+interface Aggregator {
+    val arrivalCount: Int
+    fun updateCapacity(newCapacity: Int)
+}
+
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
-class Aggregator<T : Comparable<T>>(private var capacity: Int, private val ordered: Boolean = true, private val aggregationAction: Step<List<T>>) {
-    private val barriers = mutableListOf<Pair<T, Barrier<T>>>()
+internal class AggregatorImpl<T : Comparable<T>>(private var capacity: Int, private val ordered: Boolean = true, private val aggregationAction: Step<List<T>>) : Aggregator {
+    private val barriers = mutableListOf<Pair<T, BarrierImpl<T>>>()
     private var outputs: List<T>? by immutableAfterSet(null)
     private val lock = Any()
 
-    val arrivalCount: Int
+    override val arrivalCount: Int
         get() = barriers.size
 
-    fun updateCapacity(newCapacity: Int) {
+    override fun updateCapacity(newCapacity: Int) {
         synchronized(lock) {
             if (arrivalCount > newCapacity) {
                 throw IllegalStateException("Cannot change the capacity from $capacity to $newCapacity, because there are already $arrivalCount items in the aggregator.")
@@ -32,7 +37,7 @@ class Aggregator<T : Comparable<T>>(private var capacity: Int, private val order
         }
     }
 
-    internal suspend fun push(input: T): T {
+    suspend fun push(input: T): T {
         val (barrier, index) = addBarrier(input)
 
         if (index < capacity - 1) {
@@ -77,8 +82,8 @@ class Aggregator<T : Comparable<T>>(private var capacity: Int, private val order
         // retroactively mark the last arrival as the final item.
     }
 
-    private fun addBarrier(input: T): Pair<Barrier<T>, Int> {
-        val barrier = Barrier<T>()
+    private fun addBarrier(input: T): Pair<BarrierImpl<T>, Int> {
+        val barrier = BarrierImpl<T>()
         val index = synchronized(lock) {
             if (arrivalCount == capacity) {
                 throw IllegalStateException("Cannot push another step into the aggregator. It has reached its maximum capacity of $capacity.")

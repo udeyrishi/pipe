@@ -7,16 +7,21 @@ import com.udeyrishi.pipe.util.immutableAfterSet
 import kotlin.coroutines.experimental.Continuation
 import kotlin.coroutines.experimental.suspendCoroutine
 
-class Barrier<T : Any> internal constructor() {
+interface Barrier {
+    val blockedCount: Int
+    fun lift()
+}
+
+internal class BarrierImpl<T : Any> : Barrier {
     private var lifted: Boolean by immutableAfterSet(false)
     private val continuations = mutableListOf<Pair<Continuation<T>, T>>()
     private val lock = Any()
 
-    val blockedCount: Int
+    override val blockedCount: Int
         get() = continuations.size
 
     @Suppress("EXPERIMENTAL_FEATURE_WARNING")
-    internal suspend fun blockUntilLift(input: T): T {
+    suspend fun blockUntilLift(input: T): T {
         if (lifted) {
             return input
         }
@@ -39,7 +44,7 @@ class Barrier<T : Any> internal constructor() {
         }
     }
 
-    fun lift() {
+    override fun lift() {
         if (!lifted) {
             synchronized(lock) {
                 lifted = true

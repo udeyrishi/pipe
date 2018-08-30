@@ -19,8 +19,8 @@ class PipelineTest {
     @Test
     fun works() {
         val lock = Any()
-        lateinit var barrier: Barrier<Int>
-        lateinit var aggregator: Aggregator<Pipeline.Passenger<Int>>
+        lateinit var barrier: Barrier
+        lateinit var aggregator: Aggregator
         lateinit var aggregated: List<Int>
 
         var barrierReachedCount = 0
