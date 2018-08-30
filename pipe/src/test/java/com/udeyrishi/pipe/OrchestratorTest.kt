@@ -48,7 +48,6 @@ class OrchestratorTest {
 
         var counter = 0
         while (orchestrator.state.value !is State.Terminal && counter++ < 10) {
-            assertNull(orchestrator.result)
             Thread.sleep(10)
         }
 
