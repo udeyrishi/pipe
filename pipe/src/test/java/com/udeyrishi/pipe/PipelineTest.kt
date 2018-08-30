@@ -86,7 +86,7 @@ class PipelineTest {
         // Everyone is done
 
         jobs.forEach {
-            assertTrue(it.state.value is State.Terminal.Success)
+            assertTrue(it.state.value === State.Terminal.Success)
         }
 
         jobs.forEachIndexed { index, job ->

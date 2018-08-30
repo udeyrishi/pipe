@@ -15,7 +15,7 @@ class StateTest {
     @Test
     fun scheduledWorks() {
         val scheduled = State.Scheduled
-        assertTrue(scheduled.onSuccess() is State.Terminal.Success)
+        assertTrue(scheduled.onSuccess() === State.Terminal.Success)
 
         val running = scheduled.onSuccess(nextStep = "foo")
         assertTrue(running is State.Running.Attempting)
@@ -52,7 +52,7 @@ class StateTest {
     @Test
     fun stepSucceededWorks() {
         val stepSucceeded = State.Running.AttemptSuccessful("foo")
-        assertTrue(stepSucceeded.onSuccess() is State.Terminal.Success)
+        assertTrue(stepSucceeded.onSuccess() === State.Terminal.Success)
 
         val attempting = stepSucceeded.onSuccess("bar")
         assertTrue(attempting is State.Running.Attempting)

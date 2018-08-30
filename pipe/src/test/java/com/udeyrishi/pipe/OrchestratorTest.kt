@@ -36,7 +36,7 @@ class OrchestratorTest {
     fun startsWithScheduledState() {
         val input = IdentifiableString("some input")
         val orchestrator = Orchestrator(input, listOf<StepDescriptor<IdentifiableString>>().iterator())
-        assertTrue(orchestrator.state.value is State.Scheduled)
+        assertTrue(orchestrator.state.value === State.Scheduled)
     }
 
     @Test
@@ -51,7 +51,7 @@ class OrchestratorTest {
             Thread.sleep(10)
         }
 
-        assertTrue(orchestrator.state.value is State.Terminal.Success)
+        assertTrue(orchestrator.state.value === State.Terminal.Success)
         assertEquals(input, orchestrator.result)
     }
 
@@ -71,7 +71,7 @@ class OrchestratorTest {
         var i = 0
         orchestrator.state.observe(createMockLifecycleOwner(), Observer { newState ->
             when (i++) {
-                0 -> assertTrue(orchestrator.state.value is State.Scheduled)
+                0 -> assertTrue(orchestrator.state.value === State.Scheduled)
                 1 -> {
                     // step 0 start
                     assertTrue(newState is State.Running.Attempting)
@@ -94,7 +94,7 @@ class OrchestratorTest {
                 }
                 13 -> {
                     // pipeline completion
-                    assertTrue(newState is State.Terminal.Success)
+                    assertTrue(newState === State.Terminal.Success)
                 }
                 else -> fail("Counter should've never reached $i.")
             }
@@ -106,7 +106,7 @@ class OrchestratorTest {
             Thread.sleep(100)
         }
 
-        assertTrue(orchestrator.state.value is State.Terminal.Success)
+        assertTrue(orchestrator.state.value === State.Terminal.Success)
         assertEquals(IdentifiableString("in->0->1->2->3->4->5", input.uuid), orchestrator.result)
     }
 
@@ -133,7 +133,7 @@ class OrchestratorTest {
         var i = 0
         orchestrator.state.observe(createMockLifecycleOwner(), Observer { newState ->
             when (i++) {
-                0 -> assertTrue(orchestrator.state.value is State.Scheduled)
+                0 -> assertTrue(orchestrator.state.value === State.Scheduled)
                 1 -> {
                     // step 0 start
                     assertTrue(newState is State.Running.Attempting)
@@ -213,7 +213,7 @@ class OrchestratorTest {
         var i = 0
         orchestrator.state.observe(createMockLifecycleOwner(), Observer { newState ->
             when (i++) {
-                0 -> assertTrue(orchestrator.state.value is State.Scheduled)
+                0 -> assertTrue(orchestrator.state.value === State.Scheduled)
                 1 -> {
                     // step 0 start
                     assertTrue(newState is State.Running.Attempting)
@@ -250,7 +250,7 @@ class OrchestratorTest {
                 }
                 15 -> {
                     // pipeline completion
-                    assertTrue(newState is State.Terminal.Success)
+                    assertTrue(newState === State.Terminal.Success)
                 }
                 else -> fail("Counter should've never reached $i.")
             }
@@ -261,7 +261,7 @@ class OrchestratorTest {
             Thread.sleep(100)
         }
 
-        assertTrue(orchestrator.state.value is State.Terminal.Success)
+        assertTrue(orchestrator.state.value === State.Terminal.Success)
         assertEquals(IdentifiableString("in->0->1->2->3->4->5", input.uuid), orchestrator.result)
     }
 
@@ -290,7 +290,7 @@ class OrchestratorTest {
         var i = 0
         orchestrator.state.observe(createMockLifecycleOwner(), Observer { newState ->
             when (i++) {
-                0 -> assertTrue(orchestrator.state.value is State.Scheduled)
+                0 -> assertTrue(orchestrator.state.value === State.Scheduled)
                 1 -> {
                     // step 0 start
                     assertTrue(newState is State.Running.Attempting)
