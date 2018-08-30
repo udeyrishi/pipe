@@ -217,7 +217,7 @@ private class Cursor<T : Identifiable>(private var input: T, private val steps: 
 }
 
 private class StateHolder(override val uuid: UUID) : Identifiable {
-    var state: State = State.Scheduled()
+    var state: State = State.Scheduled
         private set
 
     private val stateChangeListeners = mutableListOf<StateChangeListener>()

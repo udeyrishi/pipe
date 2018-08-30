@@ -14,7 +14,7 @@ class StateTest {
 
     @Test
     fun scheduledWorks() {
-        val scheduled = State.Scheduled()
+        val scheduled = State.Scheduled
         assertTrue(scheduled.onSuccess() is State.Terminal.Success)
 
         val running = scheduled.onSuccess(nextStep = "foo")
@@ -95,7 +95,7 @@ class StateTest {
 
     @Test
     fun terminalSuccessWorks() {
-        val terminalSuccess = State.Terminal.Success()
+        val terminalSuccess = State.Terminal.Success
         assertTrue(terminalSuccess === terminalSuccess.onSuccess())
 
         val cause = RuntimeException()
@@ -107,7 +107,7 @@ class StateTest {
 
     @Test(expected = IllegalArgumentException::class)
     fun terminalSuccessStateFailsOnSuccessWithNextStepName() {
-        val terminalSuccess = State.Terminal.Success()
+        val terminalSuccess = State.Terminal.Success
         terminalSuccess.onSuccess("bar")
     }
 

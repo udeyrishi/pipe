@@ -7,11 +7,11 @@ sealed class State {
     internal abstract fun onSuccess(nextStep: String? = null): State
     internal abstract fun onFailure(cause: Throwable): State
 
-    class Scheduled internal constructor() : State() {
+    object Scheduled : State() {
         override fun onSuccess(nextStep: String?): State {
             return nextStep?.let {
                 Running.Attempting(it)
-            } ?: Terminal.Success()
+            } ?: Terminal.Success
         }
 
         override fun onFailure(cause: Throwable): State = Terminal.Failure(listOf(cause))
@@ -50,7 +50,7 @@ sealed class State {
             override fun onSuccess(nextStep: String?): State {
                 return nextStep?.let {
                     Attempting(it)
-                } ?: Terminal.Success()
+                } ?: Terminal.Success
             }
 
             override fun onFailure(cause: Throwable): State = Terminal.Failure(listOf(cause))
@@ -60,7 +60,7 @@ sealed class State {
     }
 
     sealed class Terminal : State() {
-        class Success internal constructor() : Terminal() {
+        object Success : Terminal() {
             override fun onSuccess(nextStep: String?): State {
                 if (nextStep != null) {
                     throw IllegalArgumentException("nextStep must be null for ${this::class.java.name}.")
