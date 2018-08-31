@@ -22,6 +22,14 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
     private var started: Boolean by immutableAfterSet(false)
     private var interrupted: Boolean by immutableAfterSet(false)
 
+    // Orchestrator must read/write to volatileState.
+    // Posting to _state directly is non-dependable, since the post is asynchronous.
+    private var volatileState: State = State.Scheduled
+        set(value) {
+            field = value
+            _state.postValue(value)
+        }
+
     private val _state = MutableLiveData<State>()
     val state: LiveData<State>
         get() = _state
@@ -33,7 +41,7 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
     private val cursor = Cursor(input, steps)
 
     init {
-        _state.postValue(State.Scheduled)
+        _state.postValue(volatileState)
     }
 
     fun start() {
@@ -56,9 +64,9 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
 
     private suspend fun runAllSteps() {
         if (interrupted) {
-            state.sanityCheck<State.Scheduled>()
+            volatileState.sanityCheck<State.Scheduled>()
             onStateFailure(cause = OrchestratorInterruptedException(this))
-            state.sanityCheck<State.Terminal.Failure>()
+            volatileState.sanityCheck<State.Terminal.Failure>()
             return
         }
 
@@ -78,7 +86,7 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
                 break
             }
 
-            state.sanityCheck<State.Running.AttemptSuccessful>()
+            volatileState.sanityCheck<State.Running.AttemptSuccessful>()
             cursor.move(nextInput = stepResult.stepResult)
         }
     }
@@ -86,24 +94,24 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
     private fun onResultPrepared(result: T) {
         this._result = result
         onStateSuccess()
-        state.sanityCheck<State.Terminal.Success>()
+        volatileState.sanityCheck<State.Terminal.Success>()
     }
 
     private fun onStepResultNull(failingStep: StepDescriptor<T>, dueToInterruption: Boolean) {
         // Ran out of attempts or interrupted, or a bad state changed callback
-        if (state.value !is State.Terminal.Failure) {
+        if (volatileState !is State.Terminal.Failure) {
             // Normal execution: Ran out of attempts or interrupted
-            state.sanityCheck<State.Running.AttemptFailed>()
+            volatileState.sanityCheck<State.Running.AttemptFailed>()
             onStateFailure(cause = if (dueToInterruption) OrchestratorInterruptedException(this) else StepOutOfAttemptsException(this, failingStep))
             // No need to check the result for ^. Even if it's false, the state is still terminal false
-            state.sanityCheck<State.Terminal.Failure>()
+            volatileState.sanityCheck<State.Terminal.Failure>()
         }
     }
 
     private suspend fun runStep(input: T, nextStep: StepDescriptor<T>): StepResult<T> {
         for (i in 0L until nextStep.maxAttempts) {
             onStateSuccess(nextStep.name)
-            state.sanityCheck<State.Running.Attempting>()
+            volatileState.sanityCheck<State.Running.Attempting>()
 
             if (checkInterruption(attempt = i, stepName = nextStep.name)) {
                 return StepResult(stepResult = null, interrupted = true)
@@ -113,9 +121,9 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
             if (attemptResult.fatalError) break
 
             if (attemptResult.stepResult == null) {
-                state.sanityCheck<State.Running.AttemptFailed>()
+                volatileState.sanityCheck<State.Running.AttemptFailed>()
             } else {
-                state.sanityCheck<State.Running.AttemptSuccessful>()
+                volatileState.sanityCheck<State.Running.AttemptSuccessful>()
                 return StepResult(stepResult = attemptResult.stepResult, interrupted = false)
             }
         }
@@ -126,7 +134,7 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
     private fun checkInterruption(attempt: Long, stepName: String): Boolean {
         return if (interrupted) {
             onStateFailure(StepInterruptedException(orchestrator = this, attempt = attempt, stepName = stepName))
-            state.sanityCheck<State.Running.AttemptFailed>()
+            volatileState.sanityCheck<State.Running.AttemptFailed>()
             true
         } else {
             false
@@ -155,15 +163,11 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
     }
 
     private fun onStateSuccess(nextStep: String? = null) {
-        val newState = state.value?.onSuccess(nextStep)
-                ?: throw IllegalStateException("State must never be null")
-        _state.postValue(newState)
+        volatileState = volatileState.onSuccess(nextStep)
     }
 
     private fun onStateFailure(cause: Throwable) {
-        val newState = state.value?.onFailure(cause)
-                ?: throw IllegalStateException("State must never be null")
-        _state.postValue(newState)
+        volatileState = volatileState.onFailure(cause)
     }
 
     private class StepAttemptResult<out T> private constructor(val stepResult: T?, val fatalError: Boolean) {
@@ -179,8 +183,8 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
     class StepInterruptedException internal constructor(orchestrator: Orchestrator<*>, attempt: Long, stepName: String) : RuntimeException("$orchestrator was interrupted at step '$stepName' on the attempt #$attempt.")
 }
 
-private inline fun <reified T : State> LiveData<State>.sanityCheck() {
-    if (this.value !is T) {
+private inline fun <reified T : State> State.sanityCheck() {
+    if (this !is T) {
         throw IllegalStateException("Something went wrong. State must've been ${T::class.java.simpleName}, but was ${this::class.java.simpleName}.")
     }
 }
