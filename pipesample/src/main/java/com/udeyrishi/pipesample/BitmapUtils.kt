@@ -37,7 +37,7 @@ internal fun rotateBitmap(source: Bitmap, angle: Float): Bitmap {
 internal fun join(firstImage: Bitmap, secondImage: Bitmap): Bitmap {
     val result = Bitmap.createBitmap(SCALED_IMAGE_SIZE, SCALED_IMAGE_SIZE, firstImage.config)
     val scaledFirst = Bitmap.createScaledBitmap(firstImage, SCALED_IMAGE_SIZE, SCALED_IMAGE_SIZE, true)
-    val scaledSecond = Bitmap.createScaledBitmap(secondImage, SCALED_IMAGE_SIZE/3, SCALED_IMAGE_SIZE/3, true)
+    val scaledSecond = Bitmap.createScaledBitmap(secondImage, SCALED_IMAGE_SIZE / 3, SCALED_IMAGE_SIZE / 3, true)
 
     val canvas = Canvas(result)
     canvas.drawBitmap(scaledFirst, 0f, 0f, null)

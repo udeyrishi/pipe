@@ -26,4 +26,4 @@ env:
   - REPEAT=10
 
 script:
-  - ./gradlew check
+  - ./gradlew :pipe:check :pipesample:check
