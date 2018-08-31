@@ -41,7 +41,14 @@ android {
     }
 }
 
+kotlin {
+    experimental {
+        coroutines 'enable'
+    }
+}
+
 dependencies {
+    implementation project(':pipe')
     implementation depends.kotlin.stdlib
     implementation depends.android.support.appcompat7
 }
