@@ -5,6 +5,7 @@ package com.udeyrishi.pipe
 
 import android.arch.lifecycle.LiveData
 import android.arch.lifecycle.MutableLiveData
+import android.util.Log
 import com.udeyrishi.pipe.steps.StepDescriptor
 import com.udeyrishi.pipe.util.Identifiable
 import com.udeyrishi.pipe.util.immutableAfterSet
@@ -17,6 +18,10 @@ import java.util.UUID
  * - updates and monitors its state
  */
 internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<StepDescriptor<T>>) : Identifiable {
+    companion object {
+        private const val LOG_TAG = "Pipe"
+    }
+
     override val uuid: UUID = input.uuid
 
     private var started: Boolean by immutableAfterSet(false)
@@ -26,8 +31,17 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
     // Posting to _state directly is non-dependable, since the post is asynchronous.
     private var volatileState: State = State.Scheduled
         set(value) {
+            logStateChange(value)
             field = value
             _state.postValue(value)
+        }
+
+    var enableLogging: Boolean = false
+        set(value) {
+            if (value) {
+                Log.i(LOG_TAG, "Logging enabled for $uuid. Current state is $volatileState.")
+            }
+            field = value
         }
 
     private val _state = MutableLiveData<State>()
@@ -168,6 +182,16 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
 
     private fun onStateFailure(cause: Throwable) {
         volatileState = volatileState.onFailure(cause)
+    }
+
+    private fun logStateChange(newState: State) {
+        if (enableLogging) {
+            val message = "$uuid transitioned to state $newState."
+            when (newState) {
+                is State.Terminal.Failure -> Log.e(LOG_TAG, message)
+                else -> Log.i(LOG_TAG, message)
+            }
+        }
     }
 
     private class StepAttemptResult<out T> private constructor(val stepResult: T?, val fatalError: Boolean) {

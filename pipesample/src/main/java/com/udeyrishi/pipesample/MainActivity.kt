@@ -19,7 +19,6 @@ import kotlinx.android.synthetic.main.activity_main.root
 class MainActivity : AppCompatActivity() {
     companion object {
         private const val JOB_TAG = "IMAGE_TRANSFORM_JOBS"
-        private const val LOG_TAG = "Pipe Sample"
         private const val SCALED_IMAGE_SIZE = 400
     }
 
@@ -53,11 +52,6 @@ class MainActivity : AppCompatActivity() {
 
         jobs.forEachIndexed { index, job ->
             job.state.observe(this, Observer { state ->
-                Log.i(LOG_TAG, "${job.uuid} changed to state $state.")
-
-                (state as? State.Running.AttemptFailed)?.cause?.let(::logThrowable)
-                (state as? State.Terminal.Failure)?.causes?.forEach(::logThrowable)
-
                 when (state) {
                     is State.Running, State.Scheduled -> {
                         val drawable = ContextCompat.getDrawable(this, R.drawable.ic_arrow_downward_black_24dp)
@@ -75,6 +69,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         jobs.forEach {
+            it.enableLogging = true
             it.start()
         }
     }
@@ -87,14 +82,6 @@ class MainActivity : AppCompatActivity() {
 
         repository.removeIf {
             true
-        }
-    }
-
-    private fun logThrowable(throwable: Throwable) {
-        var t: Throwable? = throwable
-        while (t != null) {
-            Log.e(LOG_TAG, t.toString())
-            t = t.cause
         }
     }
 

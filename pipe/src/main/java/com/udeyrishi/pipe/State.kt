@@ -43,7 +43,7 @@ sealed class State {
 
             override fun onFailure(cause: Throwable): State = Terminal.Failure(listOf(this.cause, cause))
 
-            override fun toString(): String = "${super.toString()}(cause=${cause::class.java.name})"
+            override fun toString(): String = "${super.toString()}(cause=${cause.detailedToString()})"
         }
 
         class AttemptSuccessful internal constructor(step: String) : Running(step) {
@@ -85,9 +85,26 @@ sealed class State {
                 return this
             }
 
-            override fun toString(): String = "${super.toString()}(causes=${causes.size})"
+            override fun toString(): String = "${super.toString()}(causes=${causes.map { it.detailedToString() }})"
         }
     }
 
     override fun toString(): String = this.javaClass.name
+}
+
+private fun Throwable.detailedToString(): String {
+    var level = 0
+    val sb = StringBuilder()
+    var cause: Throwable? = this
+
+    while (cause != null) {
+        if (level > 0) {
+            sb.append("\n")
+        }
+        sb.append("->".repeat(level++))
+        sb.append(cause)
+        cause = cause.cause
+    }
+
+    return sb.toString()
 }

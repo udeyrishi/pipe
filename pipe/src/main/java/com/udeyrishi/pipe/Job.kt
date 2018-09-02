@@ -17,6 +17,12 @@ class Job<T : Any> internal constructor(private val orchestrator: Orchestrator<P
     val result: T?
         get() = orchestrator.result?.data
 
+    var enableLogging: Boolean
+        get() = orchestrator.enableLogging
+        set(value) {
+            orchestrator.enableLogging = value
+        }
+
     fun start() {
         orchestrator.start()
     }
