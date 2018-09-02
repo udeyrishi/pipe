@@ -7,13 +7,11 @@ import android.support.v7.app.AppCompatActivity
 import android.widget.ImageView
 import com.udeyrishi.pipe.Job
 import com.udeyrishi.pipe.State
-import com.udeyrishi.pipe.util.AndroidLogger
 import kotlinx.android.synthetic.main.activity_main.root
 
 class MainActivity : AppCompatActivity() {
     companion object {
         private const val JOB_TAG = "IMAGE_TRANSFORM_JOBS"
-        private const val LOG_TAG = "Pipe"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,11 +33,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         jobs.forEachIndexed { index, job ->
-            job.state.observe(this, Observer { state ->
-                onStateChanged(state, index, job)
+            job.state.observe(this, Observer {
+                onStateChanged(it, index, job)
             })
 
-            job.logger = App.INSTANCE.logger
             job.start()
         }
     }
@@ -67,8 +64,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         return imageUrls.map { url ->
-            pipeline.push(ImagePipelineMember(url = url), tag = JOB_TAG).also {
-                it.logger = AndroidLogger(LOG_TAG)
+            pipeline.push(ImagePipelineMember(url = url), tag = JOB_TAG).also { job ->
+                job.logger = App.INSTANCE.logger
             }
         }
     }
