@@ -23,8 +23,6 @@ class PipelineTest {
     @Test
     fun works() {
         val lock = Any()
-        lateinit var barrier: Barrier
-        lateinit var aggregator: Aggregator
         lateinit var aggregated: List<Int>
 
         var barrierReachedCount = 0
@@ -41,13 +39,13 @@ class PipelineTest {
                 it + 2
             }
 
-            barrier = addBarrier("Barrier 1")
+            addBarrier("Barrier 1")
 
             addStep("Step 3") {
                 it + 3
             }
 
-            aggregator = addAggregator("Aggregator 1", capacity = 1000000) {
+            addAggregator("Aggregator 1", capacity = 1000000) {
                 aggregated = it
                 it.map { it + 1 }
             }
@@ -76,8 +74,8 @@ class PipelineTest {
         }
 
         // Everyone is waiting at the barrier. Now that we know the count, we can safely update the aggregator capacity, and then lift the barrier.
-        barrier.lift()
-        aggregator.capacity = 3
+        pipeline.barriers[0].lift()
+        pipeline.aggregators[0].capacity = 3
 
         while (jobs.any { it.state.value !is State.Terminal }) {
             Thread.sleep(100)

@@ -41,9 +41,11 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("SetTextI18n")
     override fun onResume() {
         super.onResume()
-        val (aggregator, pipeline) = makePipeline(repository)
+        val pipeline = makePipeline(repository)
 
-        aggregator.capacity = imageUrls.size
+        pipeline.aggregators.forEach {
+            it.capacity = imageUrls.size
+        }
 
         val jobs = imageUrls.mapIndexed { index, url ->
             pipeline.push(ImagePipelineMember(index = index, url = url), tag = JOB_TAG)
@@ -96,9 +98,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun makePipeline(repository: InMemoryRepository<Job<ImagePipelineMember>>): Pair<Aggregator, Pipeline<ImagePipelineMember>> {
-        lateinit var aggregator: Aggregator
-        val pipeline = buildPipeline(repository) {
+    private fun makePipeline(repository: InMemoryRepository<Job<ImagePipelineMember>>): Pipeline<ImagePipelineMember> {
+        return buildPipeline(repository) {
             addStep("download", attempts = 4) {
                 ImagePipelineMember(index = it.index, image = downloadImage(it.getUrl()))
             }
@@ -111,7 +112,7 @@ class MainActivity : AppCompatActivity() {
                 ImagePipelineMember(index = it.index, image = scale(it.getBitmap(), SCALED_IMAGE_SIZE, SCALED_IMAGE_SIZE))
             }
 
-            aggregator = addAggregator("overdraw", capacity = Int.MAX_VALUE) { allMembers ->
+            addAggregator("overdraw", capacity = Int.MAX_VALUE) { allMembers ->
                 allMembers.map { member ->
                     val siblingIndex = member.index + (if (member.index % 2 == 0) 1 else -1)
                     val resultingImage = if (siblingIndex < allMembers.size) {
@@ -123,8 +124,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-
-        return aggregator to pipeline
     }
 }
 

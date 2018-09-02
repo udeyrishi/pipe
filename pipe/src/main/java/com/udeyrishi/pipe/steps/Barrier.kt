@@ -8,11 +8,12 @@ import kotlin.coroutines.experimental.Continuation
 import kotlin.coroutines.experimental.suspendCoroutine
 
 interface Barrier {
+    val name: String
     val blockedCount: Int
     fun lift()
 }
 
-internal class BarrierImpl<T : Any> : Barrier {
+internal class BarrierImpl<T : Any>(override val name: String) : Barrier {
     private var lifted: Boolean by immutableAfterSet(false)
     private val continuations = mutableListOf<Pair<Continuation<T>, T>>()
     private val lock = Any()

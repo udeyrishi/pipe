@@ -13,7 +13,12 @@ import com.udeyrishi.pipe.steps.StepDescriptor
 import com.udeyrishi.pipe.util.Identifiable
 import java.util.UUID
 
-class Pipeline<T : Any> private constructor(private val steps: List<StepDescriptor<Passenger<T>>>, private val repository: MutableRepository<Job<T>>) {
+class Pipeline<T : Any> private constructor(
+        private val steps: List<StepDescriptor<Passenger<T>>>,
+        val aggregators: List<Aggregator>,
+        val barriers: List<Barrier>,
+        private val repository: MutableRepository<Job<T>>) {
+
     fun push(input: T, tag: String?): Job<T> {
         return repository.add(tag) { newUUID, position ->
             val passenger = Passenger(input, newUUID, position)
@@ -25,6 +30,8 @@ class Pipeline<T : Any> private constructor(private val steps: List<StepDescript
     @Suppress("EXPERIMENTAL_FEATURE_WARNING")
     class Builder<T : Any>(private val ordered: Boolean = true) {
         private val steps = mutableListOf<StepDescriptor<Passenger<T>>>()
+        private val aggregators = mutableListOf<Aggregator>()
+        private val barriers = mutableListOf<Barrier>()
 
         fun addStep(name: String, attempts: Long = 1, step: Step<T>) {
             steps.add(StepDescriptor(name, attempts) {
@@ -33,17 +40,17 @@ class Pipeline<T : Any> private constructor(private val steps: List<StepDescript
             })
         }
 
-        fun addBarrier(name: String): Barrier {
-            val barrier = BarrierImpl<T>()
+        fun addBarrier(name: String) {
+            val barrier = BarrierImpl<T>(name)
             steps.add(StepDescriptor(name, maxAttempts = 1) {
                 val result: T = barrier.blockUntilLift(it.data)
                 Passenger(result, it.uuid, it.position)
             })
-            return barrier
+            barriers.add(barrier)
         }
 
-        fun addAggregator(name: String, capacity: Int, attempts: Long = 1, aggregationAction: Step<List<T>>): Aggregator {
-            val aggregator = AggregatorImpl<Passenger<T>>(capacity, ordered) { input ->
+        fun addAggregator(name: String, capacity: Int, attempts: Long = 1, aggregationAction: Step<List<T>>) {
+            val aggregator = AggregatorImpl<Passenger<T>>(name, capacity, ordered) { input ->
                 val result: List<T> = aggregationAction(input.map { it.data })
                 input.mapIndexed { index, originalPassenger ->
                     Passenger(result[index], originalPassenger.uuid, originalPassenger.position)
@@ -52,11 +59,11 @@ class Pipeline<T : Any> private constructor(private val steps: List<StepDescript
             steps.add(StepDescriptor(name, maxAttempts = attempts) {
                 aggregator.push(it)
             })
-            return aggregator
+            aggregators.add(aggregator)
         }
 
         fun build(repository: MutableRepository<Job<T>>): Pipeline<T> {
-            return Pipeline(steps.map { it }, repository)
+            return Pipeline(steps.map { it }, aggregators, barriers, repository)
         }
     }
 

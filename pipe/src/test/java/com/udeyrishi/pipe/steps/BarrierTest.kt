@@ -33,7 +33,7 @@ class BarrierTest {
     @Test
     @Repeat
     fun worksIfLiftedAfterStart() {
-        val barrier = BarrierImpl<String>()
+        val barrier = BarrierImpl<String>("barrier")
         var result: String? = null
         val job = launch {
             result = barrier.blockUntilLift("input")
@@ -54,7 +54,7 @@ class BarrierTest {
     @Test
     @Repeat
     fun worksIfLiftedBeforeStart() {
-        val barrier = BarrierImpl<String>()
+        val barrier = BarrierImpl<String>("barrier")
         barrier.lift()
 
         var result: String? = null
@@ -73,7 +73,7 @@ class BarrierTest {
     @Test
     @Repeat
     fun worksWithMultipleInputs() {
-        val barrier = BarrierImpl<String>()
+        val barrier = BarrierImpl<String>("barrier")
 
         var result1: String? = null
         var result2: String? = null
@@ -100,7 +100,7 @@ class BarrierTest {
 
     @Test
     fun blockCountIsCorrect() {
-        val barrier = BarrierImpl<String>()
+        val barrier = BarrierImpl<String>("barrier")
         assertEquals(0, barrier.blockedCount)
 
         val job1 = launch {

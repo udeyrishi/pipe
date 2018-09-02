@@ -8,12 +8,13 @@ import com.udeyrishi.pipe.util.immutableAfterSet
 import kotlinx.coroutines.experimental.launch
 
 interface Aggregator {
+    val name: String
     val arrivalCount: Int
     var capacity: Int
 }
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
-internal class AggregatorImpl<T : Comparable<T>>(capacity: Int, private val ordered: Boolean = true, private val aggregationAction: Step<List<T>>) : Aggregator {
+internal class AggregatorImpl<T : Comparable<T>>(override val name: String, capacity: Int, private val ordered: Boolean = true, private val aggregationAction: Step<List<T>>) : Aggregator {
     private val barriers = mutableListOf<Pair<T, BarrierImpl<T>>>()
     private var outputs: List<T>? by immutableAfterSet(null)
     private val lock = Any()
@@ -85,14 +86,14 @@ internal class AggregatorImpl<T : Comparable<T>>(capacity: Int, private val orde
     }
 
     private fun addBarrier(input: T): Pair<BarrierImpl<T>, Int> {
-        val barrier = BarrierImpl<T>()
-        val index = synchronized(lock) {
+        return synchronized(lock) {
+            val index = barriers.size
+            val barrier = BarrierImpl<T>("AggregatorHelperBarrier#$index")
             if (arrivalCount == capacity) {
-                throw IllegalStateException("Cannot push another step into the aggregator. It has reached its maximum capacity of $capacity.")
+                throw IllegalStateException("Cannot push another item into the aggregator. It has reached its maximum capacity of $capacity.")
             }
             barriers.add(input to barrier)
-            barriers.lastIndex
+            barrier to index
         }
-        return barrier to index
     }
 }
