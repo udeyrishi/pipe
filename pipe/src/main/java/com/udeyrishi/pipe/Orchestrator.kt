@@ -55,7 +55,7 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
 
     fun start() {
         if (started) {
-            throw IllegalStateException("Cannot start a ${this.javaClass.simpleName} twice.")
+            return
         }
 
         started = true

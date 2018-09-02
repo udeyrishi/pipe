@@ -450,11 +450,27 @@ class OrchestratorTest {
         assertNull(orchestrator.result)
     }
 
-    @Test(expected = IllegalStateException::class)
-    fun cannotStartMultipleTimes() {
-        val orchestrator = Orchestrator(IdentifiableString("in"), listOf<StepDescriptor<IdentifiableString>>().iterator())
+    @Test
+    fun callingStartMultipleTimesIsANoOp() {
+        var callCount = 0
+        val orchestrator = Orchestrator(IdentifiableString("in"), listOf<StepDescriptor<IdentifiableString>>(
+                StepDescriptor(name = "step 0", maxAttempts = 1) {
+                    ++callCount
+                    it
+                }
+        ).iterator())
+
         orchestrator.start()
         orchestrator.start()
+
+        while (orchestrator.state.value !== State.Terminal.Success) {
+            Thread.sleep(100)
+        }
+
+        assertEquals(1, callCount)
+
+        orchestrator.start()
+        assertEquals(1, callCount)
     }
 
     @Test
