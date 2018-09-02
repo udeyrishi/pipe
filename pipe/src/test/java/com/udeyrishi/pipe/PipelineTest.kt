@@ -5,8 +5,6 @@ package com.udeyrishi.pipe
 
 import android.arch.core.executor.testing.InstantTaskExecutorRule
 import com.udeyrishi.pipe.repository.InMemoryRepository
-import com.udeyrishi.pipe.steps.Aggregator
-import com.udeyrishi.pipe.steps.Barrier
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule

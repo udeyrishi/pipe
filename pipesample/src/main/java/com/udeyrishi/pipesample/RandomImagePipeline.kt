@@ -7,11 +7,8 @@ import com.udeyrishi.pipe.buildPipeline
 import com.udeyrishi.pipe.repository.MutableRepository
 
 class ImagePipelineMember(val index: Int, private val url: String? = null, private val image: Bitmap? = null) {
-    fun getBitmap(): Bitmap
-            = image ?: throw IllegalStateException("image must've been read.")
-
-    fun getUrl(): String
-            = url ?: throw IllegalStateException("URL must've been non-null.")
+    fun getBitmap(): Bitmap = image ?: throw IllegalStateException("image must've been read.")
+    fun getUrl(): String = url ?: throw IllegalStateException("URL must've been non-null.")
 }
 
 private const val SCALED_IMAGE_SIZE = 400

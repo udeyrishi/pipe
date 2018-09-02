@@ -14,10 +14,11 @@ import com.udeyrishi.pipe.util.Identifiable
 import java.util.UUID
 
 class Pipeline<T : Any> private constructor(
-        private val steps: List<StepDescriptor<Passenger<T>>>,
-        val aggregators: List<Aggregator>,
-        val barriers: List<Barrier>,
-        private val repository: MutableRepository<in Job<T>>) {
+    private val steps: List<StepDescriptor<Passenger<T>>>,
+    val aggregators: List<Aggregator>,
+    val barriers: List<Barrier>,
+    private val repository: MutableRepository<in Job<T>>
+) {
 
     fun push(input: T, tag: String?): Job<T> {
         @Suppress("UNCHECKED_CAST")
