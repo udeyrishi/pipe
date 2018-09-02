@@ -6,6 +6,7 @@ package com.udeyrishi.pipe
 import android.arch.core.executor.testing.InstantTaskExecutorRule
 import android.arch.lifecycle.Observer
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.udeyrishi.pipe.steps.StepDescriptor
@@ -22,7 +23,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.mockito.Mockito.mock
 import java.util.UUID
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
@@ -486,19 +486,30 @@ class OrchestratorTest {
 
         val input = IdentifiableString("in")
         val orchestrator = Orchestrator(input, steps.iterator())
-        val logger = mock(Logger::class.java)
-        orchestrator.logger = logger
+        val logger1 = mock<Logger>()
+        val logger2 = mock<Logger>()
+        orchestrator.logger = logger1
+        // Set the same reference again. Should not log scheduled 2x
+        orchestrator.logger = logger1
+        // Changed the logger. This will be logged
+        orchestrator.logger = logger2
+
         orchestrator.start()
 
         while (orchestrator.state.value !is State.Terminal.Failure) {
             Thread.sleep(100)
         }
 
-        // Scheduled, attempting step 0, success step 0, attempting step 1, fail step 1, attempting step 1, fail step 1
-        verify(logger, times(7)).i(any())
+        // Just scheduled
+        verify(logger1, times(1)).i(any())
+        verify(logger1, times(0)).d(any())
+        verify(logger1, times(0)).e(any())
+
+        // Scheduled, changed logger, attempting step 0, success step 0, attempting step 1, fail step 1, attempting step 1, fail step 1
+        verify(logger2, times(7)).i(any())
         // Stack traces for 2 step 1 failures
-        verify(logger, times(2)).d(any())
+        verify(logger2, times(2)).d(any())
         // Final failure
-        verify(logger, times(1)).e(any())
+        verify(logger2, times(1)).e(any())
     }
 }

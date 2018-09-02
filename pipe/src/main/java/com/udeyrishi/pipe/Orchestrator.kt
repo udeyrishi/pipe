@@ -35,8 +35,10 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
 
     var logger: Logger? = null
         set(value) {
-            value?.i("New logger set for $uuid. Current state is $volatileState.")
-            field = value
+            if (field !== value) {
+                value?.i("New logger set for $uuid. Current state is $volatileState.")
+                field = value
+            }
         }
 
     private val _state = MutableLiveData<State>()
