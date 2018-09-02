@@ -5,11 +5,15 @@ package com.udeyrishi.pipe
 
 import android.arch.core.executor.testing.InstantTaskExecutorRule
 import android.arch.lifecycle.Observer
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verify
 import com.udeyrishi.pipe.steps.StepDescriptor
 import com.udeyrishi.pipe.testutil.Repeat
 import com.udeyrishi.pipe.testutil.RepeatRule
 import com.udeyrishi.pipe.testutil.createMockLifecycleOwner
 import com.udeyrishi.pipe.util.Identifiable
+import com.udeyrishi.pipe.util.Logger
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -18,6 +22,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+import org.mockito.Mockito.mock
 import java.util.UUID
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
@@ -450,5 +455,34 @@ class OrchestratorTest {
         val orchestrator = Orchestrator(IdentifiableString("in"), listOf<StepDescriptor<IdentifiableString>>().iterator())
         orchestrator.start()
         orchestrator.start()
+    }
+
+    @Test
+    fun loggingWorks() {
+        val steps = listOf<StepDescriptor<IdentifiableString>>(
+                StepDescriptor(name = "step 0", maxAttempts = 1) {
+                    it
+                },
+                StepDescriptor(name = "step 1", maxAttempts = 2) {
+                    throw RuntimeException("Some error")
+                }
+        )
+
+        val input = IdentifiableString("in")
+        val orchestrator = Orchestrator(input, steps.iterator())
+        val logger = mock(Logger::class.java)
+        orchestrator.logger = logger
+        orchestrator.start()
+
+        while (orchestrator.state.value !is State.Terminal.Failure) {
+            Thread.sleep(100)
+        }
+
+        // Scheduled, attempting step 0, success step 0, attempting step 1, fail step 1, attempting step 1, fail step 1
+        verify(logger, times(7)).i(any())
+        // Stack traces for 2 step 1 failures
+        verify(logger, times(2)).d(any())
+        // Final failure
+        verify(logger, times(1)).e(any())
     }
 }

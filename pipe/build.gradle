@@ -49,6 +49,7 @@ dependencies {
     testImplementation depends.junit
     testImplementation depends.android.lifecycle.runtime
     testImplementation depends.android.lifecycle.testing
+    testImplementation depends.mockito_kotlin
 }
 
 kotlin {

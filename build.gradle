@@ -13,6 +13,7 @@ buildscript {
                         'coroutines': '0.24.0',
                         'lang': '1.2.61'
                 ],
+                'mockito_kotlin': '2.0.0-RC1',
                 'publish': [
                         'maven_plugin': '2.1',
                         'bintray_plugin': '1.8.4'
@@ -49,6 +50,7 @@ buildscript {
                         'gradle_plugin': "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin.lang}",
                         'stdlib'       : "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${versions.kotlin.lang}"
                 ],
+                'mockito_kotlin': "com.nhaarman.mockitokotlin2:mockito-kotlin:${versions.mockito_kotlin}",
                 'publish': [
                         'maven_plugin': "com.github.dcendents:android-maven-gradle-plugin:${versions.publish.maven_plugin}",
                         'bintray_plugin': "com.jfrog.bintray.gradle:gradle-bintray-plugin:${versions.publish.bintray_plugin}"

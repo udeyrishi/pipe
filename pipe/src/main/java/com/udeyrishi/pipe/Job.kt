@@ -5,6 +5,7 @@ package com.udeyrishi.pipe
 
 import android.arch.lifecycle.LiveData
 import com.udeyrishi.pipe.util.Identifiable
+import com.udeyrishi.pipe.util.Logger
 import java.util.UUID
 
 class Job<T : Any> internal constructor(private val orchestrator: Orchestrator<Pipeline.Passenger<T>>) : Identifiable {
@@ -17,10 +18,10 @@ class Job<T : Any> internal constructor(private val orchestrator: Orchestrator<P
     val result: T?
         get() = orchestrator.result?.data
 
-    var enableLogging: Boolean
-        get() = orchestrator.enableLogging
+    var logger: Logger?
+        get() = orchestrator.logger
         set(value) {
-            orchestrator.enableLogging = value
+            orchestrator.logger = value
         }
 
     fun start() {

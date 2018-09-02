@@ -5,9 +5,9 @@ package com.udeyrishi.pipe
 
 import android.arch.lifecycle.LiveData
 import android.arch.lifecycle.MutableLiveData
-import android.util.Log
 import com.udeyrishi.pipe.steps.StepDescriptor
 import com.udeyrishi.pipe.util.Identifiable
+import com.udeyrishi.pipe.util.Logger
 import com.udeyrishi.pipe.util.immutableAfterSet
 import com.udeyrishi.pipe.util.stackTraceToString
 import kotlinx.coroutines.experimental.launch
@@ -19,10 +19,6 @@ import java.util.UUID
  * - updates and monitors its state
  */
 internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<StepDescriptor<T>>) : Identifiable {
-    companion object {
-        private const val LOG_TAG = "Pipe"
-    }
-
     override val uuid: UUID = input.uuid
 
     private var started: Boolean by immutableAfterSet(false)
@@ -37,11 +33,9 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
             _state.postValue(value)
         }
 
-    var enableLogging: Boolean = false
+    var logger: Logger? = null
         set(value) {
-            if (value) {
-                Log.i(LOG_TAG, "Logging enabled for $uuid. Current state is $volatileState.")
-            }
+            value?.i("New logger set for $uuid. Current state is $volatileState.")
             field = value
         }
 
@@ -170,7 +164,7 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
     private data class StepResult<out T>(val stepResult: T?, val interrupted: Boolean) {
         init {
             if (stepResult != null && interrupted) {
-                throw IllegalArgumentException("Cannot provide a non-null result, and interupted = true.")
+                throw IllegalArgumentException("Cannot provide a non-null result, and interrupted = true.")
             }
         }
     }
@@ -184,15 +178,15 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
     }
 
     private fun logStateChange(newState: State) {
-        if (enableLogging) {
+        logger?.let {
             val message = "$uuid transitioned to state $newState."
             when (newState) {
-                is State.Terminal.Failure -> Log.e(LOG_TAG, message)
-                else -> Log.i(LOG_TAG, message)
-            }
+                is State.Terminal.Failure -> it::e
+                else -> it::i
+            }.invoke(message)
 
             if (newState is State.Running.AttemptFailed) {
-                Log.d(LOG_TAG, "Stack trace:\n${newState.cause.stackTraceToString()}")
+                it.d("Stack trace:\n${newState.cause.stackTraceToString()}")
             }
         }
     }

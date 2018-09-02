@@ -1,24 +1,23 @@
 package com.udeyrishi.pipesample
 
-import android.annotation.SuppressLint
 import android.arch.lifecycle.Observer
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
-import android.util.Log
 import android.widget.ImageView
 import com.udeyrishi.pipe.Job
 import com.udeyrishi.pipe.Pipeline
 import com.udeyrishi.pipe.State
 import com.udeyrishi.pipe.buildPipeline
 import com.udeyrishi.pipe.repository.InMemoryRepository
-import com.udeyrishi.pipe.steps.Aggregator
+import com.udeyrishi.pipe.util.AndroidLogger
 import kotlinx.android.synthetic.main.activity_main.root
 
 class MainActivity : AppCompatActivity() {
     companion object {
         private const val JOB_TAG = "IMAGE_TRANSFORM_JOBS"
+        private const val LOG_TAG = "Pipe"
         private const val SCALED_IMAGE_SIZE = 400
     }
 
@@ -37,7 +36,6 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
     }
 
-    @SuppressLint("SetTextI18n")
     override fun onResume() {
         super.onResume()
         val pipeline = makePipeline(repository)
@@ -69,7 +67,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         jobs.forEach {
-            it.enableLogging = true
+            it.logger = AndroidLogger(logTag = LOG_TAG)
             it.start()
         }
     }
