@@ -25,8 +25,6 @@ class Pipeline<T : Any> private constructor(private val steps: List<StepDescript
     @Suppress("EXPERIMENTAL_FEATURE_WARNING")
     class Builder<T : Any>(private val ordered: Boolean = true) {
         private val steps = mutableListOf<StepDescriptor<Passenger<T>>>()
-        private var barrierCount = 0
-        private var aggregatorCount = 0
 
         fun addStep(name: String, attempts: Long = 1, step: Step<T>) {
             steps.add(StepDescriptor(name, attempts) {
@@ -35,23 +33,23 @@ class Pipeline<T : Any> private constructor(private val steps: List<StepDescript
             })
         }
 
-        fun addBarrier(): Barrier {
+        fun addBarrier(name: String): Barrier {
             val barrier = BarrierImpl<T>()
-            steps.add(StepDescriptor(name = "Barrier${barrierCount++}", maxAttempts = 1) {
+            steps.add(StepDescriptor(name, maxAttempts = 1) {
                 val result: T = barrier.blockUntilLift(it.data)
                 Passenger(result, it.uuid, it.position)
             })
             return barrier
         }
 
-        fun addAggregator(capacity: Int, attempts: Long = 1, aggregationAction: Step<List<T>>): Aggregator {
+        fun addAggregator(name: String, capacity: Int, attempts: Long = 1, aggregationAction: Step<List<T>>): Aggregator {
             val aggregator = AggregatorImpl<Passenger<T>>(capacity, ordered) { input ->
                 val result: List<T> = aggregationAction(input.map { it.data })
                 input.mapIndexed { index, originalPassenger ->
                     Passenger(result[index], originalPassenger.uuid, originalPassenger.position)
                 }
             }
-            steps.add(StepDescriptor(name = "Aggregator${aggregatorCount++}", maxAttempts = attempts) {
+            steps.add(StepDescriptor(name, maxAttempts = attempts) {
                 aggregator.push(it)
             })
             return aggregator

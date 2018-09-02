@@ -41,13 +41,13 @@ class PipelineTest {
                 it + 2
             }
 
-            barrier = addBarrier()
+            barrier = addBarrier("Barrier 1")
 
             addStep("Step 3") {
                 it + 3
             }
 
-            aggregator = addAggregator(capacity = 1000000) {
+            aggregator = addAggregator("Aggregator 1", capacity = 1000000) {
                 aggregated = it
                 it.map { it + 1 }
             }
