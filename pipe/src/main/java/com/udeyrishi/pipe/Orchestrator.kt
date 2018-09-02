@@ -113,15 +113,12 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
     }
 
     private fun onStepResultNull(failingStep: StepDescriptor<T>, dueToInterruption: Boolean) {
-        // Ran out of attempts or interrupted, or a bad state changed callback
-        if (volatileState !is State.Terminal.Failure) {
-            // Normal execution: Ran out of attempts or interrupted
-            volatileState.sanityCheck<State.Running.AttemptFailed>()
-            val innerCause = (volatileState as? State.Running.AttemptFailed)?.cause
-            onStateFailure(cause = if (dueToInterruption) OrchestratorInterruptedException(this, innerCause) else StepOutOfAttemptsException(this, failingStep, innerCause))
-            // No need to check the result for ^. Even if it's false, the state is still terminal false
-            volatileState.sanityCheck<State.Terminal.Failure>()
-        }
+        // Ran out of attempts or interrupted
+        volatileState.sanityCheck<State.Running.AttemptFailed>()
+        val innerCause = (volatileState as? State.Running.AttemptFailed)?.cause
+        onStateFailure(cause = if (dueToInterruption) OrchestratorInterruptedException(this, innerCause) else StepOutOfAttemptsException(this, failingStep, innerCause))
+        // No need to check the result for ^. Even if it's false, the state is still terminal false
+        volatileState.sanityCheck<State.Terminal.Failure>()
     }
 
     private suspend fun runStep(input: T, nextStep: StepDescriptor<T>): StepResult<T> {
