@@ -17,14 +17,15 @@ class Pipeline<T : Any> private constructor(
         private val steps: List<StepDescriptor<Passenger<T>>>,
         val aggregators: List<Aggregator>,
         val barriers: List<Barrier>,
-        private val repository: MutableRepository<Job<T>>) {
+        private val repository: MutableRepository<in Job<T>>) {
 
     fun push(input: T, tag: String?): Job<T> {
+        @Suppress("UNCHECKED_CAST")
         return repository.add(tag) { newUUID, position ->
             val passenger = Passenger(input, newUUID, position)
             val orchestrator = Orchestrator(passenger, steps.iterator())
             Job(orchestrator)
-        }
+        } as Job<T>
     }
 
     @Suppress("EXPERIMENTAL_FEATURE_WARNING")
@@ -62,7 +63,7 @@ class Pipeline<T : Any> private constructor(
             aggregators.add(aggregator)
         }
 
-        fun build(repository: MutableRepository<Job<T>>): Pipeline<T> {
+        fun build(repository: MutableRepository<in Job<T>>): Pipeline<T> {
             return Pipeline(steps.map { it }, aggregators, barriers, repository)
         }
     }
@@ -79,7 +80,7 @@ class Pipeline<T : Any> private constructor(
     }
 }
 
-fun <T : Any> buildPipeline(repository: MutableRepository<Job<T>>, ordered: Boolean = true, stepDefiner: (Pipeline.Builder<T>.() -> Unit)): Pipeline<T> {
+fun <T : Any> buildPipeline(repository: MutableRepository<in Job<T>>, ordered: Boolean = true, stepDefiner: (Pipeline.Builder<T>.() -> Unit)): Pipeline<T> {
     val builder = Pipeline.Builder<T>(ordered)
     builder.stepDefiner()
     return builder.build(repository)
