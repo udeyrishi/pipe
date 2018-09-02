@@ -66,8 +66,8 @@ class MainActivity : AppCompatActivity() {
             it.capacity = imageUrls.size
         }
 
-        return imageUrls.mapIndexed { index, url ->
-            pipeline.push(ImagePipelineMember(index = index, url = url), tag = JOB_TAG).also {
+        return imageUrls.map { url ->
+            pipeline.push(ImagePipelineMember(url = url), tag = JOB_TAG).also {
                 it.logger = AndroidLogger(LOG_TAG)
             }
         }
