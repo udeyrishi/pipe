@@ -40,10 +40,14 @@ class InMemoryRepository<T : Identifiable> : MutableRepository<T> {
     }
 
     override fun get(tag: String?): List<RepositoryEntry<T>> {
+        return getMatching {
+            it.tag == tag
+        }
+    }
+
+    override fun getMatching(predicate: (RepositoryEntry<T>) -> Boolean): List<RepositoryEntry<T>> {
         return synchronized(lock) {
-            entries.filter {
-                it.tag == tag
-            }
+            entries.filter(predicate)
         }
     }
 

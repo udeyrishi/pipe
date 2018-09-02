@@ -7,6 +7,7 @@ import java.util.UUID
 interface Repository<out T : Identifiable> : Closeable {
     operator fun get(uuid: UUID): RepositoryEntry<T>?
     operator fun get(tag: String?): List<RepositoryEntry<T>>
+    fun getMatching(predicate: (RepositoryEntry<T>) -> Boolean): List<RepositoryEntry<T>>
 }
 
 interface MutableRepository<T : Identifiable> : Repository<T> {

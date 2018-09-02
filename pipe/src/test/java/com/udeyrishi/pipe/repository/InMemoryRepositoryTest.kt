@@ -107,5 +107,23 @@ class InMemoryRepositoryTest {
         assertEquals(listOf(myIdentifiable2), group2.map { it.identifiableObject })
     }
 
+    @Test
+    fun getMatchingWorks() {
+        val item1 = repo.add(tag = "tag1") { newUUID, position ->
+            MyIdentifiable(newUUID, position)
+        }
+
+        repo.add(tag = "tag2") { newUUID, position ->
+            MyIdentifiable(newUUID, position)
+        }
+
+        val item2 = repo.add(tag = "tag1") { newUUID, position ->
+            MyIdentifiable(newUUID, position)
+        }
+
+        val matches = repo.getMatching { it.tag == "tag1" }
+        assertEquals(listOf(item1, item2), matches.map { it.identifiableObject })
+    }
+
     private data class MyIdentifiable(override val uuid: UUID, val position: Long) : Identifiable
 }
