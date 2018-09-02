@@ -9,6 +9,7 @@ import android.util.Log
 import com.udeyrishi.pipe.steps.StepDescriptor
 import com.udeyrishi.pipe.util.Identifiable
 import com.udeyrishi.pipe.util.immutableAfterSet
+import com.udeyrishi.pipe.util.stackTraceToString
 import kotlinx.coroutines.experimental.launch
 import java.util.UUID
 
@@ -116,7 +117,8 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
         if (volatileState !is State.Terminal.Failure) {
             // Normal execution: Ran out of attempts or interrupted
             volatileState.sanityCheck<State.Running.AttemptFailed>()
-            onStateFailure(cause = if (dueToInterruption) OrchestratorInterruptedException(this) else StepOutOfAttemptsException(this, failingStep))
+            val innerCause = (volatileState as? State.Running.AttemptFailed)?.cause
+            onStateFailure(cause = if (dueToInterruption) OrchestratorInterruptedException(this, innerCause) else StepOutOfAttemptsException(this, failingStep, innerCause))
             // No need to check the result for ^. Even if it's false, the state is still terminal false
             volatileState.sanityCheck<State.Terminal.Failure>()
         }
@@ -127,11 +129,11 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
             onStateSuccess(nextStep.name)
             volatileState.sanityCheck<State.Running.Attempting>()
 
-            if (checkInterruption(attempt = i, stepName = nextStep.name)) {
+            if (checkInterruption(attemptIndex = i, stepName = nextStep.name)) {
                 return StepResult(stepResult = null, interrupted = true)
             }
 
-            val attemptResult = doStepAttempt(attempt = i, step = nextStep, input = input)
+            val attemptResult = doStepAttempt(attemptIndex = i, step = nextStep, input = input)
             if (attemptResult.fatalError) break
 
             if (attemptResult.stepResult == null) {
@@ -145,9 +147,9 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
         return StepResult(stepResult = null, interrupted = false)
     }
 
-    private fun checkInterruption(attempt: Long, stepName: String): Boolean {
+    private fun checkInterruption(attemptIndex: Long, stepName: String): Boolean {
         return if (interrupted) {
-            onStateFailure(StepInterruptedException(orchestrator = this, attempt = attempt, stepName = stepName))
+            onStateFailure(StepInterruptedException(orchestrator = this, attemptIndex = attemptIndex, stepName = stepName))
             volatileState.sanityCheck<State.Running.AttemptFailed>()
             true
         } else {
@@ -155,13 +157,13 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
         }
     }
 
-    private suspend fun doStepAttempt(attempt: Long, step: StepDescriptor<T>, input: T): StepAttemptResult<T> {
+    private suspend fun doStepAttempt(attemptIndex: Long, step: StepDescriptor<T>, input: T): StepAttemptResult<T> {
         return try {
             val result: T = step.step(input)
             onStateSuccess()
             StepAttemptResult.forSuccess(result)
         } catch (e: Throwable) {
-            onStateFailure(StepFailureException(orchestrator = this, attempt = attempt, stepName = step.name, throwable = e))
+            onStateFailure(StepFailureException(orchestrator = this, attemptIndex = attemptIndex, stepName = step.name, throwable = e))
             StepAttemptResult.forFailedStep()
         }
     }
@@ -191,6 +193,10 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
                 is State.Terminal.Failure -> Log.e(LOG_TAG, message)
                 else -> Log.i(LOG_TAG, message)
             }
+
+            if (newState is State.Running.AttemptFailed) {
+                Log.d(LOG_TAG, "Stack trace:\n${newState.cause.stackTraceToString()}")
+            }
         }
     }
 
@@ -201,10 +207,17 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
         }
     }
 
-    class OrchestratorInterruptedException internal constructor(orchestrator: Orchestrator<*>) : RuntimeException("$orchestrator prematurely interrupted.")
-    class StepOutOfAttemptsException internal constructor(orchestrator: Orchestrator<*>, failureStep: StepDescriptor<*>) : RuntimeException("$orchestrator ran out of the max allowed ${failureStep.step} attempts for step '${failureStep.name}'.")
-    class StepFailureException internal constructor(orchestrator: Orchestrator<*>, attempt: Long, stepName: String, throwable: Throwable) : RuntimeException("$orchestrator failed on step '$stepName''s attempt #$attempt.", throwable)
-    class StepInterruptedException internal constructor(orchestrator: Orchestrator<*>, attempt: Long, stepName: String) : RuntimeException("$orchestrator was interrupted at step '$stepName' on the attempt #$attempt.")
+    class OrchestratorInterruptedException internal constructor(orchestrator: Orchestrator<*>, cause: Throwable? = null)
+        : RuntimeException("$orchestrator prematurely interrupted.", cause)
+
+    class StepOutOfAttemptsException internal constructor(orchestrator: Orchestrator<*>, failureStep: StepDescriptor<*>, cause: Throwable?)
+        : RuntimeException("$orchestrator ran out of the max allowed ${failureStep.maxAttempts} attempts for step '${failureStep.name}'.", cause)
+
+    class StepFailureException internal constructor(orchestrator: Orchestrator<*>, attemptIndex: Long, stepName: String, throwable: Throwable)
+        : RuntimeException("$orchestrator failed on attemptIndex $attemptIndex for step '$stepName'.", throwable)
+
+    class StepInterruptedException internal constructor(orchestrator: Orchestrator<*>, attemptIndex: Long, stepName: String)
+        : RuntimeException("$orchestrator was interrupted at step '$stepName' on the attemptIndex $attemptIndex.")
 }
 
 private inline fun <reified T : State> State.sanityCheck() {

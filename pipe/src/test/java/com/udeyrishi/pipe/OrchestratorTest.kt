@@ -177,10 +177,9 @@ class OrchestratorTest {
         assertNull(orchestrator.result)
 
         (orchestrator.state.value as State.Terminal.Failure).let {
-            assertEquals(2, it.causes.size)
-            assertTrue(it.causes[0] is Orchestrator.StepFailureException)
-            assertTrue((it.causes[0] as Orchestrator.StepFailureException).cause === error)
-            assertTrue(it.causes[1] is Orchestrator.StepOutOfAttemptsException)
+            assertTrue(it.cause is Orchestrator.StepOutOfAttemptsException)
+            assertTrue(it.cause.cause is Orchestrator.StepFailureException)
+            assertEquals(error, it.cause.cause?.cause)
         }
     }
 
@@ -339,10 +338,9 @@ class OrchestratorTest {
         assertNull(orchestrator.result)
 
         (orchestrator.state.value as State.Terminal.Failure).let {
-            assertEquals(2, it.causes.size)
-            assertTrue(it.causes[0] is Orchestrator.StepFailureException)
-            assertTrue((it.causes[0] as Orchestrator.StepFailureException).cause === error)
-            assertTrue(it.causes[1] is Orchestrator.StepOutOfAttemptsException)
+            assertTrue(it.cause is Orchestrator.StepOutOfAttemptsException)
+            assertTrue(it.cause.cause is Orchestrator.StepFailureException)
+            assertEquals(error, it.cause.cause?.cause)
         }
 
         assertEquals(5, step2Called)
@@ -375,9 +373,8 @@ class OrchestratorTest {
         assertTrue(orchestrator.state.value is State.Terminal.Failure)
 
         (orchestrator.state.value as State.Terminal.Failure).let {
-            assertEquals(2, it.causes.size)
-            assertTrue(it.causes[0] is Orchestrator.StepInterruptedException)
-            assertTrue(it.causes[1] is Orchestrator.OrchestratorInterruptedException)
+            assertTrue(it.cause is Orchestrator.OrchestratorInterruptedException)
+            assertTrue(it.cause.cause is Orchestrator.StepInterruptedException)
         }
         assertNull(orchestrator.result)
     }
@@ -411,9 +408,8 @@ class OrchestratorTest {
         assertTrue(orchestrator.state.value is State.Terminal.Failure)
 
         (orchestrator.state.value as State.Terminal.Failure).let {
-            assertEquals(2, it.causes.size)
-            assertTrue(it.causes[0] is Orchestrator.StepInterruptedException)
-            assertTrue(it.causes[1] is Orchestrator.OrchestratorInterruptedException)
+            assertTrue(it.cause is Orchestrator.OrchestratorInterruptedException)
+            assertTrue(it.cause.cause is Orchestrator.StepInterruptedException)
         }
         assertNull(orchestrator.result)
     }
@@ -443,8 +439,8 @@ class OrchestratorTest {
         assertTrue(orchestrator.state.value is State.Terminal.Failure)
 
         (orchestrator.state.value as State.Terminal.Failure).let {
-            assertEquals(1, it.causes.size)
-            assertTrue(it.causes[0] is Orchestrator.OrchestratorInterruptedException)
+            assertTrue(it.cause is Orchestrator.OrchestratorInterruptedException)
+            assertNull(it.cause.cause)
         }
         assertNull(orchestrator.result)
     }

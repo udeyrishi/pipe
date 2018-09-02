@@ -24,8 +24,7 @@ class StateTest {
         val cause = RuntimeException("Some error")
         val terminal = scheduled.onFailure(cause)
         assertTrue(terminal is State.Terminal.Failure)
-        assertEquals(1, (terminal as State.Terminal.Failure).causes.size)
-        assertTrue(cause === terminal.causes[0])
+        assertEquals(cause, (terminal as State.Terminal.Failure).cause)
     }
 
     @Test
@@ -61,8 +60,7 @@ class StateTest {
         val cause = RuntimeException()
         val terminal = stepSucceeded.onFailure(cause)
         assertTrue(terminal is State.Terminal.Failure)
-        assertEquals(1, (terminal as State.Terminal.Failure).causes.size)
-        assertTrue(cause === terminal.causes[0])
+        assertEquals(cause, (terminal as State.Terminal.Failure).cause)
     }
 
     @Test
@@ -76,11 +74,8 @@ class StateTest {
         val terminal = attemptFailed.onFailure(cause2)
         assertTrue(terminal is State.Terminal.Failure)
 
-        (terminal as State.Terminal.Failure).let {
-            assertEquals(2, it.causes.size)
-            assertEquals(cause, it.causes[0])
-            assertEquals(cause2, it.causes[1])
-        }
+        // It's the caller's responsibility to set up the cause-chain correctly
+        assertEquals(cause2, (terminal as State.Terminal.Failure).cause)
 
         val success = attemptFailed.onSuccess("foo")
         assertTrue(success is State.Running.Attempting)
@@ -101,8 +96,7 @@ class StateTest {
         val cause = RuntimeException()
         val terminalFailure = terminalSuccess.onFailure(cause)
         assertTrue(terminalFailure is State.Terminal.Failure)
-        assertEquals(1, (terminalFailure as State.Terminal.Failure).causes.size)
-        assertTrue(cause === terminalFailure.causes[0])
+        assertEquals(cause, (terminalFailure as State.Terminal.Failure).cause)
     }
 
     @Test(expected = IllegalArgumentException::class)
@@ -113,25 +107,19 @@ class StateTest {
 
     @Test
     fun terminalFailureWorks() {
-        val causes = listOf(RuntimeException("foo"), RuntimeException("bar"))
-        val terminalFailure = State.Terminal.Failure(causes = causes)
-        assertEquals(2, terminalFailure.causes.size)
-        assertEquals(causes[0], terminalFailure.causes[0])
-        assertEquals(causes[1], terminalFailure.causes[1])
+        val cause = RuntimeException("foo")
+        val terminalFailure = State.Terminal.Failure(cause)
+        assertEquals(cause, terminalFailure.cause)
 
         val anotherCause = RuntimeException("hello")
-        val anotherRef = terminalFailure.onFailure(anotherCause)
+        val newTerminalFailure = terminalFailure.onFailure(anotherCause)
 
-        assertTrue(anotherRef === terminalFailure)
-
-        assertEquals(3, terminalFailure.causes.size)
-        assertEquals(causes[0], terminalFailure.causes[0])
-        assertEquals(causes[1], terminalFailure.causes[1])
-        assertEquals(anotherCause, terminalFailure.causes[2])
+        assertTrue(newTerminalFailure !== terminalFailure)
+        assertEquals(anotherCause, (newTerminalFailure as State.Terminal.Failure).cause)
     }
 
     @Test(expected = IllegalStateException::class)
     fun terminalFailureFailsOnSuccess() {
-        State.Terminal.Failure(listOf(RuntimeException())).onSuccess()
+        State.Terminal.Failure(RuntimeException()).onSuccess()
     }
 }

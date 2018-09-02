@@ -14,7 +14,7 @@ sealed class State {
             } ?: Terminal.Success
         }
 
-        override fun onFailure(cause: Throwable): State = Terminal.Failure(listOf(cause))
+        override fun onFailure(cause: Throwable): State = Terminal.Failure(cause)
     }
 
     sealed class Running(val step: String) : State() {
@@ -41,9 +41,9 @@ sealed class State {
                 return Attempting(step)
             }
 
-            override fun onFailure(cause: Throwable): State = Terminal.Failure(listOf(this.cause, cause))
+            override fun onFailure(cause: Throwable): State = Terminal.Failure(cause)
 
-            override fun toString(): String = "${super.toString()}(cause=${cause.detailedToString()})"
+            override fun toString(): String = "${super.toString()}(cause=\n${cause.detailedToString()})"
         }
 
         class AttemptSuccessful internal constructor(step: String) : Running(step) {
@@ -53,7 +53,7 @@ sealed class State {
                 } ?: Terminal.Success
             }
 
-            override fun onFailure(cause: Throwable): State = Terminal.Failure(listOf(cause))
+            override fun onFailure(cause: Throwable): State = Terminal.Failure(cause)
 
             override fun toString(): String = "${super.toString()}(step=$step)"
         }
@@ -68,24 +68,17 @@ sealed class State {
                 return this
             }
 
-            override fun onFailure(cause: Throwable): State = Failure(listOf(cause))
+            override fun onFailure(cause: Throwable): State = Failure(cause)
         }
 
-        class Failure internal constructor(causes: List<Throwable>) : Terminal() {
-            private val _causes = causes.toMutableList()
-            val causes: List<Throwable>
-                get() = _causes.toList()
-
+        class Failure internal constructor(@Suppress("MemberVisibilityCanBePrivate") val cause: Throwable) : Terminal() {
             override fun onSuccess(nextStep: String?): State {
                 throw IllegalStateException("${this::class.java.name} cannot have a success state following it.")
             }
 
-            override fun onFailure(cause: Throwable): State {
-                _causes.add(cause)
-                return this
-            }
+            override fun onFailure(cause: Throwable): State = Failure(cause)
 
-            override fun toString(): String = "${super.toString()}(causes=${causes.map { it.detailedToString() }})"
+            override fun toString(): String = "${super.toString()}(cause=\n${cause.detailedToString()})"
         }
     }
 
@@ -98,10 +91,9 @@ private fun Throwable.detailedToString(): String {
     var cause: Throwable? = this
 
     while (cause != null) {
-        if (level > 0) {
-            sb.append("\n")
+        if (level++ > 0) {
+            sb.append("\nCaused by: ")
         }
-        sb.append("->".repeat(level++))
         sb.append(cause)
         cause = cause.cause
     }
