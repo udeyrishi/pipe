@@ -8,8 +8,6 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.net.URL
 
-private const val SCALED_IMAGE_SIZE = 400
-
 internal fun downloadImage(stringUrl: String): Bitmap {
     val url = URL(stringUrl)
     val inputStream = url.content as InputStream
@@ -34,13 +32,16 @@ internal fun rotateBitmap(source: Bitmap, angle: Float): Bitmap {
     return Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix, true)
 }
 
-internal fun join(firstImage: Bitmap, secondImage: Bitmap): Bitmap {
-    val result = Bitmap.createBitmap(SCALED_IMAGE_SIZE, SCALED_IMAGE_SIZE, firstImage.config)
-    val scaledFirst = Bitmap.createScaledBitmap(firstImage, SCALED_IMAGE_SIZE, SCALED_IMAGE_SIZE, true)
-    val scaledSecond = Bitmap.createScaledBitmap(secondImage, SCALED_IMAGE_SIZE / 3, SCALED_IMAGE_SIZE / 3, true)
+internal fun scale(image: Bitmap, width: Int, height: Int): Bitmap {
+    return Bitmap.createScaledBitmap(image, width, height, true)
+}
+
+internal fun overdraw(firstImage: Bitmap, secondImage: Bitmap): Bitmap {
+    val result = Bitmap.createBitmap(firstImage.width, firstImage.height, firstImage.config)
+    val scaledSecond = scale(secondImage, firstImage.width / 3, firstImage.height / 3)
 
     val canvas = Canvas(result)
-    canvas.drawBitmap(scaledFirst, 0f, 0f, null)
+    canvas.drawBitmap(firstImage, 0f, 0f, null)
     canvas.drawBitmap(scaledSecond, 0f, 0f, null)
 
     return result

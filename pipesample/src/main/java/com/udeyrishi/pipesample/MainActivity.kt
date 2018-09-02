@@ -20,6 +20,7 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val JOB_TAG = "IMAGE_TRANSFORM_JOBS"
         private const val LOG_TAG = "Pipe Sample"
+        private const val SCALED_IMAGE_SIZE = 400
     }
 
     private val imageUrls = listOf(
@@ -61,7 +62,7 @@ class MainActivity : AppCompatActivity() {
                         (root.getChildAt(index) as ImageView).setImageDrawable(drawable)
                     }
                     is State.Terminal.Success -> {
-                        (root.getChildAt(index) as ImageView).setImageBitmap(job.result?.image)
+                        (root.getChildAt(index) as ImageView).setImageBitmap(job.result?.getBitmap())
                     }
                     is State.Terminal.Failure -> {
                         val drawable = ContextCompat.getDrawable(this, R.drawable.ic_error_black_24dp)
@@ -94,39 +95,43 @@ class MainActivity : AppCompatActivity() {
             t = t.cause
         }
     }
-}
 
-private fun makePipeline(repository: InMemoryRepository<Job<ImagePipelineMember>>): Pair<Aggregator, Pipeline<ImagePipelineMember>> {
-    lateinit var aggregator: Aggregator
-    val pipeline = buildPipeline(repository) {
-        addStep("read-drawable", attempts = 4) {
-            val image = downloadImage(it.url ?: throw IllegalStateException("URL must've been non-null."))
-            ImagePipelineMember(index = it.index, image = image)
-        }
+    private fun makePipeline(repository: InMemoryRepository<Job<ImagePipelineMember>>): Pair<Aggregator, Pipeline<ImagePipelineMember>> {
+        lateinit var aggregator: Aggregator
+        val pipeline = buildPipeline(repository) {
+            addStep("download", attempts = 4) {
+                ImagePipelineMember(index = it.index, image = downloadImage(it.getUrl()))
+            }
 
-        addStep("rotate") {
-            val drawable = it.image ?: throw IllegalStateException("image must've been read.")
-            val rotated = rotateBitmap(drawable, 90.0f)
-            ImagePipelineMember(index = it.index, image = rotated)
-        }
+            addStep("rotate") {
+                ImagePipelineMember(index = it.index, image = rotateBitmap(it.getBitmap(), 90.0f))
+            }
 
-        aggregator = addAggregator(capacity = Int.MAX_VALUE) {
-            it.map { (index, _, image) ->
-                val siblingIndex = if (index % 2 == 0) (index + 1) else (index - 1)
-                if (siblingIndex < it.size) {
-                    val joined = join(
-                            image ?: throw IllegalStateException("image must've been read."),
-                            it[siblingIndex].image ?: throw IllegalStateException("image must've been read.")
-                    )
-                    ImagePipelineMember(index = index, image = joined)
-                } else {
-                    ImagePipelineMember(index = index, image = image)
+            addStep("scale") {
+                ImagePipelineMember(index = it.index, image = scale(it.getBitmap(), SCALED_IMAGE_SIZE, SCALED_IMAGE_SIZE))
+            }
+
+            aggregator = addAggregator("overdraw", capacity = Int.MAX_VALUE) { allMembers ->
+                allMembers.map { member ->
+                    val siblingIndex = member.index + (if (member.index % 2 == 0) 1 else -1)
+                    val resultingImage = if (siblingIndex < allMembers.size) {
+                        overdraw(member.getBitmap(), allMembers[siblingIndex].getBitmap())
+                    } else {
+                        member.getBitmap()
+                    }
+                    ImagePipelineMember(index = member.index, image = resultingImage)
                 }
             }
         }
-    }
 
-    return aggregator to pipeline
+        return aggregator to pipeline
+    }
 }
 
-private data class ImagePipelineMember(val index: Int, val url: String? = null, val image: Bitmap? = null)
+private class ImagePipelineMember(val index: Int, private val url: String? = null, private val image: Bitmap? = null) {
+    fun getBitmap(): Bitmap
+        = image ?: throw IllegalStateException("image must've been read.")
+
+    fun getUrl(): String
+        = url ?: throw IllegalStateException("URL must've been non-null.")
+}
