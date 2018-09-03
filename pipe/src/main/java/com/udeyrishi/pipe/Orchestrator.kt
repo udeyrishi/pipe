@@ -127,7 +127,6 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
             }
 
             val attemptResult = doStepAttempt(attemptIndex = i, step = nextStep, input = input)
-            if (attemptResult.fatalError) break
 
             if (attemptResult.stepResult == null) {
                 volatileState.sanityCheck<State.Running.AttemptFailed>()
@@ -193,10 +192,10 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
         }
     }
 
-    private class StepAttemptResult<out T> private constructor(val stepResult: T?, val fatalError: Boolean) {
+    private class StepAttemptResult<out T> private constructor(val stepResult: T?) {
         companion object {
-            fun forFailedStep() = StepAttemptResult(null, false)
-            fun <T> forSuccess(result: T) = StepAttemptResult(result, false)
+            fun forFailedStep() = StepAttemptResult(null)
+            fun <T> forSuccess(result: T) = StepAttemptResult(result)
         }
     }
 
