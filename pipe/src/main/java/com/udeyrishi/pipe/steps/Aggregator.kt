@@ -13,7 +13,6 @@ interface Aggregator {
     var capacity: Int
 }
 
-@Suppress("EXPERIMENTAL_FEATURE_WARNING")
 internal class AggregatorImpl<T : Comparable<T>>(override val name: String, capacity: Int, private val ordered: Boolean = true, private val aggregationAction: Step<List<T>>) : Aggregator {
     private val barriers = mutableListOf<Pair<T, BarrierImpl<T>>>()
     private var outputs: List<T>? by immutableAfterSet(null)

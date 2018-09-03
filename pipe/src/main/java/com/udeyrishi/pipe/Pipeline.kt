@@ -29,7 +29,6 @@ class Pipeline<T : Any> private constructor(
         } as Job<T>
     }
 
-    @Suppress("EXPERIMENTAL_FEATURE_WARNING")
     class Builder<T : Any>(private val ordered: Boolean = true) {
         private val steps = mutableListOf<StepDescriptor<Passenger<T>>>()
         private val aggregators = mutableListOf<Aggregator>()

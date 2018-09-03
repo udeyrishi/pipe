@@ -12,7 +12,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-@Suppress("EXPERIMENTAL_FEATURE_WARNING")
 @RunWith(JUnit4::class)
 class PipelineTest {
     @get:Rule
@@ -43,9 +42,9 @@ class PipelineTest {
                 it + 3
             }
 
-            addAggregator("Aggregator 1", capacity = 1000000) {
-                aggregated = it
-                it.map { it + 1 }
+            addAggregator("Aggregator 1", capacity = 1000000) { aggregatedList ->
+                aggregated = aggregatedList
+                aggregatedList.map { it + 1 }
             }
 
             addStep("Step 4") {

@@ -21,7 +21,6 @@ internal class BarrierImpl<T : Any>(override val name: String) : Barrier {
     override val blockedCount: Int
         get() = continuations.size
 
-    @Suppress("EXPERIMENTAL_FEATURE_WARNING")
     suspend fun blockUntilLift(input: T): T {
         if (lifted) {
             return input

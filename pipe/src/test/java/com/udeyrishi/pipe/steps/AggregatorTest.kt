@@ -14,7 +14,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-@Suppress("EXPERIMENTAL_FEATURE_WARNING")
 @RunWith(JUnit4::class)
 class AggregatorTest {
     @Rule

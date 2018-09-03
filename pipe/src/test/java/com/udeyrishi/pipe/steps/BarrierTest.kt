@@ -18,7 +18,6 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import java.util.concurrent.TimeUnit
 
-@Suppress("EXPERIMENTAL_FEATURE_WARNING")
 @RunWith(JUnit4::class)
 class BarrierTest {
 
