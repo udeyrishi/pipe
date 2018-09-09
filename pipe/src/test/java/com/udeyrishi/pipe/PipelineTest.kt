@@ -36,13 +36,13 @@ class PipelineTest {
                 it + 2
             }
 
-            addBarrier("Barrier 1")
+            addManualBarrier("Barrier 1")
 
             addStep("Step 3") {
                 it + 3
             }
 
-            addAggregator("Aggregator 1", capacity = 1000000) { aggregatedList ->
+            addCountedBarrier("Aggregator 1", capacity = 1000000) { aggregatedList ->
                 aggregated = aggregatedList
                 aggregatedList.map { it + 1 }
             }
@@ -71,8 +71,8 @@ class PipelineTest {
         }
 
         // Everyone is waiting at the barrier. Now that we know the count, we can safely update the aggregator capacity, and then lift the barrier.
-        pipeline.barriers[0].lift()
-        pipeline.aggregators[0].setCapacity(3)
+        pipeline.manualBarriers[0].lift()
+        pipeline.countedBarriers[0].setCapacity(3)
 
         while (jobs.any { it.state.value !is State.Terminal }) {
             Thread.sleep(100)

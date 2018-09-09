@@ -59,7 +59,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun createImageJobs(imageUrls: List<String>): List<Job<ImagePipelineMember>> {
         val pipeline = makePipeline(App.INSTANCE.jobsRepo)
-        pipeline.aggregators.forEach {
+        pipeline.countedBarriers.forEach {
             it.setCapacity(imageUrls.size)
         }
 

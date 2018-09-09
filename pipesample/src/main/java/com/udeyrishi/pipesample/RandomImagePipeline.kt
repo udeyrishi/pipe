@@ -27,7 +27,7 @@ fun makePipeline(repository: MutableRepository<Job<ImagePipelineMember>>): Pipel
             ImagePipelineMember(image = scale(it.getBitmap(), SCALED_IMAGE_SIZE, SCALED_IMAGE_SIZE))
         }
 
-        addAggregator("overdraw", capacity = Int.MAX_VALUE) { allMembers ->
+        addCountedBarrier("overdraw", capacity = Int.MAX_VALUE) { allMembers ->
             allMembers.mapIndexed { index, member ->
                 val siblingIndex = if (index == 0) allMembers.lastIndex else index - 1
                 val resultingImage = overdraw(member.getBitmap(), allMembers[siblingIndex].getBitmap())

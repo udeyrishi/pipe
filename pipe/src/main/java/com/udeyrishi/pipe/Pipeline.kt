@@ -18,10 +18,10 @@ import java.util.UUID
 class Pipeline<T : Any> private constructor(private val repository: MutableRepository<in Job<T>>, private val operations: List<PipelineOperationSpec<T>>) {
     private val barrierControllers: List<BarrierController<Passenger<T>>>
 
-    val barriers: List<ManualBarrierController>
+    val manualBarriers: List<ManualBarrierController>
         get() = barrierControllers.filterIsInstance<ManualBarrierController>()
 
-    val aggregators: List<CountedBarrierController>
+    val countedBarriers: List<CountedBarrierController>
         get() = barrierControllers.filterIsInstance<CountedBarrierController>()
 
     init {
@@ -77,12 +77,12 @@ class Pipeline<T : Any> private constructor(private val repository: MutableRepos
             operations.add(PipelineOperationSpec.RegularStep(name, attempts, step))
         }
 
-        fun addBarrier(name: String) = apply {
+        fun addManualBarrier(name: String) = apply {
             operations.add(PipelineOperationSpec.Barrier.Manual(name))
         }
 
-        fun addAggregator(name: String, capacity: Int = Int.MAX_VALUE, attempts: Long = 1, aggregationAction: Step<List<T>>? = null) = apply {
-            operations.add(PipelineOperationSpec.Barrier.Counted(name, capacity = capacity, attempts = attempts, onBarrierLiftedAction = aggregationAction))
+        fun addCountedBarrier(name: String, capacity: Int = Int.MAX_VALUE, attempts: Long = 1, onBarrierLiftedAction: Step<List<T>>? = null) = apply {
+            operations.add(PipelineOperationSpec.Barrier.Counted(name, capacity = capacity, attempts = attempts, onBarrierLiftedAction = onBarrierLiftedAction))
         }
 
         fun build(repository: MutableRepository<in Job<T>>) = Pipeline(repository, operations)
