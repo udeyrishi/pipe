@@ -7,11 +7,17 @@ import com.udeyrishi.pipe.util.immutableAfterSet
 import kotlin.coroutines.experimental.Continuation
 import kotlin.coroutines.experimental.suspendCoroutine
 
-internal class Barrier<T : Any>(private val controller: BarrierController<T>) {
+interface Barrier<T : Any> {
+    val input: T?
+    suspend operator fun invoke(input: T): T
+    fun lift(result: T? = null)
+}
+
+internal class BarrierImpl<T : Any>(private val controller: BarrierController<T>) : Barrier<T> {
     private var lifted by immutableAfterSet(false)
     private var continuation: Continuation<T>? = null
     private val lock = Any()
-    var input: T? by immutableAfterSet(null)
+    override var input: T? by immutableAfterSet(null)
         private set
     private var result: T? by immutableAfterSet(null)
 
@@ -19,7 +25,7 @@ internal class Barrier<T : Any>(private val controller: BarrierController<T>) {
         controller.onBarrierCreated(this)
     }
 
-    suspend operator fun invoke(input: T): T {
+    override suspend operator fun invoke(input: T): T {
         this.input = input
 
         if (lifted) {
@@ -45,7 +51,7 @@ internal class Barrier<T : Any>(private val controller: BarrierController<T>) {
         }
     }
 
-    fun lift(result: T? = null) {
+    override fun lift(result: T?) {
         if (!lifted) {
             synchronized(lock) {
                 this.lifted = true
