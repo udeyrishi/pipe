@@ -9,6 +9,7 @@ import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import com.udeyrishi.pipe.testutil.Repeat
 import com.udeyrishi.pipe.testutil.RepeatRule
 import kotlinx.coroutines.experimental.async
@@ -114,10 +115,12 @@ class BarrierTest {
     }
 
     @Test
-    fun callsControllerUponBlock() {
+    fun callsControllerUponBlock() = runBlocking {
         var controllerCalled = false
-        val mockController = mock<BarrierController<String>> {
-            on { onBarrierBlocked(any()) } doAnswer { _ ->
+        val mockController = mock<BarrierController<String>>()
+
+        runBlocking {
+            whenever(mockController.onBarrierBlocked(any())).doAnswer {
                 controllerCalled = true
                 Unit
             }
@@ -145,14 +148,18 @@ class BarrierTest {
     @Test
     fun doesNotCallControllerUponBlockIfLiftedBeforeStart() {
         val barrier = BarrierImpl(mockController)
-        verify(mockController, never()).onBarrierBlocked(any())
+        runBlocking {
+            verify(mockController, never()).onBarrierBlocked(any())
+        }
         barrier.lift()
 
         runBlocking {
             barrier.invoke("this")
         }
 
-        verify(mockController, never()).onBarrierBlocked(any())
+        runBlocking {
+            verify(mockController, never()).onBarrierBlocked(any())
+        }
     }
 
     @Test

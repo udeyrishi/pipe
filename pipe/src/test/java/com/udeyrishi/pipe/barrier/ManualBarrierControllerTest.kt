@@ -7,6 +7,7 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.isNull
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
+import kotlinx.coroutines.experimental.runBlocking
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -69,8 +70,10 @@ class ManualBarrierControllerTest {
         verify(mockBarrier1, never()).lift(any())
         verify(mockBarrier2, never()).lift(any())
 
-        controller.onBarrierBlocked(mockBarrier1)
-        controller.onBarrierBlocked(mockBarrier2)
+        runBlocking {
+            controller.onBarrierBlocked(mockBarrier1)
+            controller.onBarrierBlocked(mockBarrier2)
+        }
 
         controller.lift()
         verify(mockBarrier1).lift(isNull())
@@ -78,7 +81,7 @@ class ManualBarrierControllerTest {
     }
 
     @Test(expected = IllegalArgumentException::class)
-    fun `only allows registered barriers to notify of blocks`() {
+    fun `only allows registered barriers to notify of blocks`() = runBlocking {
         controller.onBarrierCreated(mockBarrier1)
         controller.onBarrierBlocked(mockBarrier2)
     }
@@ -91,8 +94,10 @@ class ManualBarrierControllerTest {
         verify(mockBarrier1, never()).lift(any())
         verify(mockBarrier2, never()).lift(any())
 
-        controller.onBarrierBlocked(mockBarrier1)
-        controller.onBarrierBlocked(mockBarrier2)
+        runBlocking {
+            controller.onBarrierBlocked(mockBarrier1)
+            controller.onBarrierBlocked(mockBarrier2)
+        }
 
         controller.lift()
         controller.lift()
@@ -108,7 +113,7 @@ class ManualBarrierControllerTest {
     }
 
     @Test(expected = IllegalArgumentException::class)
-    fun `cannot mark a barrier as blocked 2x`() {
+    fun `cannot mark a barrier as blocked 2x`() = runBlocking {
         controller.onBarrierCreated(mockBarrier1)
         controller.onBarrierBlocked(mockBarrier1)
         controller.onBarrierBlocked(mockBarrier1)

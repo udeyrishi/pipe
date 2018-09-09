@@ -59,7 +59,7 @@ internal class CountedBarrierControllerImpl<T : Comparable<T>>(private var capac
         }
     }
 
-    override fun onBarrierBlocked(barrier: Barrier<T>) {
+    override suspend fun onBarrierBlocked(barrier: Barrier<T>) {
         synchronized(lock) {
             if (barrier !in barriers) {
                 throw IllegalArgumentException("Barrier $barrier was never registered.")

@@ -32,10 +32,15 @@ internal class BarrierImpl<T : Any>(private val controller: BarrierController<T>
             return getEvaluatedResult()
         }
 
+        controller.onBarrierBlocked(this)
+
         /**
          * lift() might get call asynchronously while the block inside suspendCoroutine is running.
          * Do the standard before-and-after check to ensure lift() wasn't called. If it was called, bail early.
          * Else, set the `continuation`. When lift() is indeed called, it will resume the coroutine via the continuation.
+         *
+         * `onBarrierBlocked` may cause the barrier to be lifted based on the controller implementation,
+         * so this before and after check is essential.
          */
         return suspendCoroutine {
             synchronized(lock) {
@@ -43,7 +48,6 @@ internal class BarrierImpl<T : Any>(private val controller: BarrierController<T>
                     it.resume(getEvaluatedResult())
                 } else {
                     this.continuation = it
-                    controller.onBarrierBlocked(this)
                 }
             }
             // If it.resume(input) isn't called until this point, suspendCoroutine will block the current coroutine

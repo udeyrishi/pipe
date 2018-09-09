@@ -22,7 +22,7 @@ internal class ManualBarrierControllerImpl<T : Any> : BarrierController<T>, Manu
         }
     }
 
-    override fun onBarrierBlocked(barrier: Barrier<T>) {
+    override suspend fun onBarrierBlocked(barrier: Barrier<T>) {
         synchronized(lock) {
             if (barrier !in unliftedBarriers) {
                 throw IllegalArgumentException("Something went wrong. $barrier should have never been blocked.")

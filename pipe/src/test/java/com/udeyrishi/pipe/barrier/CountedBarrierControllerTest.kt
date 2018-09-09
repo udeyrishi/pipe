@@ -59,7 +59,7 @@ class CountedBarrierControllerTest {
     }
 
     @Test
-    fun `lifts barrier when arrival count matches capacity`() {
+    fun `lifts barrier when arrival count matches capacity`() = runBlocking {
         controller.onBarrierCreated(mockBarrier1)
         controller.onBarrierCreated(mockBarrier2)
 
@@ -75,13 +75,11 @@ class CountedBarrierControllerTest {
     }
 
     @Test
-    fun `can update capacity to a bigger value when blocked`() {
+    fun `can update capacity to a bigger value when blocked`() = runBlocking {
         controller.onBarrierCreated(mockBarrier1)
         controller.onBarrierCreated(mockBarrier2)
         controller.onBarrierBlocked(mockBarrier1)
-        runBlocking {
-            controller.setCapacity(3)
-        }
+        controller.setCapacity(3)
         controller.onBarrierCreated(mockBarrier3)
         controller.onBarrierBlocked(mockBarrier2)
 
@@ -97,7 +95,7 @@ class CountedBarrierControllerTest {
     }
 
     @Test
-    fun `can update capacity to a lower value when blocked`() {
+    fun `can update capacity to a lower value when blocked`() = runBlocking {
         controller = CountedBarrierControllerImpl(capacity = 4)
 
         controller.onBarrierCreated(mockBarrier1)
@@ -106,9 +104,7 @@ class CountedBarrierControllerTest {
         controller.onBarrierBlocked(mockBarrier2)
         controller.onBarrierCreated(mockBarrier3)
 
-        runBlocking {
-            controller.setCapacity(3)
-        }
+        controller.setCapacity(3)
 
         verify(mockBarrier1, never()).lift(any())
         verify(mockBarrier2, never()).lift(any())
@@ -122,10 +118,8 @@ class CountedBarrierControllerTest {
     }
 
     @Test
-    fun `can update capacity to a bigger value before start`() {
-        runBlocking {
-            controller.setCapacity(3)
-        }
+    fun `can update capacity to a bigger value before start`() = runBlocking {
+        controller.setCapacity(3)
         controller.onBarrierCreated(mockBarrier1)
         controller.onBarrierCreated(mockBarrier2)
         controller.onBarrierBlocked(mockBarrier1)
@@ -145,11 +139,9 @@ class CountedBarrierControllerTest {
     }
 
     @Test
-    fun `can update capacity to a lower value before start`() {
+    fun `can update capacity to a lower value before start`() = runBlocking {
         controller = CountedBarrierControllerImpl(capacity = 4)
-        runBlocking {
-            controller.setCapacity(3)
-        }
+        controller.setCapacity(3)
 
         controller.onBarrierCreated(mockBarrier1)
         controller.onBarrierCreated(mockBarrier2)
@@ -169,7 +161,7 @@ class CountedBarrierControllerTest {
     }
 
     @Test
-    fun `updating capacity to arrival count lifts the barriers`() {
+    fun `updating capacity to arrival count lifts the barriers`() = runBlocking {
         controller = CountedBarrierControllerImpl(capacity = 4)
         controller.onBarrierCreated(mockBarrier1)
         controller.onBarrierBlocked(mockBarrier1)
@@ -180,9 +172,7 @@ class CountedBarrierControllerTest {
         verify(mockBarrier1, never()).lift(any())
         verify(mockBarrier2, never()).lift(any())
 
-        runBlocking {
-            controller.setCapacity(2)
-        }
+        controller.setCapacity(2)
         verify(mockBarrier1, times(1)).lift(eq("mockInput1"))
         verify(mockBarrier2, times(1)).lift(eq("mockInput2"))
     }
@@ -199,12 +189,12 @@ class CountedBarrierControllerTest {
     }
 
     @Test(expected = IllegalArgumentException::class)
-    fun `onBarrierBlocked verifies that the barrier was registered`() {
+    fun `onBarrierBlocked verifies that the barrier was registered`() = runBlocking {
         controller.onBarrierBlocked(mockBarrier1)
     }
 
     @Test
-    fun `invokes onBarrierLiftedAction when supplied`() {
+    fun `invokes onBarrierLiftedAction when supplied`() = runBlocking {
         controller = CountedBarrierControllerImpl(capacity = 2) {
             // the inputs come in sorted
             assertEquals(listOf("mockInput1", "mockInput2"), it)
@@ -270,7 +260,7 @@ class CountedBarrierControllerTest {
     }
 
     @Test(expected = IllegalArgumentException::class)
-    fun `cannot mark a barrier as blocked 2x`() {
+    fun `cannot mark a barrier as blocked 2x`() = runBlocking {
         controller.onBarrierCreated(mockBarrier1)
         controller.onBarrierBlocked(mockBarrier1)
         controller.onBarrierBlocked(mockBarrier1)
