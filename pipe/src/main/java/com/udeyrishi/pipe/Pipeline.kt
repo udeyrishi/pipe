@@ -13,9 +13,19 @@ import com.udeyrishi.pipe.repository.MutableRepository
 import com.udeyrishi.pipe.steps.Step
 import com.udeyrishi.pipe.steps.StepDescriptor
 import com.udeyrishi.pipe.util.Identifiable
+import com.udeyrishi.pipe.util.ThrowOnMainThreadExceptionHandler
+import com.udeyrishi.pipe.util.UnexpectedExceptionHandler
+import kotlinx.coroutines.experimental.CoroutineExceptionHandler
 import java.util.UUID
+import kotlin.coroutines.experimental.CoroutineContext
 
-class Pipeline<T : Any> private constructor(private val repository: MutableRepository<in Job<T>>, private val operations: List<PipelineOperationSpec<T>>) {
+fun <T : Any> buildPipeline(repository: MutableRepository<in Job<T>>, unexpectedExceptionHandler: UnexpectedExceptionHandler = ThrowOnMainThreadExceptionHandler, stepDefiner: (Pipeline.Builder<T>.() -> Unit)): Pipeline<T> {
+    val builder = Pipeline.Builder<T>()
+    builder.stepDefiner()
+    return builder.build(repository, unexpectedExceptionHandler)
+}
+
+class Pipeline<T : Any> private constructor(private val repository: MutableRepository<in Job<T>>, private val operations: List<PipelineOperationSpec<T>>, private val launchContext: CoroutineContext) {
     private val barrierControllers: List<BarrierController<Passenger<T>>>
 
     val manualBarriers: List<ManualBarrierController>
@@ -30,7 +40,7 @@ class Pipeline<T : Any> private constructor(private val repository: MutableRepos
                 .map {
                     when (it) {
                         is PipelineOperationSpec.Barrier.Manual<T> -> ManualBarrierControllerImpl<Passenger<T>>()
-                        is PipelineOperationSpec.Barrier.Counted<T> -> CountedBarrierControllerImpl(capacity = it.capacity, onBarrierLiftedAction = it.onBarrierLiftedAction?.toPassengerStep())
+                        is PipelineOperationSpec.Barrier.Counted<T> -> CountedBarrierControllerImpl(capacity = it.capacity, onBarrierLiftedAction = it.onBarrierLiftedAction?.toPassengerStep(), launchContext = launchContext)
                     }
                 }
     }
@@ -40,7 +50,7 @@ class Pipeline<T : Any> private constructor(private val repository: MutableRepos
         return repository.add(tag) { newUUID, position ->
             val passenger = Passenger(input, newUUID, position)
             val steps = materializeSteps()
-            val orchestrator = Orchestrator(passenger, steps)
+            val orchestrator = Orchestrator(passenger, steps, launchContext)
             Job(orchestrator)
         } as Job<T>
     }
@@ -85,7 +95,7 @@ class Pipeline<T : Any> private constructor(private val repository: MutableRepos
             operations.add(PipelineOperationSpec.Barrier.Counted(name, capacity = capacity, attempts = attempts, onBarrierLiftedAction = onBarrierLiftedAction))
         }
 
-        fun build(repository: MutableRepository<in Job<T>>) = Pipeline(repository, operations)
+        fun build(repository: MutableRepository<in Job<T>>, unexpectedExceptionHandler: UnexpectedExceptionHandler = ThrowOnMainThreadExceptionHandler) = Pipeline(repository, operations, createExceptionHandler(unexpectedExceptionHandler))
     }
 
     internal class Passenger<T : Any>(val data: T, override val uuid: UUID, val position: Long) : Comparable<Passenger<T>>, Identifiable {
@@ -114,9 +124,10 @@ private fun <T : Any> Step<List<T>>.toPassengerStep(): Step<List<Pipeline.Passen
     }
 }
 
-fun <T : Any> buildPipeline(repository: MutableRepository<in Job<T>>, stepDefiner: (Pipeline.Builder<T>.() -> Unit)): Pipeline<T> {
-    val builder = Pipeline.Builder<T>()
-    builder.stepDefiner()
-    return builder.build(repository)
+private fun createExceptionHandler(exceptionHandler: UnexpectedExceptionHandler): CoroutineExceptionHandler {
+    return CoroutineExceptionHandler { _, throwable ->
+        exceptionHandler.handler.post {
+            exceptionHandler.handleException(throwable)
+        }
+    }
 }
-
