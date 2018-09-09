@@ -5,10 +5,11 @@ package com.udeyrishi.pipe.barrier
 
 import com.udeyrishi.pipe.steps.Step
 import com.udeyrishi.pipe.util.SortReplayer
+import kotlinx.coroutines.experimental.launch
 
 interface CountedBarrierController {
     fun getCapacity(): Int
-    suspend fun setCapacity(capacity: Int)
+    fun setCapacity(capacity: Int)
 }
 
 internal class CountedBarrierControllerImpl<T : Comparable<T>>(private var capacity: Int = Int.MAX_VALUE, private val onBarrierLiftedAction: Step<List<T>>? = null) : BarrierController<T>, CountedBarrierController {
@@ -34,7 +35,7 @@ internal class CountedBarrierControllerImpl<T : Comparable<T>>(private var capac
 
     override fun getCapacity(): Int = capacity
 
-    override suspend fun setCapacity(capacity: Int) {
+    override fun setCapacity(capacity: Int) {
         synchronized(lock) {
             if (registeredCount > capacity) {
                 throw IllegalStateException("Cannot change the capacity from $capacity to $capacity, because $registeredCount items have already been registered.")
@@ -43,7 +44,9 @@ internal class CountedBarrierControllerImpl<T : Comparable<T>>(private var capac
             if (arrivalCount == capacity) {
                 // We now need to retroactively mark the last arrived input as the final input. Usually, the last arrival's coroutine can be reused for aggregation purposes, but it's blocked
                 // on the barrier now. So temporarily create a new one to do the aggregation + unblocking work.
-                onFinalInputPushed()
+                launch {
+                    onFinalInputPushed()
+                }
             }
         }
     }

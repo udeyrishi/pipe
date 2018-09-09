@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit
 @RunWith(JUnit4::class)
 class CountedBarrierControllerTest {
     @get:Rule
-    val timeoutRule = Timeout(500, TimeUnit.SECONDS)
+    val timeoutRule = Timeout(25, TimeUnit.SECONDS)
 
     private lateinit var mockBarrier1: Barrier<String>
     private lateinit var mockBarrier2: Barrier<String>
@@ -50,9 +50,7 @@ class CountedBarrierControllerTest {
 
     @Test(expected = IllegalStateException::class)
     fun `onBarrierCreated checks for capacity overflows`() {
-        runBlocking {
-            controller.setCapacity(1)
-        }
+        controller.setCapacity(1)
         controller.onBarrierCreated(mockBarrier1)
         controller.onBarrierCreated(mockBarrier2)
     }
@@ -162,43 +160,6 @@ class CountedBarrierControllerTest {
     @Test
     fun `updating capacity to arrival count lifts the barriers`() = runBlocking {
         controller = CountedBarrierControllerImpl(capacity = 4)
-        controller.onBarrierCreated(mockBarrier1)
-        controller.onBarrierBlocked(mockBarrier1)
-
-        controller.onBarrierCreated(mockBarrier2)
-        controller.onBarrierBlocked(mockBarrier2)
-
-        verify(mockBarrier1, never()).lift(any())
-        verify(mockBarrier2, never()).lift(any())
-
-        controller.setCapacity(2)
-        verify(mockBarrier1, times(1)).lift(eq("mockInput1"))
-        verify(mockBarrier2, times(1)).lift(eq("mockInput2"))
-    }
-
-    @Test(expected = IllegalStateException::class)
-    fun `cannot update capacity to a value less than the registration count`() {
-        controller = CountedBarrierControllerImpl(capacity = 4)
-        controller.onBarrierCreated(mockBarrier1)
-        controller.onBarrierCreated(mockBarrier2)
-
-        runBlocking {
-            controller.setCapacity(1)
-        }
-    }
-
-    @Test(expected = IllegalArgumentException::class)
-    fun `onBarrierBlocked verifies that the barrier was registered`() = runBlocking {
-        controller.onBarrierBlocked(mockBarrier1)
-    }
-
-    @Test
-    fun `invokes onBarrierLiftedAction when supplied`() = runBlocking {
-        controller = CountedBarrierControllerImpl(capacity = 2) {
-            // the inputs come in sorted
-            assertEquals(listOf("mockInput1", "mockInput2"), it)
-            listOf("mockResult1", "mockResult2")
-        }
 
         var mockBarrier1Result: Any? = null
         mockBarrier1 = mock {
@@ -216,6 +177,53 @@ class CountedBarrierControllerTest {
                 mockBarrier2Result = invocation.arguments[0]
                 Unit
             }
+        }
+
+        controller.onBarrierCreated(mockBarrier1)
+        controller.onBarrierBlocked(mockBarrier1)
+
+        controller.onBarrierCreated(mockBarrier2)
+        controller.onBarrierBlocked(mockBarrier2)
+
+        verify(mockBarrier1, never()).lift(any())
+        verify(mockBarrier2, never()).lift(any())
+
+        controller.setCapacity(2)
+        while (mockBarrier1Result == null || mockBarrier2Result == null) {
+            Thread.sleep(100)
+        }
+        verify(mockBarrier1, times(1)).lift(eq("mockInput1"))
+        verify(mockBarrier2, times(1)).lift(eq("mockInput2"))
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun `cannot update capacity to a value less than the registration count`() {
+        controller = CountedBarrierControllerImpl(capacity = 4)
+        controller.onBarrierCreated(mockBarrier1)
+        controller.onBarrierCreated(mockBarrier2)
+
+        controller.setCapacity(1)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `onBarrierBlocked verifies that the barrier was registered`() = runBlocking {
+        controller.onBarrierBlocked(mockBarrier1)
+    }
+
+    @Test
+    fun `invokes onBarrierLiftedAction when supplied`() = runBlocking {
+        controller = CountedBarrierControllerImpl(capacity = 2) {
+            // the inputs come in sorted
+            assertEquals(listOf("mockInput1", "mockInput2"), it)
+            listOf("mockResult1", "mockResult2")
+        }
+
+        mockBarrier1 = mock {
+            on { input } doReturn "mockInput1"
+        }
+
+        mockBarrier2 = mock {
+            on { input } doReturn "mockInput2"
         }
 
         controller.onBarrierCreated(mockBarrier2)

@@ -5,7 +5,6 @@ package com.udeyrishi.pipe
 
 import android.arch.core.executor.testing.InstantTaskExecutorRule
 import com.udeyrishi.pipe.repository.InMemoryRepository
-import kotlinx.coroutines.experimental.launch
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -73,9 +72,7 @@ class PipelineTest {
 
         // Everyone is waiting at the barrier. Now that we know the count, we can safely update the aggregator capacity, and then lift the barrier.
         pipeline.barriers[0].lift()
-        launch {
-            pipeline.aggregators[0].setCapacity(3)
-        }
+        pipeline.aggregators[0].setCapacity(3)
 
         while (jobs.any { it.state.value !is State.Terminal }) {
             Thread.sleep(100)
