@@ -24,7 +24,7 @@ class PipelineTest {
 
         var barrierReachedCount = 0
 
-        val pipeline = buildPipeline<Int>(ordered = true, repository = InMemoryRepository()) {
+        val pipeline = buildPipeline<Int>(repository = InMemoryRepository()) {
             addStep("step 1") {
                 it + 1
             }
