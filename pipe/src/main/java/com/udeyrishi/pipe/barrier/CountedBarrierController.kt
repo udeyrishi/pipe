@@ -5,7 +5,6 @@ package com.udeyrishi.pipe.barrier
 
 import com.udeyrishi.pipe.steps.Step
 import com.udeyrishi.pipe.util.SortReplayer
-import kotlinx.coroutines.experimental.launch
 
 interface CountedBarrierController {
     fun getCapacity(): Int
@@ -75,7 +74,7 @@ internal class CountedBarrierControllerImpl<T : Comparable<T>>(private var capac
         }
     }
 
-    private fun onFinalInputPushed() {
+    private suspend fun onFinalInputPushed() {
         if (barriers.any { !it.value }) {
             throw IllegalStateException("All registered barriers must have been blocked by now. Something went wrong.")
         }
@@ -92,11 +91,9 @@ internal class CountedBarrierControllerImpl<T : Comparable<T>>(private var capac
         val sortedInputs = unsortedInputs.sorted()
         val sortReplayer = SortReplayer(original = unsortedInputs, sorted = sortedInputs)
 
-        launch {
-            val sortedOutputs = onBarrierLiftedAction.invoke(sortedInputs.map { it })
-            val unsortedOutputs = sortReplayer.reverseApplySortTransformations(sortedOutputs)
-            liftBarriers(unsortedOutputs)
-        }
+        val sortedOutputs = onBarrierLiftedAction.invoke(sortedInputs.map { it })
+        val unsortedOutputs = sortReplayer.reverseApplySortTransformations(sortedOutputs)
+        liftBarriers(unsortedOutputs)
     }
 
     private fun liftBarriers(results: List<T>) {

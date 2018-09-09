@@ -14,7 +14,6 @@ import com.nhaarman.mockitokotlin2.verify
 import kotlinx.coroutines.experimental.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.Timeout
@@ -238,7 +237,6 @@ class CountedBarrierControllerTest {
         verify(mockBarrier2, times(1)).lift(eq("mockResult2"))
     }
 
-    @Ignore("Blocked by https://github.com/udeyrishi/pipe/issues/4")
     @Test(expected = IllegalArgumentException::class)
     fun `checks that onBarrierLiftedAction returns correct sized lists`() = runBlocking {
         controller = CountedBarrierControllerImpl(capacity = 2) {
