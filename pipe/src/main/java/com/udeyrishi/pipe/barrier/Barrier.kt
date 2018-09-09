@@ -7,7 +7,7 @@ import com.udeyrishi.pipe.util.immutableAfterSet
 import kotlin.coroutines.experimental.Continuation
 import kotlin.coroutines.experimental.suspendCoroutine
 
-interface Barrier<T : Any> {
+internal interface Barrier<T : Any> {
     val input: T?
     suspend operator fun invoke(input: T): T
     fun lift(result: T? = null)
