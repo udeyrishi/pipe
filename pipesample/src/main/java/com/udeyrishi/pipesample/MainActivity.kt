@@ -8,6 +8,8 @@ import android.widget.ImageView
 import com.udeyrishi.pipe.Job
 import com.udeyrishi.pipe.State
 import kotlinx.android.synthetic.main.activity_main.root
+import kotlinx.coroutines.experimental.async
+import kotlinx.coroutines.experimental.runBlocking
 
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -59,8 +61,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun createImageJobs(imageUrls: List<String>): List<Job<ImagePipelineMember>> {
         val pipeline = makePipeline(App.INSTANCE.jobsRepo)
-        pipeline.aggregators.forEach {
-            it.capacity = imageUrls.size
+        pipeline.aggregators.map {
+            async {
+                it.setCapacity(imageUrls.size)
+            }
+        }.forEach {
+            runBlocking {
+                it.await()
+            }
         }
 
         return imageUrls.map { url ->

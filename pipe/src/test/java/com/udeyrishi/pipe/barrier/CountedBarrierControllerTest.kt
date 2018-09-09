@@ -51,7 +51,9 @@ class CountedBarrierControllerTest {
 
     @Test(expected = IllegalStateException::class)
     fun `onBarrierCreated checks for capacity overflows`() {
-        controller.capacity = 1
+        runBlocking {
+            controller.setCapacity(1)
+        }
         controller.onBarrierCreated(mockBarrier1)
         controller.onBarrierCreated(mockBarrier2)
     }
@@ -77,7 +79,9 @@ class CountedBarrierControllerTest {
         controller.onBarrierCreated(mockBarrier1)
         controller.onBarrierCreated(mockBarrier2)
         controller.onBarrierBlocked(mockBarrier1)
-        controller.capacity = 3
+        runBlocking {
+            controller.setCapacity(3)
+        }
         controller.onBarrierCreated(mockBarrier3)
         controller.onBarrierBlocked(mockBarrier2)
 
@@ -102,7 +106,9 @@ class CountedBarrierControllerTest {
         controller.onBarrierBlocked(mockBarrier2)
         controller.onBarrierCreated(mockBarrier3)
 
-        controller.capacity = 3
+        runBlocking {
+            controller.setCapacity(3)
+        }
 
         verify(mockBarrier1, never()).lift(any())
         verify(mockBarrier2, never()).lift(any())
@@ -117,7 +123,9 @@ class CountedBarrierControllerTest {
 
     @Test
     fun `can update capacity to a bigger value before start`() {
-        controller.capacity = 3
+        runBlocking {
+            controller.setCapacity(3)
+        }
         controller.onBarrierCreated(mockBarrier1)
         controller.onBarrierCreated(mockBarrier2)
         controller.onBarrierBlocked(mockBarrier1)
@@ -139,7 +147,9 @@ class CountedBarrierControllerTest {
     @Test
     fun `can update capacity to a lower value before start`() {
         controller = CountedBarrierControllerImpl(capacity = 4)
-        controller.capacity = 3
+        runBlocking {
+            controller.setCapacity(3)
+        }
 
         controller.onBarrierCreated(mockBarrier1)
         controller.onBarrierCreated(mockBarrier2)
@@ -170,7 +180,9 @@ class CountedBarrierControllerTest {
         verify(mockBarrier1, never()).lift(any())
         verify(mockBarrier2, never()).lift(any())
 
-        controller.capacity = 2
+        runBlocking {
+            controller.setCapacity(2)
+        }
         verify(mockBarrier1, times(1)).lift(eq("mockInput1"))
         verify(mockBarrier2, times(1)).lift(eq("mockInput2"))
     }
@@ -181,7 +193,9 @@ class CountedBarrierControllerTest {
         controller.onBarrierCreated(mockBarrier1)
         controller.onBarrierCreated(mockBarrier2)
 
-        controller.capacity = 1
+        runBlocking {
+            controller.setCapacity(1)
+        }
     }
 
     @Test(expected = IllegalArgumentException::class)
