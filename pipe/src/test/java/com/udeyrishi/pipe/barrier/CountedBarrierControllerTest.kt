@@ -229,10 +229,6 @@ class CountedBarrierControllerTest {
         // 1 is getting pushed after 2. So arriving out of order (wrt the natural order for strings)
         controller.onBarrierBlocked(mockBarrier1)
 
-        while (mockBarrier1Result == null || mockBarrier2Result == null) {
-            Thread.sleep(100)
-        }
-
         verify(mockBarrier1, times(1)).lift(eq("mockResult1"))
         verify(mockBarrier2, times(1)).lift(eq("mockResult2"))
     }
