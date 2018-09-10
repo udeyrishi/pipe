@@ -5,6 +5,7 @@ package com.udeyrishi.pipe.barrier
 
 import com.udeyrishi.pipe.steps.Step
 import com.udeyrishi.pipe.util.SortReplayer
+import com.udeyrishi.pipe.util.immutableAfterSet
 import kotlinx.coroutines.experimental.DefaultDispatcher
 import kotlinx.coroutines.experimental.launch
 import kotlin.coroutines.experimental.CoroutineContext
@@ -34,6 +35,7 @@ internal class CountedBarrierControllerImpl<T : Comparable<T>>(private val launc
 
     // Registered barrier to whether it's blocked or not
     private val barriers = mutableMapOf<Barrier<T>, Boolean>()
+    private var interrupted by immutableAfterSet(false)
 
     override fun getCapacity(): Int = capacity
 
@@ -58,23 +60,53 @@ internal class CountedBarrierControllerImpl<T : Comparable<T>>(private val launc
             if (barriers.contains(barrier)) {
                 throw IllegalArgumentException("Cannot register $barrier 2x.")
             }
-            ++registeredCount
-            barriers.put(barrier, false)
+            if (interrupted) {
+                barrier.interrupt()
+            } else {
+                ++registeredCount
+                barriers.put(barrier, false)
+            }
         }
     }
 
     override suspend fun onBarrierBlocked(barrier: Barrier<T>) {
         synchronized(lock) {
-            if (barrier !in barriers) {
-                throw IllegalArgumentException("Barrier $barrier was never registered.")
+            when (barriers[barrier]) {
+                null -> {
+                    if (!interrupted) {
+                        // barriers can be missing an interruption call races with a barrier getting blocked. Safely ignore this message,
+                        // because the barrier was notified of the interruption too.
+                        throw IllegalArgumentException("Barrier $barrier was never registered.")
+                    }
+                }
+                true -> throw IllegalArgumentException("Barrier $barrier was already marked as blocked.")
+                false -> {
+                    barriers[barrier] = true
+                    ++arrivalCount
+                    if (arrivalCount == capacity) {
+                        onFinalInputPushed()
+                    }
+                }
             }
-            if (barriers[barrier] == true) {
-                throw IllegalArgumentException("Barrier $barrier was already marked as blocked.")
-            }
-            barriers[barrier] = true
-            ++arrivalCount
-            if (arrivalCount == capacity) {
-                onFinalInputPushed()
+        }
+    }
+
+    override fun onBarrierInterrupted(barrier: Barrier<T>) {
+        synchronized(lock) {
+            when {
+                barrier in barriers -> {
+                    interrupted = true
+                    barriers.remove(barrier)
+                    barriers.keys.forEach {
+                        it.interrupt()
+                    }
+                    barriers.clear()
+                }
+
+                !interrupted -> {
+                    // barrier can be missing in barriers in the case where a barrier.interrupt call leads to a controller.onBarrierInterrupted
+                    throw IllegalArgumentException("Barrier $barrier was never registered.")
+                }
             }
         }
     }

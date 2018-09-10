@@ -47,4 +47,11 @@ internal class ManualBarrierControllerImpl<T : Any> : BarrierController<T>, Manu
             }
         }
     }
+
+    override fun onBarrierInterrupted(barrier: Barrier<T>) {
+        synchronized(lock) {
+            unliftedBarriers.remove(barrier)
+                    ?: throw IllegalArgumentException("Something went wrong. $barrier should have never been blocked.")
+        }
+    }
 }

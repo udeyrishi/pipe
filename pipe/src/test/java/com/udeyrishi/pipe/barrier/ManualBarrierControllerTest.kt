@@ -117,4 +117,26 @@ class ManualBarrierControllerTest {
         controller.onBarrierBlocked(mockBarrier1)
         controller.onBarrierBlocked(mockBarrier1)
     }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `onBarrierInterrupted checks whether the barrier was registered`() {
+        controller.onBarrierInterrupted(mockBarrier1)
+    }
+
+    @Test
+    fun `interrupted barriers are not lifted by the controller`() {
+        controller.onBarrierCreated(mockBarrier1)
+        controller.onBarrierCreated(mockBarrier2)
+        controller.onBarrierInterrupted(mockBarrier2)
+        runBlocking {
+            controller.onBarrierBlocked(mockBarrier1)
+        }
+
+        verify(mockBarrier1, never()).lift(any())
+        verify(mockBarrier2, never()).lift(any())
+        controller.lift()
+
+        verify(mockBarrier1).lift(isNull())
+        verify(mockBarrier2, never()).lift(any())
+    }
 }

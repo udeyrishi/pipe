@@ -237,4 +237,16 @@ class BarrierTest {
 
         assertNull(result)
     }
+
+    @Test
+    fun `informs controller of interruption`() {
+        val barrier = BarrierImpl(mockController)
+        launch {
+            barrier.invoke("this")
+        }
+
+        verify(mockController, never()).onBarrierInterrupted(any())
+        barrier.interrupt()
+        verify(mockController).onBarrierInterrupted(eq(barrier))
+    }
 }

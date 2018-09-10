@@ -70,6 +70,7 @@ internal class BarrierImpl<T : Any>(private val controller: BarrierController<T>
                 if (!lifted) {
                     this.interrupted = true
                     markAsLifted(null)
+                    controller.onBarrierInterrupted(this)
                 }
             }
         }

@@ -266,4 +266,49 @@ class CountedBarrierControllerTest {
         controller.onBarrierBlocked(mockBarrier1)
         controller.onBarrierBlocked(mockBarrier1)
     }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `onBarrierInterrupted checks whether the barrier was registered`() {
+        controller.onBarrierInterrupted(mockBarrier1)
+    }
+
+    @Test
+    fun `controller interrupts all other barriers if any one is interrupted`() {
+        controller.setCapacity(3)
+
+        controller.onBarrierCreated(mockBarrier1)
+        controller.onBarrierCreated(mockBarrier2)
+        controller.onBarrierCreated(mockBarrier3)
+
+        runBlocking {
+            controller.onBarrierBlocked(mockBarrier1)
+            controller.onBarrierBlocked(mockBarrier2)
+        }
+
+        verify(mockBarrier1, never()).interrupt()
+        verify(mockBarrier2, never()).interrupt()
+        verify(mockBarrier3, never()).interrupt()
+
+        controller.onBarrierInterrupted(mockBarrier2)
+
+        verify(mockBarrier1).interrupt()
+        verify(mockBarrier2, never()).interrupt()
+        verify(mockBarrier3).interrupt()
+    }
+
+    @Test
+    fun `controller interrupts any future registrations if any one is interrupted`() {
+        controller.setCapacity(3)
+        controller.onBarrierCreated(mockBarrier1)
+        controller.onBarrierInterrupted(mockBarrier1)
+
+        verify(mockBarrier2, never()).interrupt()
+        controller.onBarrierCreated(mockBarrier2)
+        verify(mockBarrier2).interrupt()
+
+
+        verify(mockBarrier3, never()).interrupt()
+        controller.onBarrierCreated(mockBarrier3)
+        verify(mockBarrier3).interrupt()
+    }
 }
