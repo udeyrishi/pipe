@@ -24,7 +24,11 @@ internal class ManualBarrierControllerImpl<T : Any> : BarrierController<T>, Manu
 
     override suspend fun onBarrierBlocked(barrier: Barrier<T>) {
         synchronized(lock) {
-            if (barrier !in unliftedBarriers) {
+            if (barrier !in unliftedBarriers && !lifted) {
+                // The barrier might be missing in barriers if the controller was lifted a moment ago. Possible
+                // if the barrier.invoke was racing with it.
+
+                // Safe to ignore this call then, since the barrier will check for the lift again momentarily.
                 throw IllegalArgumentException("Something went wrong. $barrier should have never been blocked.")
             }
 

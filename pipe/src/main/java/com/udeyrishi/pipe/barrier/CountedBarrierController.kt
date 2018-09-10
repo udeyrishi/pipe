@@ -5,7 +5,6 @@ package com.udeyrishi.pipe.barrier
 
 import com.udeyrishi.pipe.steps.Step
 import com.udeyrishi.pipe.util.SortReplayer
-import com.udeyrishi.pipe.util.immutableAfterSet
 import kotlinx.coroutines.experimental.DefaultDispatcher
 import kotlinx.coroutines.experimental.launch
 import kotlin.coroutines.experimental.CoroutineContext
@@ -35,7 +34,13 @@ internal class CountedBarrierControllerImpl<T : Comparable<T>>(private val launc
 
     // Registered barrier to whether it's blocked or not
     private val barriers = mutableMapOf<Barrier<T>, Boolean>()
-    private var interrupted by immutableAfterSet(false)
+    private var interrupted = false
+        set(value) {
+            if (field && !value) {
+                throw IllegalArgumentException("interrupted cannot go from true to false.")
+            }
+            field = value
+        }
 
     override fun getCapacity(): Int = capacity
 

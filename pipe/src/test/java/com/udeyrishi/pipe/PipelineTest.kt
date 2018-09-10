@@ -6,6 +6,7 @@ package com.udeyrishi.pipe
 import android.arch.core.executor.testing.InstantTaskExecutorRule
 import com.udeyrishi.pipe.repository.InMemoryRepository
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -89,5 +90,106 @@ class PipelineTest {
         }
 
         assertEquals(listOf(6, 7, 8), aggregated)
+    }
+
+    @Test
+    fun `interrupting one job does not interrupt others`() {
+        val pipeline = buildPipeline<Int>(InMemoryRepository()) {
+            addManualBarrier("some barrier")
+
+            addStep("my step", attempts = 1L) {
+                it + 1
+            }
+        }
+
+        val job1 = pipeline.push(1, null)
+        val job2 = pipeline.push(2, null)
+
+        job1.interrupt()
+        job2.start()
+
+        pipeline.manualBarriers[0].lift()
+
+        assertTrue(job1.state.value is State.Terminal.Failure)
+        assertTrue((job1.state.value as State.Terminal.Failure).cause is Orchestrator.OrchestratorInterruptedException)
+        assertNull(job1.result)
+
+        while (job2.state.value !is State.Terminal) {
+            Thread.sleep(10)
+        }
+
+        assertEquals(State.Terminal.Success, job2.state.value)
+        assertEquals(3, job2.result)
+    }
+
+    @Test
+    fun `interrupting one job blocked on a manual barrier does not interrupt other jobs blocked on the same barrier`() {
+        val pipeline = buildPipeline<Int>(InMemoryRepository()) {
+            addManualBarrier("some barrier")
+
+            addStep("my step", attempts = 1L) {
+                it + 1
+            }
+        }
+
+        val job1 = pipeline.push(1, null)
+        val job2 = pipeline.push(2, null)
+
+        job1.start()
+        job2.start()
+
+        while ((job1.state.value as? State.Running.Attempting)?.step != "some barrier") {
+            Thread.sleep(10)
+        }
+
+        job1.interrupt()
+
+        pipeline.manualBarriers[0].lift()
+
+        while (job1.state.value !is State.Terminal || job2.state.value !is State.Terminal) {
+            Thread.sleep(10)
+        }
+
+        assertTrue(job1.state.value is State.Terminal.Failure)
+        assertTrue((job1.state.value as State.Terminal.Failure).cause is Orchestrator.OrchestratorInterruptedException)
+        assertNull(job1.result)
+
+        assertEquals(State.Terminal.Success, job2.state.value)
+        assertEquals(3, job2.result)
+    }
+
+    @Test
+    fun `interrupting one job blocked on a counted barrier also interrupts the sibling jobs`() {
+        val pipeline = buildPipeline<Int>(InMemoryRepository()) {
+            addCountedBarrier("some barrier", capacity = 3)
+
+            addStep("my step", attempts = 1L) {
+                it + 1
+            }
+        }
+
+        val job1 = pipeline.push(1, null)
+        val job2 = pipeline.push(2, null)
+
+        job1.start()
+        job2.start()
+
+        while ((job1.state.value as? State.Running.Attempting)?.step != "some barrier") {
+            Thread.sleep(10)
+        }
+
+        job1.interrupt()
+
+        while (job1.state.value !is State.Terminal || job2.state.value !is State.Terminal) {
+            Thread.sleep(10)
+        }
+
+        assertTrue(job1.state.value is State.Terminal.Failure)
+        assertTrue((job1.state.value as State.Terminal.Failure).cause is Orchestrator.OrchestratorInterruptedException)
+        assertNull(job1.result)
+
+        assertTrue(job2.state.value is State.Terminal.Failure)
+        assertTrue((job2.state.value as State.Terminal.Failure).cause is Orchestrator.OrchestratorInterruptedException)
+        assertNull(job2.result)
     }
 }
