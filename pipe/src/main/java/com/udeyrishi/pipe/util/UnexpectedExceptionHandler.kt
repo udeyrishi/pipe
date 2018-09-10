@@ -9,4 +9,3 @@ interface UnexpectedExceptionHandler {
     val handler: Handler
     fun handleException(throwable: Throwable)
 }
-

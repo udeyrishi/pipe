@@ -70,4 +70,3 @@ internal class BarrierImpl<T : Any>(private val controller: BarrierController<T>
         return result ?: input ?: throw IllegalStateException("Something went wrong. Result must always be non-null after a barrier lift.")
     }
 }
-

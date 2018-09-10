@@ -132,7 +132,6 @@ class CountedBarrierControllerTest {
         verify(mockBarrier1, times(1)).lift(eq("mockInput1"))
         verify(mockBarrier2, times(1)).lift(eq("mockInput2"))
         verify(mockBarrier3, times(1)).lift(eq("mockInput3"))
-
     }
 
     @Test

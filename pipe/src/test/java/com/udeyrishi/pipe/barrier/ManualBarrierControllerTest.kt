@@ -48,7 +48,6 @@ class ManualBarrierControllerTest {
         verify(mockBarrier2).lift(isNull())
     }
 
-
     @Test
     fun `lifts registered barriers when the controller is lifted`() {
         controller.onBarrierCreated(mockBarrier1)
