@@ -190,4 +190,51 @@ class BarrierTest {
 
         assertEquals("that", result)
     }
+
+    @Test
+    fun `interruption lifts the barrier with a null result`() {
+        val barrier = BarrierImpl(mockController)
+        val asyncResult = async {
+            barrier.invoke("this")
+        }
+
+        barrier.interrupt()
+        val result = runBlocking {
+            asyncResult.await()
+        }
+
+        assertNull(result)
+    }
+
+    @Test
+    fun `interrupting a lifted barrier is a no-op`() {
+        val barrier = BarrierImpl(mockController)
+        val asyncResult = async {
+            barrier.invoke("this")
+        }
+
+        barrier.lift("that")
+        barrier.interrupt()
+        val result = runBlocking {
+            asyncResult.await()
+        }
+
+        assertEquals("that", result)
+    }
+
+    @Test
+    fun `lifting an interrupted barrier still gives a null result`() {
+        val barrier = BarrierImpl(mockController)
+        val asyncResult = async {
+            barrier.invoke("this")
+        }
+
+        barrier.interrupt()
+        barrier.lift("that")
+        val result = runBlocking {
+            asyncResult.await()
+        }
+
+        assertNull(result)
+    }
 }

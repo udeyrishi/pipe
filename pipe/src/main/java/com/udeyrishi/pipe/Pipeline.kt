@@ -73,12 +73,8 @@ class Pipeline<T : Any> private constructor(private val repository: MutableRepos
         }
     }
 
-    private fun createBarrier(spec: PipelineOperationSpec.Barrier<T>, controller: BarrierController<Passenger<T>>): StepDescriptor<Passenger<T>> {
-        val barrier = BarrierImpl(controller)
-        return StepDescriptor(spec.name, maxAttempts = spec.attempts) {
-            barrier.invoke(it)
-        }
-    }
+    private fun createBarrier(spec: PipelineOperationSpec.Barrier<T>, controller: BarrierController<Passenger<T>>)
+        = StepDescriptor(spec.name, maxAttempts = spec.attempts, step = BarrierImpl(controller))
 
     class Builder<T : Any> {
         private val operations = mutableListOf<PipelineOperationSpec<T>>()

@@ -3,29 +3,30 @@
  */
 package com.udeyrishi.pipe.barrier
 
+import com.udeyrishi.pipe.steps.InterruptibleStep
 import com.udeyrishi.pipe.util.immutableAfterSet
 import kotlin.coroutines.experimental.Continuation
 import kotlin.coroutines.experimental.suspendCoroutine
 
-internal interface Barrier<T : Any> {
+internal interface Barrier<T : Any> : InterruptibleStep<T> {
     val input: T?
-    suspend operator fun invoke(input: T): T
     fun lift(result: T? = null)
 }
 
 internal class BarrierImpl<T : Any>(private val controller: BarrierController<T>) : Barrier<T> {
     private var lifted by immutableAfterSet(false)
-    private var continuation: Continuation<T>? = null
+    private var continuation: Continuation<T?>? = null
     private val lock = Any()
     override var input: T? by immutableAfterSet(null)
         private set
     private var result: T? by immutableAfterSet(null)
+    private var interrupted by immutableAfterSet(false)
 
     init {
         controller.onBarrierCreated(this)
     }
 
-    override suspend operator fun invoke(input: T): T {
+    override suspend operator fun invoke(input: T): T? {
         this.input = input
 
         if (lifted) {
@@ -58,15 +59,34 @@ internal class BarrierImpl<T : Any>(private val controller: BarrierController<T>
     override fun lift(result: T?) {
         if (!lifted) {
             synchronized(lock) {
-                this.lifted = true
-                this.result = result
-                this.continuation?.resume(getEvaluatedResult())
-                this.continuation = null
+                markAsLifted(result)
             }
         }
     }
 
-    private fun getEvaluatedResult(): T {
-        return result ?: input ?: throw IllegalStateException("Something went wrong. Result must always be non-null after a barrier lift.")
+    override fun interrupt() {
+        if (!interrupted) {
+            synchronized(lock) {
+                if (!lifted) {
+                    this.interrupted = true
+                    markAsLifted(null)
+                }
+            }
+        }
+    }
+
+    private fun markAsLifted(result: T?) {
+        this.lifted = true
+        this.result = result
+        this.continuation?.resume(getEvaluatedResult())
+        this.continuation = null
+    }
+
+    private fun getEvaluatedResult(): T? {
+        return if (interrupted) {
+            null
+        } else {
+            result ?: input ?: throw IllegalStateException("Something went wrong. Result must always be non-null after a barrier lift.")
+        }
     }
 }
