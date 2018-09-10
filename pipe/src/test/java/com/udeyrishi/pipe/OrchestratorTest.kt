@@ -533,7 +533,6 @@ class OrchestratorTest {
             }
         }
 
-
         val steps = listOf(StepDescriptor(name = "step 0", maxAttempts = 1, step = mockStep))
         val input = IdentifiableString("in")
         val orchestrator = Orchestrator(input, steps.iterator())
@@ -583,7 +582,6 @@ class OrchestratorTest {
                 null
             }
         }
-
 
         val steps = listOf(
                 StepDescriptor(name = "step 0", maxAttempts = 1, step = mockStep),

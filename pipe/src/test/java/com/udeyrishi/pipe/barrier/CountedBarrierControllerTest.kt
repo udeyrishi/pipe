@@ -306,7 +306,6 @@ class CountedBarrierControllerTest {
         controller.onBarrierCreated(mockBarrier2)
         verify(mockBarrier2).interrupt()
 
-
         verify(mockBarrier3, never()).interrupt()
         controller.onBarrierCreated(mockBarrier3)
         verify(mockBarrier3).interrupt()
