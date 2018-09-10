@@ -613,4 +613,24 @@ class OrchestratorTest {
         assertTrue((orchestrator.state.value as State.Terminal.Failure).cause.cause is Orchestrator.StepInterruptedException)
         assertFalse(step2Called)
     }
+
+    @Test
+    fun `interrupting a non-started orchestrator marks it as failed`() {
+        val steps = listOf(
+                StepDescriptor(name = "step 0", maxAttempts = 1, step = mock<InterruptibleStep<IdentifiableString>>()),
+                StepDescriptor(name = "step 1", maxAttempts = 1, step = mock<InterruptibleStep<IdentifiableString>>())
+        )
+
+        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator())
+        var failed = false
+        orchestrator.state.observe(createMockLifecycleOwner(), Observer {
+            when (it) {
+                is State.Terminal.Failure -> failed = true
+            }
+        })
+        assertFalse(failed)
+        orchestrator.interrupt()
+        assertTrue(failed)
+        assertNull(orchestrator.result)
+    }
 }

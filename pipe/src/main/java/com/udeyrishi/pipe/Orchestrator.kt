@@ -81,7 +81,15 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
 
     fun interrupt() {
         interrupted = true
-        cursor.nextStep?.step?.interrupt()
+        if (started) {
+            cursor.nextStep?.step?.interrupt()
+        } else {
+            started = true
+            _result = null
+            volatileState.sanityCheck<State.Scheduled>()
+            onStateFailure(cause = OrchestratorInterruptedException(this))
+            volatileState.sanityCheck<State.Terminal.Failure>()
+        }
     }
 
     private suspend fun runAllSteps() {
