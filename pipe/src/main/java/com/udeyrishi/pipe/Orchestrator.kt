@@ -72,6 +72,7 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
     fun interrupt() {
         if (!interrupted) {
             interrupted = true
+            cursor.nextStep?.step?.interrupt()
         }
     }
 
@@ -129,12 +130,8 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
             }
 
             val attemptResult = doStepAttempt(attemptIndex = i, step = nextStep, input = input)
-
-            if (attemptResult.stepResult == null) {
-                volatileState.sanityCheck<State.Running.AttemptFailed>()
-            } else {
-                volatileState.sanityCheck<State.Running.AttemptSuccessful>()
-                return StepResult(stepResult = attemptResult.stepResult, interrupted = false)
+            if (attemptResult.stepResult != null || attemptResult.interrupted) {
+                return attemptResult
             }
         }
 
@@ -151,14 +148,22 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
         }
     }
 
-    private suspend fun doStepAttempt(attemptIndex: Long, step: StepDescriptor<T>, input: T): StepAttemptResult<T> {
+    private suspend fun doStepAttempt(attemptIndex: Long, step: StepDescriptor<T>, input: T): StepResult<T> {
         return try {
-            val result: T = step.step(input)
-            onStateSuccess()
-            StepAttemptResult.forSuccess(result)
+            val result: T? = step.step(input)
+            if (result == null) {
+                onStateFailure(StepInterruptedException(orchestrator = this, attemptIndex = attemptIndex, stepName = step.name))
+                volatileState.sanityCheck<State.Running.AttemptFailed>()
+                StepResult(stepResult = null, interrupted = true)
+            } else {
+                onStateSuccess()
+                volatileState.sanityCheck<State.Running.AttemptSuccessful>()
+                StepResult(stepResult = result, interrupted = false)
+            }
         } catch (e: Throwable) {
             onStateFailure(StepFailureException(orchestrator = this, attemptIndex = attemptIndex, stepName = step.name, throwable = e))
-            StepAttemptResult.forFailedStep()
+            volatileState.sanityCheck<State.Running.AttemptFailed>()
+            StepResult(stepResult = null, interrupted = false)
         }
     }
 
@@ -191,13 +196,6 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
             if (newState is State.Running.AttemptFailed) {
                 it.d("Stack trace:\n${newState.cause.stackTraceToString()}")
             }
-        }
-    }
-
-    private class StepAttemptResult<out T> private constructor(val stepResult: T?) {
-        companion object {
-            fun forFailedStep() = StepAttemptResult(null)
-            fun <T> forSuccess(result: T) = StepAttemptResult(result)
         }
     }
 

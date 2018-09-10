@@ -6,16 +6,22 @@ package com.udeyrishi.pipe
 import android.arch.core.executor.testing.InstantTaskExecutorRule
 import android.arch.lifecycle.Observer
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
+import com.udeyrishi.pipe.steps.InterruptibleStep
 import com.udeyrishi.pipe.steps.StepDescriptor
 import com.udeyrishi.pipe.testutil.Repeat
 import com.udeyrishi.pipe.testutil.RepeatRule
 import com.udeyrishi.pipe.testutil.createMockLifecycleOwner
 import com.udeyrishi.pipe.util.Identifiable
 import com.udeyrishi.pipe.util.Logger
+import kotlinx.coroutines.experimental.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -510,5 +516,101 @@ class OrchestratorTest {
         verify(logger2, times(2)).d(any())
         // Final failure
         verify(logger2, times(1)).e(any())
+    }
+
+    @Test
+    fun `interrupt tries to interrupt the current step`() {
+        var invokeAnswer: IdentifiableString? = null
+        var reachedInvoke = false
+        val mockStep = mock<InterruptibleStep<IdentifiableString>>()
+        runBlocking {
+            whenever(mockStep.invoke(any())).doAnswer {
+                reachedInvoke = true
+                while (invokeAnswer == null) {
+                    Thread.sleep(10)
+                }
+                invokeAnswer
+            }
+        }
+
+
+        val steps = listOf(StepDescriptor(name = "step 0", maxAttempts = 1, step = mockStep))
+        val input = IdentifiableString("in")
+        val orchestrator = Orchestrator(input, steps.iterator())
+        orchestrator.start()
+
+        while (!reachedInvoke) {
+            Thread.sleep(10)
+        }
+
+        verify(mockStep, never()).interrupt()
+        orchestrator.interrupt()
+        verify(mockStep).interrupt()
+
+        // Pass a non-null result. Treated as a a failure to interrupt the step.
+        // Since this is the only step, the pipeline succeeds.
+        val result = IdentifiableString("result", input.uuid)
+        invokeAnswer = result
+
+        while (orchestrator.state.value !is State.Terminal) {
+            Thread.sleep(10)
+        }
+
+        assertTrue(orchestrator.state.value is State.Terminal.Success)
+        assertEquals(result, orchestrator.result)
+    }
+
+    @Test
+    fun `null result from the step is interpreted as interruption`() {
+        var answerInvoke = false
+        var reachedInvoke = false
+        val mockStep = mock<InterruptibleStep<IdentifiableString>>()
+        runBlocking {
+            whenever(mockStep.invoke(any())).doAnswer {
+                reachedInvoke = true
+                while (!answerInvoke) {
+                    Thread.sleep(10)
+                }
+                null
+            }
+        }
+
+        var step2Called = false
+        val mockStep2 = mock<InterruptibleStep<IdentifiableString>>()
+        runBlocking {
+            whenever(mockStep2.invoke(any())).doAnswer {
+                step2Called = true
+                null
+            }
+        }
+
+
+        val steps = listOf(
+                StepDescriptor(name = "step 0", maxAttempts = 1, step = mockStep),
+                StepDescriptor(name = "step 1", maxAttempts = 1, step = mockStep2)
+        )
+        val input = IdentifiableString("in")
+        val orchestrator = Orchestrator(input, steps.iterator())
+        orchestrator.start()
+
+        while (!reachedInvoke) {
+            Thread.sleep(10)
+        }
+
+        verify(mockStep, never()).interrupt()
+        orchestrator.interrupt()
+        verify(mockStep).interrupt()
+
+        answerInvoke = true
+
+        while (orchestrator.state.value !is State.Terminal) {
+            Thread.sleep(10)
+        }
+
+        assertTrue(orchestrator.state.value is State.Terminal.Failure)
+        assertNull(orchestrator.result)
+        assertTrue((orchestrator.state.value as State.Terminal.Failure).cause is Orchestrator.OrchestratorInterruptedException)
+        assertTrue((orchestrator.state.value as State.Terminal.Failure).cause.cause is Orchestrator.StepInterruptedException)
+        assertFalse(step2Called)
     }
 }

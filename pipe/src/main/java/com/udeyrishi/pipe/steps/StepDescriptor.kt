@@ -7,5 +7,5 @@ internal data class StepDescriptor<T : Any>(val name: String, val maxAttempts: L
         }
     }
 
-    constructor(name: String, maxAttempts: Long, step: Step<T>) : this(name, maxAttempts, interruptibleStep(step))
+    constructor(name: String, maxAttempts: Long, step: Step<T>) : this(name, maxAttempts, nonInterruptibleStep(step))
 }
