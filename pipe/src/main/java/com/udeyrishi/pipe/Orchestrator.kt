@@ -24,7 +24,17 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
     override val uuid: UUID = input.uuid
 
     private var started: Boolean by immutableAfterSet(false)
-    private var interrupted: Boolean by immutableAfterSet(false)
+
+    private val interruptionLock = Any()
+    private var interrupted = false
+        set(value) {
+            synchronized(interruptionLock) {
+                if (field && !value) {
+                    throw IllegalArgumentException("interrupted cannot go from true to false.")
+                }
+                field = value
+            }
+        }
 
     // Orchestrator must read/write to volatileState.
     // Posting to _state directly is non-dependable, since the post is asynchronous.
@@ -70,10 +80,8 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
     }
 
     fun interrupt() {
-        if (!interrupted) {
-            interrupted = true
-            cursor.nextStep?.step?.interrupt()
-        }
+        interrupted = true
+        cursor.nextStep?.step?.interrupt()
     }
 
     private suspend fun runAllSteps() {
@@ -154,6 +162,7 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
             if (result == null) {
                 onStateFailure(StepInterruptedException(orchestrator = this, attemptIndex = attemptIndex, stepName = step.name))
                 volatileState.sanityCheck<State.Running.AttemptFailed>()
+                interrupted = true
                 StepResult(stepResult = null, interrupted = true)
             } else {
                 onStateSuccess()
