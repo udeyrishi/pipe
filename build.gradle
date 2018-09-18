@@ -3,7 +3,7 @@ buildscript {
         versions = [
                 'android': [
                     'gradle_plugin': '3.1.4',
-                    'lifecycle': "1.1.0",
+                    'lifecycle': "1.1.1",
                     'support': [
                         'appcompat7': '27.1.1'
                     ]
@@ -19,7 +19,7 @@ buildscript {
                         'bintray_plugin': '1.8.4'
                 ],
                 'static_analysis': [
-                        'ktlint': '0.27.0',
+                        'ktlint': '0.28.0',
                 ]
         ]
 
