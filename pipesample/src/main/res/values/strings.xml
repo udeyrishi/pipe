@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Pipe Sample</string>
+    <string name="fail_image_disclaimer">The above image is failing intentionally. It demos the resilience of the lib. Pull-to-refresh to fix the issue.</string>
 </resources>
