@@ -5,7 +5,8 @@ package com.udeyrishi.pipe.barrier
 
 import com.udeyrishi.pipe.steps.Step
 import com.udeyrishi.pipe.util.SortReplayer
-import kotlinx.coroutines.experimental.DefaultDispatcher
+import kotlinx.coroutines.experimental.Dispatchers
+import kotlinx.coroutines.experimental.GlobalScope
 import kotlinx.coroutines.experimental.launch
 import kotlin.coroutines.experimental.CoroutineContext
 
@@ -15,7 +16,7 @@ interface CountedBarrierController {
     fun setCapacity(capacity: Int)
 }
 
-internal class CountedBarrierControllerImpl<T : Comparable<T>>(private val launchContext: CoroutineContext = DefaultDispatcher, private var capacity: Int = Int.MAX_VALUE, private val onBarrierLiftedAction: Step<List<T>>? = null) : BarrierController<T>, CountedBarrierController {
+internal class CountedBarrierControllerImpl<T : Comparable<T>>(private val launchContext: CoroutineContext = Dispatchers.Default, private var capacity: Int = Int.MAX_VALUE, private val onBarrierLiftedAction: Step<List<T>>? = null) : BarrierController<T>, CountedBarrierController {
     private val lock = Any()
 
     override var arrivalCount: Int = 0
@@ -68,7 +69,7 @@ internal class CountedBarrierControllerImpl<T : Comparable<T>>(private val launc
             if (arrivalCount == capacity) {
                 // We now need to retroactively mark the last arrived input as the final input. Usually, the last arrival's coroutine can be reused for aggregation purposes, but it's blocked
                 // on the barrier now. So temporarily create a new one to do the aggregation + unblocking work.
-                launch(launchContext) {
+                GlobalScope.launch(launchContext) {
                     onFinalInputPushed()
                 }
             }

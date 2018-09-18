@@ -10,8 +10,8 @@ buildscript {
                 ],
                 'junit' : '4.12',
                 'kotlin': [
-                        'coroutines': '0.24.0',
-                        'lang': '1.2.61'
+                        'coroutines': '0.26.0',
+                        'lang': '1.2.70'
                 ],
                 'mockito_kotlin': '2.0.0-RC1',
                 'publish': [

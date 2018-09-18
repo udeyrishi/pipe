@@ -12,6 +12,7 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.udeyrishi.pipe.testutil.Repeat
 import com.udeyrishi.pipe.testutil.RepeatRule
+import kotlinx.coroutines.experimental.GlobalScope
 import kotlinx.coroutines.experimental.async
 import kotlinx.coroutines.experimental.launch
 import kotlinx.coroutines.experimental.runBlocking
@@ -48,7 +49,7 @@ class BarrierTest {
     fun worksIfLiftedAfterStart() {
         val barrier = BarrierImpl(mockController)
         var result: String? = null
-        val job = launch {
+        val job = GlobalScope.launch {
             result = barrier.invoke("input")
         }
 
@@ -71,7 +72,7 @@ class BarrierTest {
         barrier.lift()
 
         var result: String? = null
-        val job = launch {
+        val job = GlobalScope.launch {
             result = barrier.invoke("input")
         }
 
@@ -87,7 +88,7 @@ class BarrierTest {
     fun doesNotWorksWithMultipleInputs() {
         val barrier = BarrierImpl(mockController)
 
-        launch {
+        GlobalScope.launch {
             barrier.invoke("input1")
         }
 
@@ -115,7 +116,7 @@ class BarrierTest {
     }
 
     @Test
-    fun callsControllerUponBlock() = runBlocking {
+    fun callsControllerUponBlock() {
         var controllerCalled = false
         val mockController = mock<BarrierController<String>>()
 
@@ -127,8 +128,10 @@ class BarrierTest {
         }
 
         val barrier = BarrierImpl(mockController)
-        verify(mockController, never()).onBarrierBlocked(any())
-        val job = launch {
+        runBlocking {
+            verify(mockController, never()).onBarrierBlocked(any())
+        }
+        val job = GlobalScope.launch {
             barrier.invoke("this")
         }
 
@@ -142,7 +145,9 @@ class BarrierTest {
             job.join()
         }
 
-        verify(mockController).onBarrierBlocked(barrier)
+        runBlocking {
+            verify(mockController).onBarrierBlocked(barrier)
+        }
     }
 
     @Test
@@ -178,7 +183,7 @@ class BarrierTest {
     fun canSetCustomResultIfLiftedAfterStart() {
         val barrier = BarrierImpl(mockController)
 
-        val asyncResult = async {
+        val asyncResult = GlobalScope.async {
             barrier.invoke("this")
         }
 
@@ -194,7 +199,7 @@ class BarrierTest {
     @Test
     fun `interruption lifts the barrier with a null result`() {
         val barrier = BarrierImpl(mockController)
-        val asyncResult = async {
+        val asyncResult = GlobalScope.async {
             barrier.invoke("this")
         }
 
@@ -209,7 +214,7 @@ class BarrierTest {
     @Test
     fun `interrupting a lifted barrier is a no-op`() {
         val barrier = BarrierImpl(mockController)
-        val asyncResult = async {
+        val asyncResult = GlobalScope.async {
             barrier.invoke("this")
         }
 
@@ -225,7 +230,7 @@ class BarrierTest {
     @Test
     fun `lifting an interrupted barrier still gives a null result`() {
         val barrier = BarrierImpl(mockController)
-        val asyncResult = async {
+        val asyncResult = GlobalScope.async {
             barrier.invoke("this")
         }
 
@@ -241,7 +246,7 @@ class BarrierTest {
     @Test
     fun `informs controller of interruption`() {
         val barrier = BarrierImpl(mockController)
-        launch {
+        GlobalScope.launch {
             barrier.invoke("this")
         }
 
