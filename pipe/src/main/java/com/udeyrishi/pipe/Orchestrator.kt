@@ -43,10 +43,6 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
             logStateChange(value)
             field = value
             _state.postValue(value)
-
-            if (value is State.Terminal.Failure) {
-                failureListener?.invoke(this)
-            }
         }
 
     var logger: Logger? = null
@@ -136,6 +132,9 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
         volatileState.sanityCheck<State.Running.AttemptFailed>()
         val innerCause = (volatileState as? State.Running.AttemptFailed)?.cause
         onStateFailure(cause = if (dueToInterruption) OrchestratorInterruptedException(this, innerCause) else StepOutOfAttemptsException(this, failingStep, innerCause))
+        if (!dueToInterruption) {
+            failureListener?.invoke(this)
+        }
         // No need to check the result for ^. Even if it's false, the state is still terminal false
         volatileState.sanityCheck<State.Terminal.Failure>()
     }

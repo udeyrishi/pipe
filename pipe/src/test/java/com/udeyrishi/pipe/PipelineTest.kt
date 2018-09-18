@@ -5,6 +5,8 @@ package com.udeyrishi.pipe
 
 import android.arch.core.executor.testing.InstantTaskExecutorRule
 import com.udeyrishi.pipe.repository.InMemoryRepository
+import com.udeyrishi.pipe.testutil.Repeat
+import com.udeyrishi.pipe.testutil.RepeatRule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -22,6 +24,9 @@ class PipelineTest {
 
     @get:Rule
     val timeoutRule = Timeout(25, TimeUnit.SECONDS)
+
+    @get:Rule
+    val repeatRule = RepeatRule()
 
     @Test
     fun works() {
@@ -163,6 +168,7 @@ class PipelineTest {
         assertEquals(3, job2.result)
     }
 
+    @Repeat
     @Test
     fun `interrupting one job blocked on a counted barrier also interrupts the sibling jobs`() {
         val pipeline = buildPipeline<Int>(InMemoryRepository()) {
