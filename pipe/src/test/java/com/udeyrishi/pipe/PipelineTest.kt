@@ -10,13 +10,18 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.Timeout
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+import java.util.concurrent.TimeUnit
 
 @RunWith(JUnit4::class)
 class PipelineTest {
     @get:Rule
     val instantExecutionRule = InstantTaskExecutorRule()
+
+    @get:Rule
+    val timeoutRule = Timeout(25, TimeUnit.SECONDS)
 
     @Test
     fun works() {
@@ -191,5 +196,155 @@ class PipelineTest {
         assertTrue(job2.state.value is State.Terminal.Failure)
         assertTrue((job2.state.value as State.Terminal.Failure).cause is Orchestrator.OrchestratorInterruptedException)
         assertNull(job2.result)
+    }
+
+    @Test
+    fun `error in one job reduces the counted barrier capacity such that its siblings may continue working`() {
+        lateinit var barrierList: List<Int>
+        val pipeline = buildPipeline<Int>(InMemoryRepository()) {
+            addStep("my step 1", attempts = 1L) {
+                if (it == 1) {
+                    throw RuntimeException("BOOM!")
+                }
+                it + 1
+            }
+
+            addCountedBarrier("some barrier", capacity = 3) {
+                barrierList = it
+                it
+            }
+
+            addStep("my step 2", attempts = 1L) {
+                it + 1
+            }
+        }
+
+        val job1 = pipeline.push(1, null)
+        val job2 = pipeline.push(2, null)
+        val job3 = pipeline.push(3, null)
+
+        job1.start()
+        job2.start()
+        job3.start()
+
+        while (listOf(job1, job2, job3).any { it.state.value !is State.Terminal }) {
+            Thread.sleep(100)
+        }
+
+        assertTrue(job1.state.value is State.Terminal.Failure)
+        assertTrue((job1.state.value as State.Terminal.Failure).cause is Orchestrator.StepOutOfAttemptsException)
+        assertTrue((job1.state.value as State.Terminal.Failure).cause.cause is Orchestrator.StepFailureException)
+        assertTrue((job1.state.value as State.Terminal.Failure).cause.cause?.cause is RuntimeException)
+        assertEquals("BOOM!", (job1.state.value as State.Terminal.Failure).cause.cause?.cause?.message)
+        assertNull(job1.result)
+
+        assertTrue(job2.state.value is State.Terminal.Success)
+        assertEquals(4, job2.result)
+
+        assertTrue(job3.state.value is State.Terminal.Success)
+        assertEquals(5, job3.result)
+
+        // The capacity was automatically reduced, and the arg to the `onBarrierLiftedAction` only included the successful passengers
+        assertEquals(listOf(3, 4), barrierList)
+        assertEquals(2, pipeline.countedBarriers[0].getCapacity())
+    }
+
+    @Test
+    fun `error in one job does not affect its siblings if the error appears after the counted barrier`() {
+        lateinit var barrierList: List<Int>
+        val pipeline = buildPipeline<Int>(InMemoryRepository()) {
+            addStep("my step 1", attempts = 1L) {
+                it + 1
+            }
+
+            addCountedBarrier("some barrier", capacity = 3) {
+                barrierList = it
+                it
+            }
+
+            addStep("my step 2", attempts = 1L) {
+                if (it == 2) {
+                    throw RuntimeException("BOOM!")
+                }
+                it + 1
+            }
+        }
+
+        val job1 = pipeline.push(1, null)
+        val job2 = pipeline.push(2, null)
+        val job3 = pipeline.push(3, null)
+
+        job1.start()
+        job2.start()
+        job3.start()
+
+        while (listOf(job1, job2, job3).any { it.state.value !is State.Terminal }) {
+            Thread.sleep(100)
+        }
+
+        assertTrue(job1.state.value is State.Terminal.Failure)
+        assertTrue((job1.state.value as State.Terminal.Failure).cause is Orchestrator.StepOutOfAttemptsException)
+        assertTrue((job1.state.value as State.Terminal.Failure).cause.cause is Orchestrator.StepFailureException)
+        assertTrue((job1.state.value as State.Terminal.Failure).cause.cause?.cause is RuntimeException)
+        assertEquals("BOOM!", (job1.state.value as State.Terminal.Failure).cause.cause?.cause?.message)
+        assertNull(job1.result)
+
+        assertTrue(job2.state.value is State.Terminal.Success)
+        assertEquals(4, job2.result)
+
+        assertTrue(job3.state.value is State.Terminal.Success)
+        assertEquals(5, job3.result)
+
+        assertEquals(listOf(2, 3, 4), barrierList)
+        assertEquals(3, pipeline.countedBarriers[0].getCapacity())
+    }
+
+    @Test
+    fun `error in one job does not affect its sibling if they share a manual barrier`() {
+        val pipeline = buildPipeline<Int>(InMemoryRepository()) {
+            addStep("my step 1", attempts = 1L) {
+                if (it == 1) {
+                    throw RuntimeException("BOOM!")
+                }
+                it + 1
+            }
+
+            addManualBarrier("some barrier")
+
+            addStep("my step 2", attempts = 1L) {
+                it + 1
+            }
+        }
+
+        val job1 = pipeline.push(1, null)
+        val job2 = pipeline.push(2, null)
+        val job3 = pipeline.push(3, null)
+
+        job1.start()
+        job2.start()
+        job3.start()
+
+        while (job1.state.value !is State.Terminal) {
+            Thread.sleep(100)
+        }
+
+        pipeline.manualBarriers[0].lift()
+
+        while (listOf(job2, job3).any { it.state.value !is State.Terminal }) {
+            Thread.sleep(100)
+        }
+
+        assertTrue(job1.state.value is State.Terminal.Failure)
+        assertTrue((job1.state.value as State.Terminal.Failure).cause is Orchestrator.StepOutOfAttemptsException)
+        assertTrue((job1.state.value as State.Terminal.Failure).cause.cause is Orchestrator.StepFailureException)
+        assertTrue((job1.state.value as State.Terminal.Failure).cause.cause?.cause is RuntimeException)
+        assertEquals("BOOM!", (job1.state.value as State.Terminal.Failure).cause.cause?.cause?.message)
+        assertNull(job1.result)
+
+        assertTrue(job2.state.value is State.Terminal.Success)
+        assertEquals(4, job2.result)
+
+        assertTrue(job3.state.value is State.Terminal.Success)
+        assertEquals(5, job3.result)
     }
 }
