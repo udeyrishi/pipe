@@ -29,7 +29,7 @@ class PipelineTest {
     val repeatRule = RepeatRule()
 
     @Test
-    fun works() {
+    fun `DSL api works`() {
         val lock = Any()
         lateinit var aggregated: List<Int>
 
@@ -62,6 +62,75 @@ class PipelineTest {
                 it + 4
             }
         }
+
+        val jobs = mutableListOf(
+                pipeline.push(0, null),
+                pipeline.push(1, null),
+                pipeline.push(2, null)
+        )
+
+        jobs.forEach {
+            it.start()
+        }
+
+        while (barrierReachedCount < 3) {
+            Thread.sleep(100)
+        }
+
+        jobs.forEach {
+            assertTrue(it.state.value is State.Running.Attempting)
+        }
+
+        // Everyone is waiting at the barrier. Now that we know the count, we can safely update the aggregator capacity, and then lift the barrier.
+        pipeline.manualBarriers[0].lift()
+        pipeline.countedBarriers[0].setCapacity(3)
+
+        while (jobs.any { it.state.value !is State.Terminal }) {
+            Thread.sleep(100)
+        }
+
+        // Everyone is done
+
+        jobs.forEach {
+            assertTrue(it.state.value === State.Terminal.Success)
+        }
+
+        jobs.forEachIndexed { index, job ->
+            assertEquals(index + 1 + 2 + 3 + 1 + 4, job.result)
+        }
+
+        assertEquals(listOf(6, 7, 8), aggregated)
+    }
+
+    @Test
+    fun `builder API works`() {
+        val lock = Any()
+        lateinit var aggregated: List<Int>
+
+        var barrierReachedCount = 0
+
+        val pipeline = Pipeline.Builder<Int>()
+                .addStep("step 1") {
+                    it + 1
+                }
+                .addStep("Step 2") {
+                    synchronized(lock) {
+                        barrierReachedCount++
+                    }
+                    it + 2
+                }
+                .addManualBarrier("Barrier 1")
+                .addStep("Step 3") {
+                    it + 3
+                }
+                .addCountedBarrier("Aggregator 1", capacity = 1000000) { aggregatedList ->
+                    aggregated = aggregatedList
+                    aggregatedList.map { it + 1 }
+                }
+                .addStep("Step 4") {
+                    it + 4
+                }
+                .build(InMemoryRepository())
 
         val jobs = mutableListOf(
                 pipeline.push(0, null),
