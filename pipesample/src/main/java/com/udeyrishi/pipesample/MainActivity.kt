@@ -4,11 +4,9 @@ import android.arch.lifecycle.Observer
 import android.os.Bundle
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
-import android.view.View
 import android.widget.ImageView
 import com.udeyrishi.pipe.Job
 import com.udeyrishi.pipe.State
-import kotlinx.android.synthetic.main.activity_main.fail_message as failMessage
 import kotlinx.android.synthetic.main.activity_main.image_container as imageContainer
 import kotlinx.android.synthetic.main.activity_main.root_view as rootView
 
@@ -32,12 +30,10 @@ class MainActivity : AppCompatActivity() {
             }
 
             runPipeline(intentionallyFail = false)
-            failMessage.visibility = View.GONE
         }
 
         rootView.isRefreshing = true
         runPipeline(intentionallyFail = true)
-        failMessage.visibility = View.VISIBLE
     }
 
     private fun runPipeline(intentionallyFail: Boolean) {
