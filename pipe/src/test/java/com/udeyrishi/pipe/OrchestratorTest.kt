@@ -631,4 +631,31 @@ class OrchestratorTest {
         assertTrue(failed)
         assertNull(orchestrator.result)
     }
+
+    @Test
+    fun `failureListener works`() {
+        val steps = listOf<StepDescriptor<IdentifiableString>>(
+                StepDescriptor(name = "step 0", maxAttempts = 1) {
+                    it
+                },
+                StepDescriptor(name = "step 1", maxAttempts = 2) {
+                    throw RuntimeException("Some error")
+                }
+        )
+
+        lateinit var failedOrchestrator: Orchestrator<IdentifiableString>
+
+        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator(), failureListener = {
+            failedOrchestrator = it
+        })
+
+        orchestrator.start()
+
+        while (orchestrator.state.value !is State.Terminal) {
+            Thread.sleep(10)
+        }
+
+        assertTrue(orchestrator.state.value is State.Terminal.Failure)
+        assertEquals(orchestrator, failedOrchestrator)
+    }
 }

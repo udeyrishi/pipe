@@ -20,7 +20,7 @@ import kotlin.coroutines.experimental.CoroutineContext
  * - guides the provided input through the provided steps
  * - updates and monitors its state
  */
-internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<StepDescriptor<T>>, private val launchContext: CoroutineContext = DefaultDispatcher) : Identifiable {
+internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<StepDescriptor<T>>, private val launchContext: CoroutineContext = DefaultDispatcher, private val failureListener: ((Orchestrator<T>) -> Unit)? = null) : Identifiable {
     override val uuid: UUID = input.uuid
 
     private var started: Boolean by immutableAfterSet(false)
@@ -43,6 +43,10 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
             logStateChange(value)
             field = value
             _state.postValue(value)
+
+            if (value is State.Terminal.Failure) {
+                failureListener?.invoke(this)
+            }
         }
 
     var logger: Logger? = null
