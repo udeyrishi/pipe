@@ -38,6 +38,7 @@ class Pipeline<T : Any> private constructor(private val repository: MutableRepos
 
     init {
         barrierControllers = operations
+                .asSequence()
                 .filterIsInstance<PipelineOperationSpec.Barrier<T>>()
                 .map {
                     when (it) {
@@ -45,6 +46,7 @@ class Pipeline<T : Any> private constructor(private val repository: MutableRepos
                         is PipelineOperationSpec.Barrier.Counted<T> -> CountedBarrierControllerImpl(capacity = it.capacity, onBarrierLiftedAction = it.onBarrierLiftedAction?.toPassengerStep(), launchContext = launchContext)
                     }
                 }
+                .toList()
     }
 
     fun push(input: T, tag: String?): Job<T> {
@@ -55,11 +57,13 @@ class Pipeline<T : Any> private constructor(private val repository: MutableRepos
             val orchestrator = Orchestrator(passenger, steps, launchContext, failureListener = { _ ->
                 synchronized(countedBarrierCapacityLock) {
                     barrierControllers
+                            .asSequence()
                             .filterIsInstance<CountedBarrierControllerImpl<Passenger<T>>>()
                             .filter {
                                 // Do not bother the counted barriers that have reached their capacity, and hence have been lifted.
                                 it.arrivalCount < it.getCapacity()
-                            }.forEach {
+                            }
+                            .forEach {
                                 // This will notify them to not bother waiting. The failed job is never going to arrive.
                                 it.changeCapacityDueToError(it.getCapacity() - 1)
                             }
