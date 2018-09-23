@@ -85,14 +85,18 @@ class BarrierTest {
     }
 
     @Test(expected = IllegalStateException::class)
-    fun doesNotWorksWithMultipleInputs() {
+    fun `fails if invoked multiple times`() {
         val barrier = BarrierImpl(mockController)
 
-        GlobalScope.launch {
+        val firstDeferredResult = GlobalScope.async {
             barrier.invoke("input1")
         }
 
         barrier.lift()
+
+        runBlocking {
+            firstDeferredResult.await()
+        }
 
         val exception: Throwable? = runBlocking {
             try {
