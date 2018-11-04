@@ -24,11 +24,5 @@ class Job<T : Any> internal constructor(private val orchestrator: Orchestrator<P
             orchestrator.logger = value
         }
 
-    fun start() {
-        orchestrator.start()
-    }
-
-    fun interrupt() {
-        orchestrator.interrupt()
-    }
+    fun interrupt(): Unit = orchestrator.interrupt()
 }

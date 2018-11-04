@@ -70,10 +70,6 @@ class PipelineTest {
                 pipeline.push(2, null)
         )
 
-        jobs.forEach {
-            it.start()
-        }
-
         while (barrierReachedCount < 3) {
             Thread.sleep(100)
         }
@@ -139,10 +135,6 @@ class PipelineTest {
                 pipeline.push(2, null)
         )
 
-        jobs.forEach {
-            it.start()
-        }
-
         while (barrierReachedCount < 3) {
             Thread.sleep(100)
         }
@@ -186,11 +178,12 @@ class PipelineTest {
         val job2 = pipeline.push(2, null)
 
         job1.interrupt()
-        job2.start()
 
         pipeline.manualBarriers[0].lift()
 
-        assertTrue(job1.state.value is State.Terminal.Failure)
+        while (job1.state.value !is State.Terminal.Failure) {
+            Thread.sleep(10)
+        }
         assertTrue((job1.state.value as State.Terminal.Failure).cause is Orchestrator.OrchestratorInterruptedException)
         assertNull(job1.result)
 
@@ -214,9 +207,6 @@ class PipelineTest {
 
         val job1 = pipeline.push(1, null)
         val job2 = pipeline.push(2, null)
-
-        job1.start()
-        job2.start()
 
         while ((job1.state.value as? State.Running.Attempting)?.step != "some barrier") {
             Thread.sleep(10)
@@ -251,9 +241,6 @@ class PipelineTest {
 
         val job1 = pipeline.push(1, null)
         val job2 = pipeline.push(2, null)
-
-        job1.start()
-        job2.start()
 
         while ((job1.state.value as? State.Running.Attempting)?.step != "some barrier") {
             Thread.sleep(10)
@@ -298,10 +285,6 @@ class PipelineTest {
         val job1 = pipeline.push(1, null)
         val job2 = pipeline.push(2, null)
         val job3 = pipeline.push(3, null)
-
-        job1.start()
-        job2.start()
-        job3.start()
 
         while (listOf(job1, job2, job3).any { it.state.value !is State.Terminal }) {
             Thread.sleep(100)
@@ -350,10 +333,6 @@ class PipelineTest {
         val job2 = pipeline.push(2, null)
         val job3 = pipeline.push(3, null)
 
-        job1.start()
-        job2.start()
-        job3.start()
-
         while (listOf(job1, job2, job3).any { it.state.value !is State.Terminal }) {
             Thread.sleep(100)
         }
@@ -395,10 +374,6 @@ class PipelineTest {
         val job1 = pipeline.push(1, null)
         val job2 = pipeline.push(2, null)
         val job3 = pipeline.push(3, null)
-
-        job1.start()
-        job2.start()
-        job3.start()
 
         while (job1.state.value !is State.Terminal) {
             Thread.sleep(100)

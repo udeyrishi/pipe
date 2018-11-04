@@ -55,8 +55,6 @@ class MainActivity : AppCompatActivity() {
             job.state.observe(this, Observer {
                 onStateChanged(it, index, job)
             })
-
-            job.start()
         }
     }
 

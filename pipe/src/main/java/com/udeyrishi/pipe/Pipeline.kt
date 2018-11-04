@@ -70,6 +70,7 @@ class Pipeline<T : Any> private constructor(private val repository: MutableRepos
             val job = Job(orchestrator)
             try {
                 repository.add(tag, job)
+                orchestrator.start()
                 return job
             } catch (e: DuplicateUUIDException) {
                 // May throw if UUID was already taken. Super rare that UUID.randomUUID() repeats UUIDs,
