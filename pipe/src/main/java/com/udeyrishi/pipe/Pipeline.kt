@@ -9,6 +9,7 @@ import com.udeyrishi.pipe.barrier.CountedBarrierController
 import com.udeyrishi.pipe.barrier.CountedBarrierControllerImpl
 import com.udeyrishi.pipe.barrier.ManualBarrierController
 import com.udeyrishi.pipe.barrier.ManualBarrierControllerImpl
+import com.udeyrishi.pipe.repository.DuplicateUUIDException
 import com.udeyrishi.pipe.repository.MutableRepository
 import com.udeyrishi.pipe.steps.Step
 import com.udeyrishi.pipe.steps.StepDescriptor
@@ -47,9 +48,9 @@ class Pipeline<T : Any> private constructor(private val repository: MutableRepos
     }
 
     fun push(input: T, tag: String?): Job<T> {
-        @Suppress("UNCHECKED_CAST")
-        return repository.add(tag) { newUUID, position ->
-            val passenger = Passenger(input, newUUID, position)
+        while (true) {
+            val uuid = UUID.randomUUID()
+            val passenger = Passenger(input, uuid, createdAt = System.currentTimeMillis())
             val steps = materializeSteps()
             val orchestrator = Orchestrator(passenger, steps, launchContext, failureListener = {
                 synchronized(countedBarrierCapacityLock) {
@@ -66,8 +67,15 @@ class Pipeline<T : Any> private constructor(private val repository: MutableRepos
                             }
                 }
             })
-            Job(orchestrator)
-        } as Job<T>
+            val job = Job(orchestrator)
+            try {
+                repository.add(tag, job)
+                return job
+            } catch (e: DuplicateUUIDException) {
+                // May throw if UUID was already taken. Super rare that UUID.randomUUID() repeats UUIDs,
+                // but if it still happens, try again.
+            }
+        }
     }
 
     private fun materializeSteps(): Iterator<StepDescriptor<Passenger<T>>> {
@@ -84,7 +92,7 @@ class Pipeline<T : Any> private constructor(private val repository: MutableRepos
     private fun createRegularStep(spec: PipelineOperationSpec.RegularStep<T>): StepDescriptor<Passenger<T>> {
         return StepDescriptor(spec.name, spec.attempts) {
             val result: T = spec.step(it.data)
-            Passenger(result, it.uuid, it.position)
+            Passenger(result, it.uuid, it.createdAt)
         }
     }
 
@@ -110,13 +118,11 @@ class Pipeline<T : Any> private constructor(private val repository: MutableRepos
         fun build(repository: MutableRepository<in Job<T>>, dispatcher: PipelineDispatcher) = Pipeline(repository, operations, dispatcher.createEffectiveContext())
     }
 
-    internal class Passenger<T : Any>(val data: T, override val uuid: UUID, val position: Long) : Comparable<Passenger<T>>, Identifiable {
-        override fun compareTo(other: Passenger<T>): Int = position.compareTo(other.position)
+    internal class Passenger<T : Any>(val data: T, override val uuid: UUID, val createdAt: Long) : Comparable<Passenger<T>>, Identifiable {
+        override fun compareTo(other: Passenger<T>): Int = createdAt.compareTo(other.createdAt)
         override fun toString(): String = data.toString()
     }
 
-    // Safely suppress `T`, since it's needed to prevent a class-cast in the `when` expression inside `materializeSteps`.
-    @Suppress("unused")
     private sealed class PipelineOperationSpec<T : Any>(val name: String) {
         class RegularStep<T : Any>(name: String, val attempts: Long, val step: Step<T>) : PipelineOperationSpec<T>(name)
 
@@ -131,7 +137,7 @@ private fun <T : Any> Step<List<T>>.toPassengerStep(): Step<List<Pipeline.Passen
     return { input ->
         val result: List<T> = this(input.map { it.data })
         input.mapIndexed { index, originalPassenger ->
-            Pipeline.Passenger(result[index], originalPassenger.uuid, originalPassenger.position)
+            Pipeline.Passenger(result[index], originalPassenger.uuid, originalPassenger.createdAt)
         }
     }
 }

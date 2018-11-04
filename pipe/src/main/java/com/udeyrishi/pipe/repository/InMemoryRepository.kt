@@ -13,22 +13,14 @@ class InMemoryRepository<T : Identifiable> : MutableRepository<T> {
     private val uuidIndex = hashMapOf<UUID, Int>()
     private val lock = Any()
 
-    override fun add(tag: String?, identifiableObjectBuilder: (newUUID: UUID, position: Long) -> T): T {
+    override fun add(tag: String?, entry: T) {
         return synchronized(lock) {
-            val identifiableObject = identifiableObjectBuilder(generateUuid(), entries.size.toLong())
-            val entry = InMemoryRepositoryEntry(identifiableObject, tag)
-            entries.add(entry)
+            if (uuidIndex.containsKey(entry.uuid)) {
+                throw DuplicateUUIDException(entry.uuid)
+            }
+            entries.add(InMemoryRepositoryEntry(entry, tag))
             uuidIndex[entry.uuid] = entries.lastIndex
-            identifiableObject
         }
-    }
-
-    private fun generateUuid(): UUID {
-        var uuid = UUID.randomUUID()
-        while (uuidIndex.containsKey(uuid)) {
-            uuid = UUID.randomUUID()
-        }
-        return uuid
     }
 
     override fun get(uuid: UUID): RepositoryEntry<T>? {

@@ -71,7 +71,7 @@ sealed class State {
             override fun onFailure(cause: Throwable): State = Failure(cause)
         }
 
-        class Failure internal constructor(@Suppress("MemberVisibilityCanBePrivate") val cause: Throwable) : Terminal() {
+        class Failure internal constructor(val cause: Throwable) : Terminal() {
             override fun onSuccess(nextStep: String?): State {
                 throw IllegalStateException("${this::class.java.name} cannot have a success state following it.")
             }

@@ -11,6 +11,8 @@ interface Repository<out T : Identifiable> : Closeable {
 }
 
 interface MutableRepository<T : Identifiable> : Repository<T> {
-    fun add(tag: String?, identifiableObjectBuilder: (newUUID: UUID, position: Long) -> T): T
+    fun add(tag: String?, entry: T)
     fun removeIf(predicate: (RepositoryEntry<T>) -> Boolean)
 }
+
+class DuplicateUUIDException(uuid: UUID) : Exception("$uuid has already been used.")

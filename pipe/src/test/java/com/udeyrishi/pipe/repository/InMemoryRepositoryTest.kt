@@ -21,16 +21,10 @@ class InMemoryRepositoryTest {
 
     @Test
     fun addWorks() {
-        val myIdentifiable = repo.add(tag = null) { newUUID, position ->
-            MyIdentifiable(newUUID, position)
-        }
-
-        val myIdentifiable2 = repo.add(tag = null) { newUUID, position ->
-            MyIdentifiable(newUUID, position)
-        }
-
-        assertEquals(0L, myIdentifiable.position)
-        assertEquals(1L, myIdentifiable2.position)
+        val myIdentifiable = MyIdentifiable(UUID.randomUUID())
+        val myIdentifiable2 = MyIdentifiable(UUID.randomUUID())
+        repo.add(null, myIdentifiable)
+        repo.add(null, myIdentifiable2)
 
         assertEquals(myIdentifiable, repo[myIdentifiable.uuid]?.identifiableObject)
         assertEquals(myIdentifiable2, repo[myIdentifiable2.uuid]?.identifiableObject)
@@ -39,26 +33,21 @@ class InMemoryRepositoryTest {
     @Test
     fun getByUuidWorksWhenUuidNotFound() {
         assertNull(repo[UUID.randomUUID()])
-        val myIdentifiable = repo.add(tag = null) { newUUID, position ->
-            MyIdentifiable(newUUID, position)
-        }
+        val myIdentifiable = MyIdentifiable(UUID.randomUUID())
+        repo.add(null, myIdentifiable)
         assertNotNull(repo[myIdentifiable.uuid])
         assertNull(repo[UUID.randomUUID()])
     }
 
     @Test
     fun getByTagWorksWhenTagFound() {
-        val myIdentifiable = repo.add(tag = "tag1") { newUUID, position ->
-            MyIdentifiable(newUUID, position)
-        }
+        val myIdentifiable = MyIdentifiable(UUID.randomUUID())
+        val myIdentifiable2 = MyIdentifiable(UUID.randomUUID())
+        val myIdentifiable3 = MyIdentifiable(UUID.randomUUID())
 
-        val myIdentifiable2 = repo.add(tag = "tag2") { newUUID, position ->
-            MyIdentifiable(newUUID, position)
-        }
-
-        val myIdentifiable3 = repo.add(tag = "tag1") { newUUID, position ->
-            MyIdentifiable(newUUID, position)
-        }
+        repo.add("tag1", myIdentifiable)
+        repo.add("tag2", myIdentifiable2)
+        repo.add("tag1", myIdentifiable3)
 
         val group1 = repo["tag1"]
         val group2 = repo["tag2"]
@@ -69,13 +58,8 @@ class InMemoryRepositoryTest {
 
     @Test
     fun getByTagWorksWhenTagNotFound() {
-        repo.add(tag = "tag1") { newUUID, position ->
-            MyIdentifiable(newUUID, position)
-        }
-
-        repo.add(tag = "tag2") { newUUID, position ->
-            MyIdentifiable(newUUID, position)
-        }
+        repo.add("tag1", MyIdentifiable(UUID.randomUUID()))
+        repo.add("tag2", MyIdentifiable(UUID.randomUUID()))
 
         val group1 = repo["tag3"]
 
@@ -84,17 +68,12 @@ class InMemoryRepositoryTest {
 
     @Test
     fun removeIfWorks() {
-        repo.add(tag = "tag1") { newUUID, position ->
-            MyIdentifiable(newUUID, position)
-        }
+        val myIdentifiable = MyIdentifiable(UUID.randomUUID())
+        val myIdentifiable2 = MyIdentifiable(UUID.randomUUID())
 
-        val myIdentifiable2 = repo.add(tag = "tag2") { newUUID, position ->
-            MyIdentifiable(newUUID, position)
-        }
-
-        repo.add(tag = "tag1") { newUUID, position ->
-            MyIdentifiable(newUUID, position)
-        }
+        repo.add("tag1", myIdentifiable)
+        repo.add("tag2", myIdentifiable2)
+        repo.add("tag1", MyIdentifiable(UUID.randomUUID()))
 
         repo.removeIf {
             it.tag == "tag1"
@@ -109,21 +88,23 @@ class InMemoryRepositoryTest {
 
     @Test
     fun getMatchingWorks() {
-        val item1 = repo.add(tag = "tag1") { newUUID, position ->
-            MyIdentifiable(newUUID, position)
-        }
+        val item1 = MyIdentifiable(UUID.randomUUID())
+        val item2 = MyIdentifiable(UUID.randomUUID())
 
-        repo.add(tag = "tag2") { newUUID, position ->
-            MyIdentifiable(newUUID, position)
-        }
-
-        val item2 = repo.add(tag = "tag1") { newUUID, position ->
-            MyIdentifiable(newUUID, position)
-        }
+        repo.add("tag1", item1)
+        repo.add("tag2", MyIdentifiable(UUID.randomUUID()))
+        repo.add("tag1", item2)
 
         val matches = repo.getMatching { it.tag == "tag1" }
         assertEquals(listOf(item1, item2), matches.map { it.identifiableObject })
     }
 
-    private data class MyIdentifiable(override val uuid: UUID, val position: Long) : Identifiable
+    @Test(expected = DuplicateUUIDException::class)
+    fun `Fails if duplicate UUIDs are used`() {
+        val uuid = UUID.randomUUID()
+        repo.add(null, MyIdentifiable(uuid))
+        repo.add(null, MyIdentifiable(uuid))
+    }
+
+    private data class MyIdentifiable(override val uuid: UUID) : Identifiable
 }
