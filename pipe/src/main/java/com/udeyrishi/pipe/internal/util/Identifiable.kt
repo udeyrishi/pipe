@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2018 Udey Rishi. All rights reserved.
  */
-package com.udeyrishi.pipe.util
+package com.udeyrishi.pipe.internal.util
 
 import java.util.UUID
 

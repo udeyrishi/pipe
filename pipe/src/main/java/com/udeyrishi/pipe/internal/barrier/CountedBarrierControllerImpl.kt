@@ -1,19 +1,14 @@
 /**
  * Copyright (c) 2018 Udey Rishi. All rights reserved.
  */
-package com.udeyrishi.pipe.barrier
+package com.udeyrishi.pipe.internal.barrier
 
-import com.udeyrishi.pipe.steps.Step
-import com.udeyrishi.pipe.util.SortReplayer
+import com.udeyrishi.pipe.CountedBarrierController
+import com.udeyrishi.pipe.Step
+import com.udeyrishi.pipe.internal.util.SortReplayer
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
-
-interface CountedBarrierController {
-    val arrivalCount: Int
-    fun getCapacity(): Int
-    fun setCapacity(capacity: Int)
-}
 
 /**
  * The launchContext is only needed if this controller deems necessary to create a new coroutine. Usually, it'll be able to reuse existing acting coroutines.

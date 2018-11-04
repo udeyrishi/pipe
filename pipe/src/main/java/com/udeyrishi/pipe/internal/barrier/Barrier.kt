@@ -1,10 +1,10 @@
 /**
  * Copyright (c) 2018 Udey Rishi. All rights reserved.
  */
-package com.udeyrishi.pipe.barrier
+package com.udeyrishi.pipe.internal.barrier
 
-import com.udeyrishi.pipe.steps.InterruptibleStep
-import com.udeyrishi.pipe.util.immutableAfterSet
+import com.udeyrishi.pipe.internal.steps.InterruptibleStep
+import com.udeyrishi.pipe.internal.util.immutableAfterSet
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine

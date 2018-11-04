@@ -1,4 +1,4 @@
-package com.udeyrishi.pipe.steps
+package com.udeyrishi.pipe.internal.steps
 
 import org.junit.Test
 import org.junit.runner.RunWith

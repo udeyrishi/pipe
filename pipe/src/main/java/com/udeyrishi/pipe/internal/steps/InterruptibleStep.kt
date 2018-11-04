@@ -1,7 +1,9 @@
 /**
  * Copyright (c) 2018 Udey Rishi. All rights reserved.
  */
-package com.udeyrishi.pipe.steps
+package com.udeyrishi.pipe.internal.steps
+
+import com.udeyrishi.pipe.Step
 
 /**
  * We are intentionally publicly exposing a function type, while internally using an interface in

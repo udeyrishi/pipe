@@ -6,9 +6,7 @@ package com.udeyrishi.pipe
 import android.os.Handler
 import android.os.Looper
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
-import kotlin.coroutines.CoroutineContext
 
 interface PipelineDispatcher {
     val coroutineDispatcher: CoroutineDispatcher
@@ -26,11 +24,5 @@ object DefaultAndroidDispatcher : PipelineDispatcher {
         handler.post {
             throw throwable
         }
-    }
-}
-
-internal fun PipelineDispatcher.createEffectiveContext(): CoroutineContext {
-    return coroutineDispatcher + CoroutineExceptionHandler { _, throwable ->
-        onInternalPipeError(throwable)
     }
 }

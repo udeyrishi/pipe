@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2018 Udey Rishi. All rights reserved.
  */
-package com.udeyrishi.pipe.barrier
+package com.udeyrishi.pipe.internal.barrier
 
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.isNull

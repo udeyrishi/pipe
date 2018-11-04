@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2018 Udey Rishi. All rights reserved.
  */
-package com.udeyrishi.pipe
+package com.udeyrishi.pipe.internal
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.Observer
@@ -12,14 +12,16 @@ import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import com.udeyrishi.pipe.steps.InterruptibleStep
-import com.udeyrishi.pipe.steps.StepDescriptor
+import com.udeyrishi.pipe.State
+import com.udeyrishi.pipe.internal.steps.InterruptibleStep
+import com.udeyrishi.pipe.internal.steps.StepDescriptor
+import com.udeyrishi.pipe.internal.util.Identifiable
+import com.udeyrishi.pipe.internal.util.Logger
+import com.udeyrishi.pipe.internal.util.createEffectiveContext
 import com.udeyrishi.pipe.testutil.DefaultTestDispatcher
 import com.udeyrishi.pipe.testutil.Repeat
 import com.udeyrishi.pipe.testutil.RepeatRule
 import com.udeyrishi.pipe.testutil.createMockLifecycleOwner
-import com.udeyrishi.pipe.util.Identifiable
-import com.udeyrishi.pipe.util.Logger
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

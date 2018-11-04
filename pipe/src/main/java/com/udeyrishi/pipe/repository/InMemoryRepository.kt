@@ -3,7 +3,7 @@
  */
 package com.udeyrishi.pipe.repository
 
-import com.udeyrishi.pipe.util.Identifiable
+import com.udeyrishi.pipe.internal.util.Identifiable
 import java.util.UUID
 
 private data class InMemoryRepositoryEntry<T : Identifiable>(override val identifiableObject: T, override val tag: String?) : RepositoryEntry<T>

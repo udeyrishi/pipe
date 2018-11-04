@@ -1,4 +1,4 @@
-package com.udeyrishi.pipe.barrier
+package com.udeyrishi.pipe.internal.barrier
 
 internal interface BarrierController<T : Any> {
     fun onBarrierCreated(barrier: Barrier<T>)

@@ -1,4 +1,6 @@
-package com.udeyrishi.pipe.steps
+package com.udeyrishi.pipe.internal.steps
+
+import com.udeyrishi.pipe.Step
 
 internal data class StepDescriptor<T : Any>(val name: String, val maxAttempts: Long, val step: InterruptibleStep<T>) {
     init {

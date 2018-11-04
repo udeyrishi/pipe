@@ -1,10 +1,10 @@
-package com.udeyrishi.pipe.barrier
+/**
+ * Copyright (c) 2018 Udey Rishi. All rights reserved.
+ */
+package com.udeyrishi.pipe.internal.barrier
 
-import com.udeyrishi.pipe.util.immutableAfterSet
-
-interface ManualBarrierController {
-    fun lift()
-}
+import com.udeyrishi.pipe.ManualBarrierController
+import com.udeyrishi.pipe.internal.util.immutableAfterSet
 
 internal class ManualBarrierControllerImpl<T : Any> : BarrierController<T>, ManualBarrierController {
     private val lock = Any()

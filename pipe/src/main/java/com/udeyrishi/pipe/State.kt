@@ -3,6 +3,8 @@
  */
 package com.udeyrishi.pipe
 
+import com.udeyrishi.pipe.internal.util.detailedToString
+
 sealed class State {
     internal abstract fun onSuccess(nextStep: String? = null): State
     internal abstract fun onFailure(cause: Throwable): State
@@ -83,20 +85,4 @@ sealed class State {
     }
 
     override fun toString(): String = this.javaClass.name
-}
-
-private fun Throwable.detailedToString(): String {
-    var level = 0
-    val sb = StringBuilder()
-    var cause: Throwable? = this
-
-    while (cause != null) {
-        if (level++ > 0) {
-            sb.append("\nCaused by: ")
-        }
-        sb.append(cause)
-        cause = cause.cause
-    }
-
-    return sb.toString()
 }

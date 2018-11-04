@@ -1,15 +1,16 @@
 /**
  * Copyright (c) 2018 Udey Rishi. All rights reserved.
  */
-package com.udeyrishi.pipe
+package com.udeyrishi.pipe.internal
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.udeyrishi.pipe.steps.StepDescriptor
-import com.udeyrishi.pipe.util.Identifiable
-import com.udeyrishi.pipe.util.Logger
-import com.udeyrishi.pipe.util.immutableAfterSet
-import com.udeyrishi.pipe.util.stackTraceToString
+import com.udeyrishi.pipe.State
+import com.udeyrishi.pipe.internal.steps.StepDescriptor
+import com.udeyrishi.pipe.internal.util.Identifiable
+import com.udeyrishi.pipe.internal.util.Logger
+import com.udeyrishi.pipe.internal.util.immutableAfterSet
+import com.udeyrishi.pipe.internal.util.stackTraceToString
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.util.UUID
