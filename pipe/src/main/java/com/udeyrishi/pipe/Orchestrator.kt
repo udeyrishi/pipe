@@ -10,7 +10,6 @@ import com.udeyrishi.pipe.util.Identifiable
 import com.udeyrishi.pipe.util.Logger
 import com.udeyrishi.pipe.util.immutableAfterSet
 import com.udeyrishi.pipe.util.stackTraceToString
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -21,7 +20,7 @@ import kotlin.coroutines.CoroutineContext
  * - guides the provided input through the provided steps
  * - updates and monitors its state
  */
-internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<StepDescriptor<T>>, private val launchContext: CoroutineContext = Dispatchers.Default, private val failureListener: ((Orchestrator<T>) -> Unit)? = null) : Identifiable {
+internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<StepDescriptor<T>>, private val launchContext: CoroutineContext, private val failureListener: ((Orchestrator<T>) -> Unit)? = null) : Identifiable {
     override val uuid: UUID = input.uuid
 
     private var started: Boolean by immutableAfterSet(false)

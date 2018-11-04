@@ -14,6 +14,7 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import com.udeyrishi.pipe.steps.InterruptibleStep
 import com.udeyrishi.pipe.steps.StepDescriptor
+import com.udeyrishi.pipe.testutil.DefaultTestDispatcher
 import com.udeyrishi.pipe.testutil.Repeat
 import com.udeyrishi.pipe.testutil.RepeatRule
 import com.udeyrishi.pipe.testutil.createMockLifecycleOwner
@@ -45,14 +46,14 @@ class OrchestratorTest {
     @Test
     fun startsWithScheduledState() {
         val input = IdentifiableString("some input")
-        val orchestrator = Orchestrator(input, listOf<StepDescriptor<IdentifiableString>>().iterator())
+        val orchestrator = Orchestrator(input, listOf<StepDescriptor<IdentifiableString>>().iterator(), DefaultTestDispatcher.createEffectiveContext())
         assertTrue(orchestrator.state.value === State.Scheduled)
     }
 
     @Test
     fun goesToCompletionWhenNoSteps() {
         val input = IdentifiableString("some input")
-        val orchestrator = Orchestrator(input, listOf<StepDescriptor<IdentifiableString>>().iterator())
+        val orchestrator = Orchestrator(input, listOf<StepDescriptor<IdentifiableString>>().iterator(), DefaultTestDispatcher.createEffectiveContext())
         assertNull(orchestrator.result)
         orchestrator.start()
 
@@ -75,7 +76,7 @@ class OrchestratorTest {
         }
 
         val input = IdentifiableString("in")
-        val orchestrator = Orchestrator(input, steps.iterator())
+        val orchestrator = Orchestrator(input, steps.iterator(), launchContext = DefaultTestDispatcher.createEffectiveContext())
         assertNull(orchestrator.result)
 
         var i = 0
@@ -137,7 +138,7 @@ class OrchestratorTest {
             }
         }
 
-        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator())
+        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator(), launchContext = DefaultTestDispatcher.createEffectiveContext())
         assertNull(orchestrator.result)
 
         var i = 0
@@ -216,7 +217,7 @@ class OrchestratorTest {
         }
 
         val input = IdentifiableString("in")
-        val orchestrator = Orchestrator(input, steps.iterator())
+        val orchestrator = Orchestrator(input, steps.iterator(), launchContext = DefaultTestDispatcher.createEffectiveContext())
         assertNull(orchestrator.result)
 
         var i = 0
@@ -293,7 +294,7 @@ class OrchestratorTest {
             }
         }
 
-        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator())
+        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator(), launchContext = DefaultTestDispatcher.createEffectiveContext())
         assertNull(orchestrator.result)
 
         var i = 0
@@ -368,7 +369,7 @@ class OrchestratorTest {
             }
         }
 
-        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator())
+        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator(), launchContext = DefaultTestDispatcher.createEffectiveContext())
         orchestrator.start()
         Thread.sleep(500)
         orchestrator.interrupt()
@@ -401,7 +402,7 @@ class OrchestratorTest {
             }
         }
 
-        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator())
+        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator(), launchContext = DefaultTestDispatcher.createEffectiveContext())
         orchestrator.start()
         Thread.sleep(500)
         orchestrator.interrupt()
@@ -436,7 +437,7 @@ class OrchestratorTest {
             }
         }
 
-        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator())
+        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator(), launchContext = DefaultTestDispatcher.createEffectiveContext())
         orchestrator.interrupt()
         orchestrator.start()
         Thread.sleep(500)
@@ -463,7 +464,7 @@ class OrchestratorTest {
                     ++callCount
                     it
                 }
-        ).iterator())
+        ).iterator(), DefaultTestDispatcher.createEffectiveContext())
 
         orchestrator.start()
         orchestrator.start()
@@ -490,7 +491,7 @@ class OrchestratorTest {
         )
 
         val input = IdentifiableString("in")
-        val orchestrator = Orchestrator(input, steps.iterator())
+        val orchestrator = Orchestrator(input, steps.iterator(), launchContext = DefaultTestDispatcher.createEffectiveContext())
         val logger1 = mock<Logger>()
         val logger2 = mock<Logger>()
         orchestrator.logger = logger1
@@ -535,7 +536,7 @@ class OrchestratorTest {
 
         val steps = listOf(StepDescriptor(name = "step 0", maxAttempts = 1, step = mockStep))
         val input = IdentifiableString("in")
-        val orchestrator = Orchestrator(input, steps.iterator())
+        val orchestrator = Orchestrator(input, steps.iterator(), launchContext = DefaultTestDispatcher.createEffectiveContext())
         orchestrator.start()
 
         while (!reachedInvoke) {
@@ -588,7 +589,7 @@ class OrchestratorTest {
                 StepDescriptor(name = "step 1", maxAttempts = 1, step = mockStep2)
         )
         val input = IdentifiableString("in")
-        val orchestrator = Orchestrator(input, steps.iterator())
+        val orchestrator = Orchestrator(input, steps.iterator(), launchContext = DefaultTestDispatcher.createEffectiveContext())
         orchestrator.start()
 
         while (!reachedInvoke) {
@@ -619,7 +620,7 @@ class OrchestratorTest {
                 StepDescriptor(name = "step 1", maxAttempts = 1, step = mock<InterruptibleStep<IdentifiableString>>())
         )
 
-        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator())
+        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator(), launchContext = DefaultTestDispatcher.createEffectiveContext())
         var failed = false
         orchestrator.state.observe(createMockLifecycleOwner(), Observer {
             when (it) {
@@ -645,7 +646,7 @@ class OrchestratorTest {
 
         lateinit var failedOrchestrator: Orchestrator<IdentifiableString>
 
-        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator(), failureListener = {
+        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator(), launchContext = DefaultTestDispatcher.createEffectiveContext(), failureListener = {
             failedOrchestrator = it
         })
 

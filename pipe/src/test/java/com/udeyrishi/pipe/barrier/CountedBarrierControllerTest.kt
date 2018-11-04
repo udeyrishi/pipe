@@ -11,6 +11,8 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import com.udeyrishi.pipe.createEffectiveContext
+import com.udeyrishi.pipe.testutil.DefaultTestDispatcher
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -45,7 +47,7 @@ class CountedBarrierControllerTest {
             on { input } doReturn "mockInput3"
         }
 
-        controller = CountedBarrierControllerImpl(capacity = 2)
+        controller = CountedBarrierControllerImpl(capacity = 2, launchContext = DefaultTestDispatcher.createEffectiveContext())
     }
 
     @Test(expected = IllegalStateException::class)
@@ -93,7 +95,7 @@ class CountedBarrierControllerTest {
 
     @Test
     fun `can update capacity to a lower value when blocked`() = runBlocking {
-        controller = CountedBarrierControllerImpl(capacity = 4)
+        controller = CountedBarrierControllerImpl(capacity = 4, launchContext = DefaultTestDispatcher.createEffectiveContext())
 
         controller.onBarrierCreated(mockBarrier1)
         controller.onBarrierCreated(mockBarrier2)
@@ -136,7 +138,7 @@ class CountedBarrierControllerTest {
 
     @Test
     fun `can update capacity to a lower value before start`() = runBlocking {
-        controller = CountedBarrierControllerImpl(capacity = 4)
+        controller = CountedBarrierControllerImpl(capacity = 4, launchContext = DefaultTestDispatcher.createEffectiveContext())
         controller.setCapacity(3)
 
         controller.onBarrierCreated(mockBarrier1)
@@ -158,7 +160,7 @@ class CountedBarrierControllerTest {
 
     @Test
     fun `updating capacity to arrival count lifts the barriers`() = runBlocking {
-        controller = CountedBarrierControllerImpl(capacity = 4)
+        controller = CountedBarrierControllerImpl(capacity = 4, launchContext = DefaultTestDispatcher.createEffectiveContext())
 
         var mockBarrier1Result: Any? = null
         mockBarrier1 = mock {
@@ -197,7 +199,7 @@ class CountedBarrierControllerTest {
 
     @Test(expected = IllegalStateException::class)
     fun `cannot update capacity to a value less than the registration count`() {
-        controller = CountedBarrierControllerImpl(capacity = 4)
+        controller = CountedBarrierControllerImpl(capacity = 4, launchContext = DefaultTestDispatcher.createEffectiveContext())
         controller.onBarrierCreated(mockBarrier1)
         controller.onBarrierCreated(mockBarrier2)
 
@@ -211,7 +213,7 @@ class CountedBarrierControllerTest {
 
     @Test
     fun `invokes onBarrierLiftedAction when supplied`() = runBlocking {
-        controller = CountedBarrierControllerImpl(capacity = 2) {
+        controller = CountedBarrierControllerImpl(capacity = 2, launchContext = DefaultTestDispatcher.createEffectiveContext()) {
             // the inputs come in sorted
             assertEquals(listOf("mockInput1", "mockInput2"), it)
             listOf("mockResult1", "mockResult2")
@@ -242,7 +244,7 @@ class CountedBarrierControllerTest {
 
     @Test(expected = IllegalArgumentException::class)
     fun `checks that onBarrierLiftedAction returns correct sized lists`() = runBlocking {
-        controller = CountedBarrierControllerImpl(capacity = 2) {
+        controller = CountedBarrierControllerImpl(capacity = 2, launchContext = DefaultTestDispatcher.createEffectiveContext()) {
             // the inputs come in sorted
             listOf("mockResult1")
         }

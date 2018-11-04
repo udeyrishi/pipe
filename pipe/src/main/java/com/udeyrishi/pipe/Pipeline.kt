@@ -13,16 +13,13 @@ import com.udeyrishi.pipe.repository.MutableRepository
 import com.udeyrishi.pipe.steps.Step
 import com.udeyrishi.pipe.steps.StepDescriptor
 import com.udeyrishi.pipe.util.Identifiable
-import com.udeyrishi.pipe.util.ThrowOnMainThreadExceptionHandler
-import com.udeyrishi.pipe.util.UnexpectedExceptionHandler
-import kotlinx.coroutines.CoroutineExceptionHandler
 import java.util.UUID
 import kotlin.coroutines.CoroutineContext
 
-fun <T : Any> buildPipeline(repository: MutableRepository<in Job<T>>, unexpectedExceptionHandler: UnexpectedExceptionHandler = ThrowOnMainThreadExceptionHandler, stepDefiner: (Pipeline.Builder<T>.() -> Unit)): Pipeline<T> {
+fun <T : Any> buildPipeline(repository: MutableRepository<in Job<T>>, dispatcher: PipelineDispatcher = DefaultAndroidDispatcher, stepDefiner: (Pipeline.Builder<T>.() -> Unit)): Pipeline<T> {
     val builder = Pipeline.Builder<T>()
     builder.stepDefiner()
-    return builder.build(repository, unexpectedExceptionHandler)
+    return builder.build(repository, dispatcher)
 }
 
 class Pipeline<T : Any> private constructor(private val repository: MutableRepository<in Job<T>>, private val operations: List<PipelineOperationSpec<T>>, private val launchContext: CoroutineContext) {
@@ -110,7 +107,7 @@ class Pipeline<T : Any> private constructor(private val repository: MutableRepos
             operations.add(PipelineOperationSpec.Barrier.Counted(name, capacity = capacity, attempts = attempts, onBarrierLiftedAction = onBarrierLiftedAction))
         }
 
-        fun build(repository: MutableRepository<in Job<T>>, unexpectedExceptionHandler: UnexpectedExceptionHandler = ThrowOnMainThreadExceptionHandler) = Pipeline(repository, operations, createExceptionHandler(unexpectedExceptionHandler))
+        fun build(repository: MutableRepository<in Job<T>>, dispatcher: PipelineDispatcher) = Pipeline(repository, operations, dispatcher.createEffectiveContext())
     }
 
     internal class Passenger<T : Any>(val data: T, override val uuid: UUID, val position: Long) : Comparable<Passenger<T>>, Identifiable {
@@ -135,14 +132,6 @@ private fun <T : Any> Step<List<T>>.toPassengerStep(): Step<List<Pipeline.Passen
         val result: List<T> = this(input.map { it.data })
         input.mapIndexed { index, originalPassenger ->
             Pipeline.Passenger(result[index], originalPassenger.uuid, originalPassenger.position)
-        }
-    }
-}
-
-private fun createExceptionHandler(exceptionHandler: UnexpectedExceptionHandler): CoroutineExceptionHandler {
-    return CoroutineExceptionHandler { _, throwable ->
-        exceptionHandler.handler.post {
-            exceptionHandler.handleException(throwable)
         }
     }
 }

@@ -5,7 +5,6 @@ package com.udeyrishi.pipe.barrier
 
 import com.udeyrishi.pipe.steps.Step
 import com.udeyrishi.pipe.util.SortReplayer
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
@@ -16,7 +15,16 @@ interface CountedBarrierController {
     fun setCapacity(capacity: Int)
 }
 
-internal class CountedBarrierControllerImpl<T : Comparable<T>>(private val launchContext: CoroutineContext = Dispatchers.Default, private var capacity: Int = Int.MAX_VALUE, private val onBarrierLiftedAction: Step<List<T>>? = null) : BarrierController<T>, CountedBarrierController {
+/**
+ * The launchContext is only needed if this controller deems necessary to create a new coroutine. Usually, it'll be able to reuse existing acting coroutines.
+ * However, the user may update the capacity retroactively via `setCapacity`. If the new capacity == the number of arrivals at that point, we'll need to unblock the barrier.
+ * This unblocking action may need to perform a `onBarrierLiftedAction` suspending action. Therefore, a new coroutine would be needed.
+ *
+ * Once that action is performed, the pipelines would be resumed on their original coroutines.
+ *
+ * TL;DR: ensure that the `launchContext` is the same as the one you used for creating the pipeline.
+ */
+internal class CountedBarrierControllerImpl<T : Comparable<T>>(private val launchContext: CoroutineContext, private var capacity: Int = Int.MAX_VALUE, private val onBarrierLiftedAction: Step<List<T>>? = null) : BarrierController<T>, CountedBarrierController {
     private val lock = Any()
 
     override var arrivalCount: Int = 0
