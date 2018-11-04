@@ -2,29 +2,28 @@ buildscript {
     ext {
         versions = [
                 'android': [
-                    'gradle_plugin': '3.1.4',
-                    'lifecycle': "1.1.1",
-                    'support': [
-                        'appcompat7': '27.1.1'
+                    'gradle_plugin': '3.2.1',
+                    'x': [
+                            'appcompat': '1.0.0',
+                            'lifecycle': '2.0.0'
                     ]
                 ],
                 'junit' : '4.12',
                 'kotlin': [
-                        'coroutines': '0.26.0',
-                        'lang': '1.2.70'
+                        'coroutines': '1.0.0',
+                        'lang': '1.3.0'
                 ],
-                'mockito_kotlin': '2.0.0-RC1',
+                'mockito_kotlin': '2.0.0',
                 'publish': [
                         'maven_plugin': '2.1',
                         'bintray_plugin': '1.8.4'
                 ],
                 'static_analysis': [
-                        'ktlint': '0.28.0',
+                        'ktlint': '0.29.0',
                 ]
         ]
 
         coreVersions = [
-                'buildTools': '27.0.3',
                 'targetSdkVersion': 28,
                 'minSdkVersion': 15,
                 'compileSdkVersion': 28,
@@ -35,13 +34,13 @@ buildscript {
         depends = [
                 'android': [
                     'gradle_plugin': "com.android.tools.build:gradle:${versions.android.gradle_plugin}",
-                    'lifecycle': [
-                        'livedata': "android.arch.lifecycle:livedata:${versions.android.lifecycle}",
-                        'runtime': "android.arch.lifecycle:runtime:${versions.android.lifecycle}",
-                        'testing': "android.arch.core:core-testing:${versions.android.lifecycle}"
-                    ],
-                    'support': [
-                        'appcompat7': "com.android.support:appcompat-v7:${versions.android.support.appcompat7}"
+                    'x': [
+                            'appcompat': "androidx.appcompat:appcompat:${versions.android.x.appcompat}",
+                            'lifecycle': [
+                                    'livedata': "androidx.lifecycle:lifecycle-livedata:${versions.android.x.lifecycle}",
+                                    'runtime': "androidx.lifecycle:lifecycle-runtime:${versions.android.x.lifecycle}",
+                                    'testing': "androidx.arch.core:core-testing:${versions.android.x.lifecycle}"
+                            ]
                     ]
                 ],
                 'junit' : "junit:junit:${versions.junit}",

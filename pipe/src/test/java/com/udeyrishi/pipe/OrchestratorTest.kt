@@ -3,8 +3,8 @@
  */
 package com.udeyrishi.pipe
 
-import android.arch.core.executor.testing.InstantTaskExecutorRule
-import android.arch.lifecycle.Observer
+import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import androidx.lifecycle.Observer
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.mock
@@ -19,7 +19,7 @@ import com.udeyrishi.pipe.testutil.RepeatRule
 import com.udeyrishi.pipe.testutil.createMockLifecycleOwner
 import com.udeyrishi.pipe.util.Identifiable
 import com.udeyrishi.pipe.util.Logger
-import kotlinx.coroutines.experimental.runBlocking
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

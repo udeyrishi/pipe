@@ -3,9 +3,9 @@
  */
 package com.udeyrishi.pipe.testutil
 
-import android.arch.lifecycle.Lifecycle
-import android.arch.lifecycle.LifecycleOwner
-import android.arch.lifecycle.LifecycleRegistry
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
 
 fun createMockLifecycleOwner(): LifecycleOwner {
     return object : LifecycleOwner {

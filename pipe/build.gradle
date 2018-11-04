@@ -8,7 +8,6 @@ apply from: '../ktlint.gradle'
 sourceCompatibility = 1.8
 
 android {
-    buildToolsVersion coreVersions.buildTools
     compileSdkVersion coreVersions.compileSdkVersion
     defaultConfig {
         minSdkVersion coreVersions.minSdkVersion
@@ -44,18 +43,12 @@ android {
 dependencies {
     implementation depends.kotlin.stdlib
     implementation depends.kotlin.coroutines
-    api depends.android.lifecycle.livedata
+    api depends.android.x.lifecycle.livedata
 
     testImplementation depends.junit
-    testImplementation depends.android.lifecycle.runtime
-    testImplementation depends.android.lifecycle.testing
+    testImplementation depends.android.x.lifecycle.runtime
+    testImplementation depends.android.x.lifecycle.testing
     testImplementation depends.mockito_kotlin
-}
-
-kotlin {
-    experimental {
-        coroutines 'enable'
-    }
 }
 
 ext {

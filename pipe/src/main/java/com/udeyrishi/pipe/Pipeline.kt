@@ -15,9 +15,9 @@ import com.udeyrishi.pipe.steps.StepDescriptor
 import com.udeyrishi.pipe.util.Identifiable
 import com.udeyrishi.pipe.util.ThrowOnMainThreadExceptionHandler
 import com.udeyrishi.pipe.util.UnexpectedExceptionHandler
-import kotlinx.coroutines.experimental.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineExceptionHandler
 import java.util.UUID
-import kotlin.coroutines.experimental.CoroutineContext
+import kotlin.coroutines.CoroutineContext
 
 fun <T : Any> buildPipeline(repository: MutableRepository<in Job<T>>, unexpectedExceptionHandler: UnexpectedExceptionHandler = ThrowOnMainThreadExceptionHandler, stepDefiner: (Pipeline.Builder<T>.() -> Unit)): Pipeline<T> {
     val builder = Pipeline.Builder<T>()

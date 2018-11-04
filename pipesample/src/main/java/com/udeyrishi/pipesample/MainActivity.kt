@@ -1,10 +1,10 @@
 package com.udeyrishi.pipesample
 
-import android.arch.lifecycle.Observer
 import android.os.Bundle
-import android.support.v4.content.ContextCompat
-import android.support.v7.app.AppCompatActivity
 import android.widget.ImageView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Observer
 import com.udeyrishi.pipe.Job
 import com.udeyrishi.pipe.State
 import kotlinx.android.synthetic.main.activity_main.image_container as imageContainer

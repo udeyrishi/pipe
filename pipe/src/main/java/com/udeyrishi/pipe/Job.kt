@@ -3,7 +3,7 @@
  */
 package com.udeyrishi.pipe
 
-import android.arch.lifecycle.LiveData
+import androidx.lifecycle.LiveData
 import com.udeyrishi.pipe.util.Identifiable
 import com.udeyrishi.pipe.util.Logger
 import java.util.UUID

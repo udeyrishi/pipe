@@ -5,8 +5,9 @@ package com.udeyrishi.pipe.barrier
 
 import com.udeyrishi.pipe.steps.InterruptibleStep
 import com.udeyrishi.pipe.util.immutableAfterSet
-import kotlin.coroutines.experimental.Continuation
-import kotlin.coroutines.experimental.suspendCoroutine
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 internal interface Barrier<T : Any> : InterruptibleStep<T> {
     val input: T?

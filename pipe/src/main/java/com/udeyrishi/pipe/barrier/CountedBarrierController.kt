@@ -5,10 +5,10 @@ package com.udeyrishi.pipe.barrier
 
 import com.udeyrishi.pipe.steps.Step
 import com.udeyrishi.pipe.util.SortReplayer
-import kotlinx.coroutines.experimental.Dispatchers
-import kotlinx.coroutines.experimental.GlobalScope
-import kotlinx.coroutines.experimental.launch
-import kotlin.coroutines.experimental.CoroutineContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlin.coroutines.CoroutineContext
 
 interface CountedBarrierController {
     val arrivalCount: Int
@@ -91,7 +91,7 @@ internal class CountedBarrierControllerImpl<T : Comparable<T>>(private val launc
     }
 
     override suspend fun onBarrierBlocked(barrier: Barrier<T>) {
-        synchronized(lock) {
+        val liftBarrier = synchronized(lock) {
             when (barriers[barrier]) {
                 null -> {
                     if (!interrupted) {
@@ -99,16 +99,19 @@ internal class CountedBarrierControllerImpl<T : Comparable<T>>(private val launc
                         // because the barrier was notified of the interruption too.
                         throw IllegalArgumentException("Barrier $barrier was never registered.")
                     }
+                    false
                 }
                 true -> throw IllegalArgumentException("Barrier $barrier was already marked as blocked.")
                 false -> {
                     barriers[barrier] = true
                     ++arrivalCount
-                    if (arrivalCount == capacity) {
-                        onFinalInputPushed()
-                    }
+                    arrivalCount == capacity
                 }
             }
+        }
+
+        if (liftBarrier) {
+            onFinalInputPushed()
         }
     }
 

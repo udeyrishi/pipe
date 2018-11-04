@@ -6,7 +6,6 @@ apply from: '../ktlint.gradle'
 sourceCompatibility = 1.8
 
 android {
-    buildToolsVersion coreVersions.buildTools
     compileSdkVersion coreVersions.compileSdkVersion
 
     defaultConfig {
@@ -42,14 +41,8 @@ android {
     }
 }
 
-kotlin {
-    experimental {
-        coroutines 'enable'
-    }
-}
-
 dependencies {
     implementation project(':pipe')
     implementation depends.kotlin.stdlib
-    implementation depends.android.support.appcompat7
+    implementation depends.android.x.appcompat
 }

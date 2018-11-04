@@ -3,7 +3,7 @@
  */
 package com.udeyrishi.pipe
 
-import android.arch.core.executor.testing.InstantTaskExecutorRule
+import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.udeyrishi.pipe.repository.InMemoryRepository
 import com.udeyrishi.pipe.testutil.Repeat
 import com.udeyrishi.pipe.testutil.RepeatRule
