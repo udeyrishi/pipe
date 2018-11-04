@@ -14,7 +14,9 @@ class ImagePipelineMember(private val url: String? = null, private val image: Bi
 private const val SCALED_IMAGE_SIZE = 400
 
 fun makePipeline(repository: MutableRepository<Job<ImagePipelineMember>>): Pipeline<ImagePipelineMember> {
-    return buildPipeline(repository) {
+    return buildPipeline {
+        setRepository(repository)
+
         addStep("download", attempts = 4) {
             ImagePipelineMember(image = downloadImage(it.getUrl()))
         }

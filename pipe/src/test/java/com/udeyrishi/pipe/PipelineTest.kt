@@ -5,7 +5,6 @@ package com.udeyrishi.pipe
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.udeyrishi.pipe.internal.Orchestrator
-import com.udeyrishi.pipe.repository.InMemoryRepository
 import com.udeyrishi.pipe.testutil.DefaultTestDispatcher
 import com.udeyrishi.pipe.testutil.Repeat
 import com.udeyrishi.pipe.testutil.RepeatRule
@@ -37,7 +36,9 @@ class PipelineTest {
 
         var barrierReachedCount = 0
 
-        val pipeline = buildPipeline<Int>(InMemoryRepository(), DefaultTestDispatcher) {
+        val pipeline = buildPipeline<Int> {
+            setDispatcher(DefaultTestDispatcher)
+
             addStep("step 1") {
                 it + 1
             }
@@ -107,7 +108,7 @@ class PipelineTest {
 
         var barrierReachedCount = 0
 
-        val pipeline = Pipeline.Builder<Int>()
+        val pipeline = PipelineBuilder<Int>()
                 .addStep("step 1") {
                     it + 1
                 }
@@ -128,7 +129,8 @@ class PipelineTest {
                 .addStep("Step 4") {
                     it + 4
                 }
-                .build(InMemoryRepository(), DefaultTestDispatcher)
+                .setDispatcher(DefaultTestDispatcher)
+                .build()
 
         val jobs = mutableListOf(
                 pipeline.push(0, null),
@@ -167,7 +169,9 @@ class PipelineTest {
 
     @Test
     fun `interrupting one job does not interrupt others`() {
-        val pipeline = buildPipeline<Int>(InMemoryRepository(), DefaultTestDispatcher) {
+        val pipeline = buildPipeline<Int> {
+            setDispatcher(DefaultTestDispatcher)
+
             addManualBarrier("some barrier")
 
             addStep("my step", attempts = 1L) {
@@ -198,7 +202,9 @@ class PipelineTest {
 
     @Test
     fun `interrupting one job blocked on a manual barrier does not interrupt other jobs blocked on the same barrier`() {
-        val pipeline = buildPipeline<Int>(InMemoryRepository(), DefaultTestDispatcher) {
+        val pipeline = buildPipeline<Int> {
+            setDispatcher(DefaultTestDispatcher)
+
             addManualBarrier("some barrier")
 
             addStep("my step", attempts = 1L) {
@@ -232,7 +238,9 @@ class PipelineTest {
     @Repeat
     @Test
     fun `interrupting one job blocked on a counted barrier also interrupts the sibling jobs`() {
-        val pipeline = buildPipeline<Int>(InMemoryRepository(), DefaultTestDispatcher) {
+        val pipeline = buildPipeline<Int> {
+            setDispatcher(DefaultTestDispatcher)
+
             addCountedBarrier("some barrier", capacity = 3)
 
             addStep("my step", attempts = 1L) {
@@ -265,7 +273,9 @@ class PipelineTest {
     @Test
     fun `error in one job reduces the counted barrier capacity such that its siblings may continue working`() {
         lateinit var barrierList: List<Int>
-        val pipeline = buildPipeline<Int>(InMemoryRepository(), DefaultTestDispatcher) {
+        val pipeline = buildPipeline<Int> {
+            setDispatcher(DefaultTestDispatcher)
+
             addStep("my step 1", attempts = 1L) {
                 if (it == 1) {
                     throw RuntimeException("BOOM!")
@@ -312,7 +322,9 @@ class PipelineTest {
     @Test
     fun `error in one job does not affect its siblings if the error appears after the counted barrier`() {
         lateinit var barrierList: List<Int>
-        val pipeline = buildPipeline<Int>(InMemoryRepository(), DefaultTestDispatcher) {
+        val pipeline = buildPipeline<Int> {
+            setDispatcher(DefaultTestDispatcher)
+
             addStep("my step 1", attempts = 1L) {
                 it + 1
             }
@@ -357,7 +369,9 @@ class PipelineTest {
 
     @Test
     fun `error in one job does not affect its sibling if they share a manual barrier`() {
-        val pipeline = buildPipeline<Int>(InMemoryRepository(), DefaultTestDispatcher) {
+        val pipeline = buildPipeline<Int> {
+            setDispatcher(DefaultTestDispatcher)
+
             addStep("my step 1", attempts = 1L) {
                 if (it == 1) {
                     throw RuntimeException("BOOM!")

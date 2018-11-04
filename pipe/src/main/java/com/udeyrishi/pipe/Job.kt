@@ -5,11 +5,12 @@ package com.udeyrishi.pipe
 
 import androidx.lifecycle.LiveData
 import com.udeyrishi.pipe.internal.Orchestrator
+import com.udeyrishi.pipe.internal.pipeline.Passenger
 import com.udeyrishi.pipe.internal.util.Identifiable
 import com.udeyrishi.pipe.internal.util.Logger
 import java.util.UUID
 
-class Job<T : Any> internal constructor(private val orchestrator: Orchestrator<Pipeline.Passenger<T>>) : Identifiable {
+class Job<T : Any> internal constructor(private val orchestrator: Orchestrator<Passenger<T>>) : Identifiable {
     override val uuid: UUID
         get() = orchestrator.uuid
 
