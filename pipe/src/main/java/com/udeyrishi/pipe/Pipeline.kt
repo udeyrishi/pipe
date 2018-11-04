@@ -51,7 +51,7 @@ class Pipeline<T : Any> private constructor(private val repository: MutableRepos
         return repository.add(tag) { newUUID, position ->
             val passenger = Passenger(input, newUUID, position)
             val steps = materializeSteps()
-            val orchestrator = Orchestrator(passenger, steps, launchContext, failureListener = { _ ->
+            val orchestrator = Orchestrator(passenger, steps, launchContext, failureListener = {
                 synchronized(countedBarrierCapacityLock) {
                     barrierControllers
                             .asSequence()

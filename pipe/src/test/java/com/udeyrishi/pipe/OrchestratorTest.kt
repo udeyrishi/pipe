@@ -644,10 +644,10 @@ class OrchestratorTest {
                 }
         )
 
-        lateinit var failedOrchestrator: Orchestrator<IdentifiableString>
+        var failed = false
 
         val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator(), launchContext = DefaultTestDispatcher.createEffectiveContext(), failureListener = {
-            failedOrchestrator = it
+            failed = true
         })
 
         orchestrator.start()
@@ -657,6 +657,6 @@ class OrchestratorTest {
         }
 
         assertTrue(orchestrator.state.value is State.Terminal.Failure)
-        assertEquals(orchestrator, failedOrchestrator)
+        assertTrue(failed)
     }
 }

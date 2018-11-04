@@ -20,7 +20,7 @@ import kotlin.coroutines.CoroutineContext
  * - guides the provided input through the provided steps
  * - updates and monitors its state
  */
-internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<StepDescriptor<T>>, private val launchContext: CoroutineContext, private val failureListener: ((Orchestrator<T>) -> Unit)? = null) : Identifiable {
+internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<StepDescriptor<T>>, private val launchContext: CoroutineContext, private val failureListener: (() -> Unit)? = null) : Identifiable {
     override val uuid: UUID = input.uuid
 
     private var started: Boolean by immutableAfterSet(false)
@@ -133,7 +133,7 @@ internal class Orchestrator<out T : Identifiable>(input: T, steps: Iterator<Step
         val innerCause = (volatileState as? State.Running.AttemptFailed)?.cause
         onStateFailure(cause = if (dueToInterruption) OrchestratorInterruptedException(this, innerCause) else StepOutOfAttemptsException(this, failingStep, innerCause))
         if (!dueToInterruption) {
-            failureListener?.invoke(this)
+            failureListener?.invoke()
         }
         // No need to check the result for ^. Even if it's false, the state is still terminal false
         volatileState.sanityCheck<State.Terminal.Failure>()
