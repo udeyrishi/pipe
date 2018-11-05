@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2018 Udey Rishi. All rights reserved.
+ */
 package com.udeyrishi.pipe.repository
 
 import com.udeyrishi.pipe.util.Identifiable
