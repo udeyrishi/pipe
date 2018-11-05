@@ -6,10 +6,16 @@ package com.udeyrishi.pipe.repository
 import com.udeyrishi.pipe.util.Identifiable
 import java.util.UUID
 
-private data class InMemoryRepositoryEntry<T : Identifiable>(override val identifiableObject: T, override val tag: String?) : RepositoryEntry<T>
+/**
+ * A simple in-memory `Record` to accompany the `InMemoryRepository`.
+ */
+private data class InMemoryRecord<T : Identifiable>(override val identifiableObject: T, override val tag: String?) : Record<T>
 
+/**
+ * A simple, `HashMap` backed in-memory implementation of `MutableRepository`.
+ */
 class InMemoryRepository<T : Identifiable> : MutableRepository<T> {
-    private val entries = arrayListOf<InMemoryRepositoryEntry<T>>()
+    private val entries = arrayListOf<InMemoryRecord<T>>()
     private val uuidIndex = hashMapOf<UUID, Int>()
     private val lock = Any()
 
@@ -18,12 +24,12 @@ class InMemoryRepository<T : Identifiable> : MutableRepository<T> {
             if (uuidIndex.containsKey(entry.uuid)) {
                 throw DuplicateUUIDException(entry.uuid)
             }
-            entries.add(InMemoryRepositoryEntry(entry, tag))
+            entries.add(InMemoryRecord(entry, tag))
             uuidIndex[entry.uuid] = entries.lastIndex
         }
     }
 
-    override fun get(uuid: UUID): RepositoryEntry<T>? {
+    override fun get(uuid: UUID): Record<T>? {
         return synchronized(lock) {
             uuidIndex[uuid]?.let {
                 entries[it]
@@ -31,19 +37,19 @@ class InMemoryRepository<T : Identifiable> : MutableRepository<T> {
         }
     }
 
-    override fun get(tag: String?): List<RepositoryEntry<T>> {
+    override fun get(tag: String?): List<Record<T>> {
         return getMatching {
             it.tag == tag
         }
     }
 
-    override fun getMatching(predicate: (RepositoryEntry<T>) -> Boolean): List<RepositoryEntry<T>> {
+    override fun getMatching(predicate: (Record<T>) -> Boolean): List<Record<T>> {
         return synchronized(lock) {
             entries.filter(predicate)
         }
     }
 
-    override fun removeIf(predicate: (RepositoryEntry<T>) -> Boolean) {
+    override fun removeIf(predicate: (Record<T>) -> Boolean) {
         val iterator = entries.iterator()
         while (iterator.hasNext()) {
             val item = iterator.next()
