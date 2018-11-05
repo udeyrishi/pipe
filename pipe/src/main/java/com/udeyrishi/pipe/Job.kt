@@ -7,7 +7,6 @@ import androidx.lifecycle.LiveData
 import com.udeyrishi.pipe.internal.Orchestrator
 import com.udeyrishi.pipe.internal.pipeline.Passenger
 import com.udeyrishi.pipe.util.Identifiable
-import java.util.UUID
 
 class Job<T : Any> internal constructor(private val orchestrator: Orchestrator<Passenger<T>>) : Identifiable by orchestrator {
     val state: LiveData<State>

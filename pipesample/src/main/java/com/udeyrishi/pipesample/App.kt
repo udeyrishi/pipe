@@ -17,6 +17,7 @@ object App : Application() {
                 .forEach { it.interrupt() }
 
         jobsRepo.removeIf { true }
+        jobsRepo.close()
 
         super.onTerminate()
     }
