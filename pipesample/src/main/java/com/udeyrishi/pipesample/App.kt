@@ -6,19 +6,9 @@ import com.udeyrishi.pipe.repository.InMemoryRepository
 import com.udeyrishi.pipe.repository.MutableRepository
 import com.udeyrishi.pipe.util.AndroidLogger
 
-class App : Application() {
-    companion object {
-        lateinit var INSTANCE: App
-            private set
-    }
-
+object App : Application() {
     val jobsRepo: MutableRepository<Job<ImagePipelineMember>> = InMemoryRepository()
     val logger = AndroidLogger("Pipe")
-
-    override fun onCreate() {
-        super.onCreate()
-        INSTANCE = this
-    }
 
     override fun onTerminate() {
         jobsRepo

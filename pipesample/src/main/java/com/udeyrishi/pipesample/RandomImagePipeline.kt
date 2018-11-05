@@ -1,10 +1,8 @@
 package com.udeyrishi.pipesample
 
 import android.graphics.Bitmap
-import com.udeyrishi.pipe.Job
 import com.udeyrishi.pipe.Pipeline
 import com.udeyrishi.pipe.buildPipeline
-import com.udeyrishi.pipe.repository.MutableRepository
 
 class ImagePipelineMember(private val url: String? = null, private val image: Bitmap? = null) {
     fun getBitmap(): Bitmap = image ?: throw IllegalStateException("image must've been read.")
@@ -13,9 +11,10 @@ class ImagePipelineMember(private val url: String? = null, private val image: Bi
 
 private const val SCALED_IMAGE_SIZE = 400
 
-fun makePipeline(repository: MutableRepository<Job<ImagePipelineMember>>): Pipeline<ImagePipelineMember> {
+fun makePipeline(): Pipeline<ImagePipelineMember> {
     return buildPipeline {
-        setRepository(repository)
+        setRepository(App.jobsRepo)
+        setLogger(App.logger)
 
         addStep("download", attempts = 4) {
             ImagePipelineMember(image = downloadImage(it.getUrl()))

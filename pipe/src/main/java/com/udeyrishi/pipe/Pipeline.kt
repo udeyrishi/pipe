@@ -8,6 +8,7 @@ import com.udeyrishi.pipe.internal.pipeline.PipelineOperationSpec
 import com.udeyrishi.pipe.internal.util.createEffectiveContext
 import com.udeyrishi.pipe.repository.InMemoryRepository
 import com.udeyrishi.pipe.repository.MutableRepository
+import com.udeyrishi.pipe.util.Logger
 
 interface Pipeline<T : Any> {
     val manualBarriers: List<ManualBarrierController>
@@ -26,6 +27,7 @@ class PipelineBuilder<T : Any> {
     private val operations = mutableListOf<PipelineOperationSpec<T>>()
     private var dispatcher: PipelineDispatcher = DefaultAndroidDispatcher
     private var repository: MutableRepository<in Job<T>> = InMemoryRepository()
+    private var logger: Logger? = null
 
     fun addStep(name: String, attempts: Long = 1, step: Step<T>) = apply {
         operations.add(PipelineOperationSpec.RegularStep(name, attempts, step))
@@ -47,5 +49,9 @@ class PipelineBuilder<T : Any> {
         this.repository = repository
     }
 
-    fun build(): Pipeline<T> = PipelineImpl(repository, operations, dispatcher.createEffectiveContext())
+    fun setLogger(logger: Logger?) = apply {
+        this.logger = logger
+    }
+
+    fun build(): Pipeline<T> = PipelineImpl(repository, operations, dispatcher.createEffectiveContext(), logger)
 }

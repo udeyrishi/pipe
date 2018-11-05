@@ -15,10 +15,11 @@ import com.udeyrishi.pipe.internal.barrier.ManualBarrierControllerImpl
 import com.udeyrishi.pipe.internal.steps.StepDescriptor
 import com.udeyrishi.pipe.repository.DuplicateUUIDException
 import com.udeyrishi.pipe.repository.MutableRepository
+import com.udeyrishi.pipe.util.Logger
 import java.util.UUID
 import kotlin.coroutines.CoroutineContext
 
-internal class PipelineImpl<T : Any>(private val repository: MutableRepository<in Job<T>>, private val operations: List<PipelineOperationSpec<T>>, private val launchContext: CoroutineContext) : Pipeline<T> {
+internal class PipelineImpl<T : Any>(private val repository: MutableRepository<in Job<T>>, private val operations: List<PipelineOperationSpec<T>>, private val launchContext: CoroutineContext, private val logger: Logger?) : Pipeline<T> {
     private val barrierControllers by lazy {
         operations
                 .asSequence()
@@ -65,6 +66,7 @@ internal class PipelineImpl<T : Any>(private val repository: MutableRepository<i
             val job = Job(orchestrator)
             try {
                 repository.add(tag, job)
+                orchestrator.logger = logger
                 orchestrator.start()
                 return job
             } catch (e: DuplicateUUIDException) {

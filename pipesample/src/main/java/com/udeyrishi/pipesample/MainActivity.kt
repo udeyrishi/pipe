@@ -20,12 +20,12 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         rootView.setOnRefreshListener {
-            App.INSTANCE.jobsRepo[JOB_TAG].forEach {
+            App.jobsRepo[JOB_TAG].forEach {
                 it.identifiableObject.state.removeObservers(this)
                 it.identifiableObject.interrupt()
             }
 
-            App.INSTANCE.jobsRepo.removeIf {
+            App.jobsRepo.removeIf {
                 it.tag == JOB_TAG
             }
 
@@ -45,10 +45,10 @@ class MainActivity : AppCompatActivity() {
                 if (intentionallyFail) "foobar" else "http://g77v3827gg2notadhhw9pew7-wpengine.netdna-ssl.com/wp-content/uploads/2017/03/what-to-do-cat-seizure_canna-pet-e1490730066628-1024x681.jpg"
         )
 
-        val jobs = if (App.INSTANCE.jobsRepo[JOB_TAG].isEmpty()) {
+        val jobs = if (App.jobsRepo[JOB_TAG].isEmpty()) {
             createImageJobs(imageUrls)
         } else {
-            App.INSTANCE.jobsRepo[JOB_TAG].map { it.identifiableObject }
+            App.jobsRepo[JOB_TAG].map { it.identifiableObject }
         }
 
         jobs.forEachIndexed { index, job ->
@@ -77,15 +77,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun createImageJobs(imageUrls: List<String>): List<Job<ImagePipelineMember>> {
-        val pipeline = makePipeline(App.INSTANCE.jobsRepo)
+        val pipeline = makePipeline()
         pipeline.countedBarriers.forEach {
             it.setCapacity(imageUrls.size)
         }
 
         return imageUrls.map { url ->
-            pipeline.push(ImagePipelineMember(url = url), tag = JOB_TAG).also { job ->
-                job.logger = App.INSTANCE.logger
-            }
+            pipeline.push(ImagePipelineMember(url = url), tag = JOB_TAG)
         }
     }
 }
