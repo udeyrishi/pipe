@@ -15,8 +15,8 @@ import com.nhaarman.mockitokotlin2.whenever
 import com.udeyrishi.pipe.State
 import com.udeyrishi.pipe.internal.steps.InterruptibleStep
 import com.udeyrishi.pipe.internal.steps.StepDescriptor
-import com.udeyrishi.pipe.internal.util.Identifiable
-import com.udeyrishi.pipe.internal.util.Logger
+import com.udeyrishi.pipe.util.Identifiable
+import com.udeyrishi.pipe.util.Logger
 import com.udeyrishi.pipe.internal.util.createEffectiveContext
 import com.udeyrishi.pipe.testutil.DefaultTestDispatcher
 import com.udeyrishi.pipe.testutil.Repeat

@@ -1,4 +1,4 @@
-package com.udeyrishi.pipe.internal.util
+package com.udeyrishi.pipe.util
 
 import android.util.Log
 

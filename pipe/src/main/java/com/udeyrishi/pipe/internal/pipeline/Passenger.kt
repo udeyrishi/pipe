@@ -1,6 +1,6 @@
 package com.udeyrishi.pipe.internal.pipeline
 
-import com.udeyrishi.pipe.internal.util.Identifiable
+import com.udeyrishi.pipe.util.Identifiable
 import java.util.UUID
 
 internal data class Passenger<T : Any>(val data: T, override val uuid: UUID, val createdAt: Long) : Comparable<Passenger<T>>, Identifiable {

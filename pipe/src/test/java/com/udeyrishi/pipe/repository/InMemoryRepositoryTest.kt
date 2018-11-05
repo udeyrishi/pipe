@@ -1,6 +1,6 @@
 package com.udeyrishi.pipe.repository
 
-import com.udeyrishi.pipe.internal.util.Identifiable
+import com.udeyrishi.pipe.util.Identifiable
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull

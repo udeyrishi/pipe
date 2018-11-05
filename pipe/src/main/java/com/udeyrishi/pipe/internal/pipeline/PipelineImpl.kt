@@ -87,6 +87,7 @@ internal class PipelineImpl<T : Any>(private val repository: MutableRepository<i
         }.iterator()
     }
 }
+
 private fun <T : Any> Step<List<T>>.toPassengerStep(): Step<List<Passenger<T>>> {
     return { passengers ->
         passengers

@@ -1,4 +1,4 @@
-package com.udeyrishi.pipe.internal.util
+package com.udeyrishi.pipe.util
 
 interface Logger {
     fun e(message: String)
