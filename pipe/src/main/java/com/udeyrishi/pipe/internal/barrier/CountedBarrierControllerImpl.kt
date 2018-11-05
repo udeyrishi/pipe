@@ -48,20 +48,27 @@ internal class CountedBarrierControllerImpl<T : Comparable<T>>(private val launc
             field = value
         }
 
-    private var shouldExpectAbsentees: Boolean = false
+    private var expectedAbsenteeCount = 0
+
+    private val isReadyToLift: Boolean
+        get() = (arrivalCount + expectedAbsenteeCount) == capacity
 
     override fun getCapacity(): Int = capacity
 
-    fun changeCapacityDueToError(capacity: Int) {
+    fun notifyError() {
         synchronized(lock) {
-            if (registeredCount > capacity) {
-                // safe to abandon these registrations, since they have failed.
-                registeredCount = capacity
-                shouldExpectAbsentees = true
+            ++expectedAbsenteeCount
+            if (isReadyToLift) {
+                // We now need to retroactively mark the last arrived input as the final input. Usually, the last arrival's coroutine can be reused for aggregation purposes, but it's blocked
+                // on the barrier now. So temporarily create a new one to do the aggregation + unblocking work.
+                GlobalScope.launch(launchContext) {
+                    onFinalInputPushed()
+                }
             }
-            setCapacity(capacity)
         }
     }
+
+    override fun getErrorCount(): Int = expectedAbsenteeCount
 
     override fun setCapacity(capacity: Int) {
         synchronized(lock) {
@@ -69,7 +76,7 @@ internal class CountedBarrierControllerImpl<T : Comparable<T>>(private val launc
                 throw IllegalStateException("Cannot change the capacity from ${this.capacity} to $capacity, because $registeredCount items have already been registered.")
             }
             this.capacity = capacity
-            if (arrivalCount == capacity) {
+            if (isReadyToLift) {
                 // We now need to retroactively mark the last arrived input as the final input. Usually, the last arrival's coroutine can be reused for aggregation purposes, but it's blocked
                 // on the barrier now. So temporarily create a new one to do the aggregation + unblocking work.
                 GlobalScope.launch(launchContext) {
@@ -108,7 +115,7 @@ internal class CountedBarrierControllerImpl<T : Comparable<T>>(private val launc
                 false -> {
                     barriers[barrier] = true
                     ++arrivalCount
-                    arrivalCount == capacity
+                    isReadyToLift
                 }
             }
         }
@@ -147,8 +154,8 @@ internal class CountedBarrierControllerImpl<T : Comparable<T>>(private val launc
 
         val absenteeCount = barriers.size - blockedBarriers.size
 
-        if (absenteeCount > 0 && !shouldExpectAbsentees) {
-            throw IllegalStateException("All registered barriers must have been blocked by now. Something went wrong.")
+        if (absenteeCount != expectedAbsenteeCount) {
+            throw IllegalStateException("Expected $expectedAbsenteeCount absentees, but there were actually $absenteeCount. Something went wrong.")
         }
 
         val unsortedInputs = blockedBarriers.map {

@@ -271,7 +271,7 @@ class PipelineTest {
     }
 
     @Test
-    fun `error in one job reduces the counted barrier capacity such that its siblings may continue working`() {
+    fun `error in one job does not affect its siblings if the error appears before the counted barrier`() {
         lateinit var barrierList: List<Int>
         val pipeline = buildPipeline<Int> {
             setDispatcher(DefaultTestDispatcher)
@@ -314,9 +314,10 @@ class PipelineTest {
         assertTrue(job3.state.value is State.Terminal.Success)
         assertEquals(5, job3.result)
 
-        // The capacity was automatically reduced, and the arg to the `onBarrierLiftedAction` only included the successful passengers
+        // The arg to the `onBarrierLiftedAction` only included the successful passengers
         assertEquals(listOf(3, 4), barrierList)
-        assertEquals(2, pipeline.countedBarriers[0].getCapacity())
+        assertEquals(1, pipeline.countedBarriers[0].getErrorCount())
+        assertEquals(3, pipeline.countedBarriers[0].getCapacity())
     }
 
     @Test

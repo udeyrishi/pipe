@@ -59,7 +59,7 @@ internal class PipelineImpl<T : Any>(private val repository: MutableRepository<i
                             }
                             .forEach {
                                 // This will notify them to not bother waiting. The failed job is never going to arrive.
-                                it.changeCapacityDueToError(it.getCapacity() - 1)
+                                it.notifyError()
                             }
                 }
             })

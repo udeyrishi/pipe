@@ -5,7 +5,9 @@ package com.udeyrishi.pipe
 
 interface CountedBarrierController {
     val arrivalCount: Int
+
     fun getCapacity(): Int
+    fun getErrorCount(): Int
     fun setCapacity(capacity: Int)
 }
 
