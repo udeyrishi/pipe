@@ -22,7 +22,8 @@
                 android:maxHeight="100dp"
                 android:maxWidth="100dp"
                 android:background="@color/colorAccent"
-                android:layout_gravity="center_horizontal"/>
+                android:layout_gravity="center_horizontal"
+                tools:ignore="ContentDescription" />
 
             <ImageView
                 android:layout_width="wrap_content"
@@ -30,7 +31,8 @@
                 android:maxHeight="100dp"
                 android:maxWidth="100dp"
                 android:background="@color/colorPrimary"
-                android:layout_gravity="center_horizontal"/>
+                android:layout_gravity="center_horizontal"
+                tools:ignore="ContentDescription" />
 
             <ImageView
                 android:layout_width="wrap_content"
@@ -38,7 +40,8 @@
                 android:maxHeight="100dp"
                 android:maxWidth="100dp"
                 android:background="#FFFFFFFF"
-                android:layout_gravity="center_horizontal"/>
+                android:layout_gravity="center_horizontal"
+                tools:ignore="ContentDescription" />
 
             <ImageView
                 android:layout_width="wrap_content"
@@ -46,7 +49,8 @@
                 android:maxHeight="100dp"
                 android:maxWidth="100dp"
                 android:background="#FF00FF00"
-                android:layout_gravity="center_horizontal"/>
+                android:layout_gravity="center_horizontal"
+                tools:ignore="ContentDescription" />
 
             <ImageView
                 android:layout_width="wrap_content"
@@ -54,7 +58,8 @@
                 android:maxHeight="100dp"
                 android:maxWidth="100dp"
                 android:background="#FF000000"
-                android:layout_gravity="center_horizontal"/>
+                android:layout_gravity="center_horizontal"
+                tools:ignore="ContentDescription" />
 
             <TextView
                 android:layout_width="wrap_content"

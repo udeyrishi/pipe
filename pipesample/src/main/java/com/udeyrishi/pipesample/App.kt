@@ -6,19 +6,21 @@ import com.udeyrishi.pipe.repository.InMemoryRepository
 import com.udeyrishi.pipe.repository.MutableRepository
 import com.udeyrishi.pipe.util.AndroidLogger
 
-object App : Application() {
-    val jobsRepo: MutableRepository<Job<ImagePipelineMember>> = InMemoryRepository()
-    val logger = AndroidLogger("Pipe")
+class App : Application() {
+    companion object {
+        val jobsRepo: MutableRepository<Job<ImagePipelineMember>> = InMemoryRepository()
+        val logger = AndroidLogger("Pipe")
+    }
 
     override fun onTerminate() {
-        jobsRepo
-                .getMatching { true }
+        jobsRepo.apply {
+            getMatching { true }
                 .map { it.identifiableObject }
                 .forEach { it.interrupt() }
 
-        jobsRepo.removeIf { true }
-        jobsRepo.close()
-
+            removeIf { true }
+            close()
+        }
         super.onTerminate()
     }
 }
