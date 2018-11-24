@@ -10,13 +10,67 @@ import com.udeyrishi.pipe.repository.InMemoryRepository
 import com.udeyrishi.pipe.repository.MutableRepository
 import com.udeyrishi.pipe.util.Logger
 
+/**
+ * A pipeline is a sequence of steps (and barriers, optionally) used to convert to an input to an output.
+ *
+ * Note that all the barriers will be applicable to all the `Jobs` that will be `push`-started
+ * via this _instance_ of the `Pipeline`. So if you plan on reusing the same schematic for the pipeline
+ * for multiple groups of inputs, but the barriers need to be applied only to 1 group at a time,
+ * make sure you're creating new instances of the same Pipeline. This can be done by using a reusable
+ * factory functions that create pipeline instances.
+ *
+ *
+ * e.g.
+ *
+ * ```
+ * // Some factory function.
+ * fun makeMyPipeline(): Pipeline<Int> {
+ *     return buildPipeline {
+ *           // define steps
+ *     }
+ * }
+ *
+ * val group1 = listOf(1,2,3)
+ * val group2 = listOf(5,6,7)
+ *
+ * val pipeline1 = makeMyPipeline()
+ * val jobGroup1 = group1.map { pipeline1.push(it) }
+ *
+ * val pipeline2 = makeMyPipeline()
+ * val jobGroup2 = group2.map { pipeline2.push(it) }
+ * ```
+ *
+ * These two pipelines have the same schematic; meaning they will execute the same steps. However,
+ * `jobGroup1` and `jobGroup2` do not share their barriers. [1,2,3] will be treated as job siblings,
+ * while [5,6,7] will be treated as another group of siblings.
+ */
 interface Pipeline<T : Any> {
+    /**
+     * Returns the list of all the manual barriers added to the pipeline. They are ordered in the same way
+     * as they were added.
+     */
     val manualBarriers: List<ManualBarrierController>
+
+    /**
+     * Returns the list of all the counted barriers added to the pipeline. They are ordered in the same way
+     * as they were added.
+     */
     val countedBarriers: List<CountedBarrierController>
 
+    /**
+     * Pushes an input into the pipeline. Returns the `Job` that can be used for monitoring the flow
+     * of this input through the pipeline.
+     *
+     * - An optional tag can be provided to logically group jobs. Jobs can be queried by tags on the
+     * `Repository` that was supplied to the pipeline.
+     */
     fun push(input: T, tag: String?): Job<T>
 }
 
+/**
+ * A DSL for building a pipeline. See the backing `PipelineBuilder` for seeing all possible setup operations
+ * available.
+ */
 fun <T : Any> buildPipeline(stepDefiner: (PipelineBuilder<T>.() -> Unit)): Pipeline<T> {
     val builder = PipelineBuilder<T>()
     builder.stepDefiner()
@@ -29,14 +83,43 @@ class PipelineBuilder<T : Any> {
     private var repository: MutableRepository<in Job<T>> = InMemoryRepository()
     private var logger: Logger? = null
 
+    /**
+     * Adds a step in the pipeline.
+     *
+     * @param name A name for this step. This should ideally be unique, but it's not required. This
+     *             will appear in the logs and any exception messages.
+     * @param attempts The maximum number of attempts to be made in case this step throws an exception.
+     * @param step A **pure** input-output function defining the business logic in the step.
+     *             Note that we cannot prevent you from affecting any global state in the body of the `step`.
+     *             However, that is almost always a bad idea. This function will be shared among the
+     *             different `Job`s that will be push-started via this pipeline. Additionally, it may
+     *             be invoked multiple times due to retries. Therefore, it's best to architect your pipeline
+     *             such that they only use pure functional steps.
+     */
     fun addStep(name: String, attempts: Long = 1, step: Step<T>) = apply {
         operations.add(PipelineOperationSpec.RegularStep(name, attempts, step))
     }
 
+    /**
+     * Adds a manual barrier in the pipeline. A handle to the corresponding `ManualBarrierController`
+     * can be retrieved once the pipeline is created via `Pipeline::manualBarriers::get(i)`.
+     *
+     * @param name A name for this barrier. This should ideally be unique, but it's not required. This
+     *             will appear in the logs and any exception messages.
+     */
     fun addManualBarrier(name: String) = apply {
         operations.add(PipelineOperationSpec.Barrier.Manual(name))
     }
 
+    /**
+     * Adds a counted barrier in the pipeline. A handle to the corresponding `CountedBarrierController`
+     * can be retrieved once the pipeline is created via `Pipeline::countedBarriers::get(i)`.
+     *
+     * @param name A name for this barrier. This should ideally be unique, but it's not required. This
+     *             will appear in the logs and any exception messages.
+     * @param capacity The initial capacity for this counted barrier.
+     * @param attempts
+     */
     fun addCountedBarrier(name: String, capacity: Int = Int.MAX_VALUE, attempts: Long = 1, onBarrierLiftedAction: Step<List<T>>? = null) = apply {
         operations.add(PipelineOperationSpec.Barrier.Counted(name, capacity = capacity, attempts = attempts, onBarrierLiftedAction = onBarrierLiftedAction))
     }
