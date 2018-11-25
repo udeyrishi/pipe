@@ -44,30 +44,30 @@ val JOBS_REPO = InMemoryRepository<Job<ImagePipelineMember>>()
 val LOGGER = AndroidLogger("Pipe")
 
 fun makePipeline() = buildPipeline<ImagePipelineMember> {
-	setRepository(JOBS_REPO)
-	setLogger(LOGGER)
-	
-	addManualBarrier("start_barrier")
-	
-	addStep("download", attempts = 4) {
-	    ImagePipelineMember(image = downloadImage(it.url!!))
-	}
-	
-	addStep("rotate") {
-	    ImagePipelineMember(image = rotateBitmap(it.image!!, 90.0f))
-	}
-	
-	addStep("scale") {
-	    ImagePipelineMember(image = scale(it.image!!, 400, 400))
-	}
-	
-	addCountedBarrier("overdraw", capacity = Int.MAX_VALUE) { allMembers ->
-	    allMembers.mapIndexed { index, member ->
-	        val siblingIndex = if (index == 0) allMembers.lastIndex else index - 1
-	        val resultingImage = overdraw(member.image!!, allMembers[siblingIndex].image!!)
-	        ImagePipelineMember(image = resultingImage)
-	    }
-	}
+    setRepository(JOBS_REPO)
+    setLogger(LOGGER)
+
+    addManualBarrier("start_barrier")
+
+    addStep("download", attempts = 4) {
+        ImagePipelineMember(image = downloadImage(it.url!!))
+    }
+
+    addStep("rotate") {
+        ImagePipelineMember(image = rotateBitmap(it.image!!, 90.0f))
+    }
+
+    addStep("scale") {
+        ImagePipelineMember(image = scale(it.image!!, 400, 400))
+    }
+
+    addCountedBarrier("overdraw", capacity = Int.MAX_VALUE) { allMembers ->
+        allMembers.mapIndexed { index, member ->
+            val siblingIndex = if (index == 0) allMembers.lastIndex else index - 1
+            val resultingImage = overdraw(member.image!!, allMembers[siblingIndex].image!!)
+            ImagePipelineMember(image = resultingImage)
+        }
+    }
 }
 ```
 
