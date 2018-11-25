@@ -20,5 +20,5 @@ internal fun List<LiveData<State>>.waitTill(condition: (State) -> Boolean) {
         })
     }
 
-    jobCompletedWaiter.await(10000, size)
+    jobCompletedWaiter.await(5000, size)
 }

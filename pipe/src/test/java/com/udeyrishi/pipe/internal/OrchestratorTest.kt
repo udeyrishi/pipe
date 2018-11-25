@@ -17,6 +17,7 @@ import com.udeyrishi.pipe.internal.steps.InterruptibleStep
 import com.udeyrishi.pipe.internal.steps.StepDescriptor
 import com.udeyrishi.pipe.internal.util.createEffectiveContext
 import com.udeyrishi.pipe.testutil.DefaultTestDispatcher
+import com.udeyrishi.pipe.testutil.assertIs
 import com.udeyrishi.pipe.testutil.createMockLifecycleOwner
 import com.udeyrishi.pipe.testutil.waitTill
 import com.udeyrishi.pipe.util.Identifiable
@@ -46,7 +47,7 @@ class OrchestratorTest {
     fun startsWithScheduledState() {
         val input = IdentifiableString("some input")
         val orchestrator = Orchestrator(input, listOf<StepDescriptor<IdentifiableString>>().iterator(), DefaultTestDispatcher.createEffectiveContext())
-        assertTrue(orchestrator.state.value === State.Scheduled)
+        assertEquals(State.Scheduled, orchestrator.state.value)
     }
 
     @Test
@@ -78,27 +79,27 @@ class OrchestratorTest {
                 0 -> assertEquals(State.Scheduled, orchestrator.state.value)
                 1 -> {
                     // step 0 start
-                    assertTrue(newState is State.Running.Attempting)
+                    newState.assertIs<State.Running.Attempting>()
                     assertEquals("step0", (newState as State.Running).step)
                 }
                 2 -> {
                     // step 0 done
-                    assertTrue(newState is State.Running.AttemptSuccessful)
+                    newState.assertIs<State.Running.AttemptSuccessful>()
                     assertEquals("step0", (newState as State.Running).step)
                 }
                 3, 5, 7, 9, 11 -> {
                     // steps 1-5 start
-                    assertTrue(newState is State.Running.Attempting)
+                    newState.assertIs<State.Running.Attempting>()
                     assertEquals("step${(i - 1) / 2}", (newState as State.Running).step)
                 }
                 4, 6, 8, 10, 12 -> {
                     // steps 1-5 end
-                    assertTrue(newState is State.Running.AttemptSuccessful)
+                    newState.assertIs<State.Running.AttemptSuccessful>()
                     assertEquals("step${(i - 2) / 2}", (newState as State.Running).step)
                 }
                 13 -> {
                     // pipeline completion
-                    assertTrue(newState === State.Terminal.Success)
+                    assertEquals(State.Terminal.Success, newState)
                 }
                 else -> fail("Counter should've never reached $i.")
             }
@@ -133,36 +134,36 @@ class OrchestratorTest {
         var i = 0
         orchestrator.state.observe(createMockLifecycleOwner(), Observer { newState ->
             when (i++) {
-                0 -> assertTrue(orchestrator.state.value === State.Scheduled)
+                0 -> assertEquals(State.Scheduled, orchestrator.state.value)
                 1 -> {
                     // step 0 start
-                    assertTrue(newState is State.Running.Attempting)
+                    newState.assertIs<State.Running.Attempting>()
                     assertEquals("step0", (newState as State.Running).step)
                 }
                 2 -> {
                     // step 0 done
-                    assertTrue(newState is State.Running.AttemptSuccessful)
+                    newState.assertIs<State.Running.AttemptSuccessful>()
                     assertEquals("step0", (newState as State.Running).step)
                 }
                 3, 5 -> {
                     // step starts
-                    assertTrue(newState is State.Running.Attempting)
+                    newState.assertIs<State.Running.Attempting>()
                     val j = if (i < 8) i else (i - 2)
                     assertEquals("step${(j - 1) / 2}", (newState as State.Running).step)
                 }
                 4 -> {
-                    assertTrue(newState is State.Running.AttemptSuccessful)
+                    newState.assertIs<State.Running.AttemptSuccessful>()
                     val j = if (i < 7) i else (i - 2)
                     assertEquals("step${(j - 2) / 2}", (newState as State.Running).step)
                 }
                 6 -> {
                     // step 2 failure
-                    assertTrue(newState is State.Running.AttemptFailed)
+                    newState.assertIs<State.Running.AttemptFailed>()
                     assertEquals("step2", (newState as State.Running).step)
                 }
                 7 -> {
                     // step 2 retry
-                    assertTrue(newState is State.Terminal.Failure)
+                    newState.assertIs<State.Terminal.Failure>()
                 }
                 else -> fail("Counter should've never reached $i.")
             }
@@ -173,8 +174,8 @@ class OrchestratorTest {
         assertNull(orchestrator.result)
 
         (orchestrator.state.value as State.Terminal.Failure).let {
-            assertTrue(it.cause is Orchestrator.StepOutOfAttemptsException)
-            assertTrue(it.cause.cause is Orchestrator.StepFailureException)
+            it.cause.assertIs<Orchestrator.StepOutOfAttemptsException>()
+            it.cause.cause.assertIs<Orchestrator.StepFailureException>()
             assertEquals(error, it.cause.cause?.cause)
         }
     }
@@ -207,44 +208,44 @@ class OrchestratorTest {
         var i = 0
         orchestrator.state.observe(createMockLifecycleOwner(), Observer { newState ->
             when (i++) {
-                0 -> assertTrue(orchestrator.state.value === State.Scheduled)
+                0 -> assertEquals(State.Scheduled, orchestrator.state.value)
                 1 -> {
                     // step 0 start
-                    assertTrue(newState is State.Running.Attempting)
+                    newState.assertIs<State.Running.Attempting>()
                     assertEquals("step0", (newState as State.Running).step)
                 }
                 2 -> {
                     // step 0 done
-                    assertTrue(newState is State.Running.AttemptSuccessful)
+                    newState.assertIs<State.Running.AttemptSuccessful>()
                     assertEquals("step0", (newState as State.Running).step)
                 }
                 3, 5, 9, 11, 13 -> {
                     // steps; starts. Skips 6 because of the failures.
-                    assertTrue(newState is State.Running.Attempting)
+                    newState.assertIs<State.Running.Attempting>()
                     val j = if (i < 8) i else (i - 2)
                     assertEquals("step${(j - 1) / 2}", (newState as State.Running).step)
                 }
                 6 -> {
                     // step 2 failure
-                    assertTrue(newState is State.Running.AttemptFailed)
+                    newState.assertIs<State.Running.AttemptFailed>()
                     assertEquals("step2", (newState as State.Running).step)
-                    assertTrue((newState as State.Running.AttemptFailed).cause is Orchestrator.StepFailureException)
-                    assertTrue((newState.cause as Orchestrator.StepFailureException).cause === error)
+                    (newState as State.Running.AttemptFailed).cause.assertIs<Orchestrator.StepFailureException>()
+                    assertEquals(error, (newState.cause as Orchestrator.StepFailureException).cause)
                 }
                 7 -> {
                     // step 2 retry
-                    assertTrue(newState is State.Running.Attempting)
+                    newState.assertIs<State.Running.Attempting>()
                     assertEquals("step2", (newState as State.Running).step)
                 }
                 4, 8, 10, 12, 14 -> {
                     // step 1, 3, 4, and 5 were successful the first time. 2 took a retry.
-                    assertTrue(newState is State.Running.AttemptSuccessful)
+                    newState.assertIs<State.Running.AttemptSuccessful>()
                     val j = if (i < 7) i else (i - 2)
                     assertEquals("step${(j - 2) / 2}", (newState as State.Running).step)
                 }
                 15 -> {
                     // pipeline completion
-                    assertTrue(newState === State.Terminal.Success)
+                    assertEquals(State.Terminal.Success, newState)
                 }
                 else -> fail("Counter should've never reached $i.")
             }
@@ -279,40 +280,40 @@ class OrchestratorTest {
         var i = 0
         orchestrator.state.observe(createMockLifecycleOwner(), Observer { newState ->
             when (i++) {
-                0 -> assertTrue(orchestrator.state.value === State.Scheduled)
+                0 -> assertEquals(State.Scheduled, orchestrator.state.value)
                 1 -> {
                     // step 0 start
-                    assertTrue(newState is State.Running.Attempting)
+                    newState.assertIs<State.Running.Attempting>()
                     assertEquals("step0", (newState as State.Running).step)
                 }
                 2 -> {
                     // step 0 done
-                    assertTrue(newState is State.Running.AttemptSuccessful)
+                    newState.assertIs<State.Running.AttemptSuccessful>()
                     assertEquals("step0", (newState as State.Running).step)
                 }
                 3, 5 -> {
                     // step starts
-                    assertTrue(newState is State.Running.Attempting)
+                    newState.assertIs<State.Running.Attempting>()
                     val j = if (i < 8) i else (i - 2)
                     assertEquals("step${(j - 1) / 2}", (newState as State.Running).step)
                 }
                 4 -> {
-                    assertTrue(newState is State.Running.AttemptSuccessful)
+                    newState.assertIs<State.Running.AttemptSuccessful>()
                     val j = if (i < 7) i else (i - 2)
                     assertEquals("step${(j - 2) / 2}", (newState as State.Running).step)
                 }
                 6, 8, 10, 12, 14 -> {
                     // step 2 failure
-                    assertTrue(newState is State.Running.AttemptFailed)
+                    newState.assertIs<State.Running.AttemptFailed>()
                     assertEquals("step2", (newState as State.Running).step)
                 }
                 7, 9, 11, 13 -> {
                     // step 2 retry
-                    assertTrue(newState is State.Running.Attempting)
+                    newState.assertIs<State.Running.Attempting>()
                     assertEquals("step2", (newState as State.Running).step)
                 }
                 15 -> {
-                    assertTrue(newState is State.Terminal.Failure)
+                    newState.assertIs<State.Terminal.Failure>()
                 }
                 else -> fail("Counter should've never reached $i.")
             }
@@ -324,8 +325,8 @@ class OrchestratorTest {
         assertNull(orchestrator.result)
 
         (orchestrator.state.value as State.Terminal.Failure).let {
-            assertTrue(it.cause is Orchestrator.StepOutOfAttemptsException)
-            assertTrue(it.cause.cause is Orchestrator.StepFailureException)
+            it.cause.assertIs<Orchestrator.StepOutOfAttemptsException>()
+            it.cause.cause.assertIs<Orchestrator.StepFailureException>()
             assertEquals(error, it.cause.cause?.cause)
         }
 
@@ -334,24 +335,30 @@ class OrchestratorTest {
 
     @Test
     fun interruptsCorrectly() {
+        val lastStepIndex = 4
         val interruptionWaiter = Waiter()
+        val lastStepContinueWaiter = Waiter()
         val steps = (0..1000).asSequence().map { i ->
             StepDescriptor<IdentifiableString>("step$i", 1) {
                 interruptionWaiter.resume()
+                if (i == lastStepIndex) {
+                    lastStepContinueWaiter.await(1000)
+                }
                 it
             }
         }
 
         val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator(), launchContext = DefaultTestDispatcher.createEffectiveContext())
         orchestrator.start()
-        interruptionWaiter.await(1000, 5)
+        interruptionWaiter.await(1000, lastStepIndex + 1)
         orchestrator.interrupt()
+        lastStepContinueWaiter.resume()
 
         orchestrator.state.waitTill { it is State.Terminal.Failure }
 
         (orchestrator.state.value as State.Terminal.Failure).let {
-            assertTrue(it.cause is Orchestrator.OrchestratorInterruptedException)
-            assertTrue(it.cause.cause is Orchestrator.StepInterruptedException)
+            it.cause.assertIs<Orchestrator.OrchestratorInterruptedException>()
+            it.cause.cause.assertIs<Orchestrator.StepInterruptedException>()
         }
         assertNull(orchestrator.result)
     }
@@ -376,8 +383,8 @@ class OrchestratorTest {
         orchestrator.state.waitTill { it is State.Terminal.Failure }
 
         (orchestrator.state.value as State.Terminal.Failure).let {
-            assertTrue(it.cause is Orchestrator.OrchestratorInterruptedException)
-            assertTrue(it.cause.cause is Orchestrator.StepInterruptedException)
+            it.cause.assertIs<Orchestrator.OrchestratorInterruptedException>()
+            it.cause.cause.assertIs<Orchestrator.StepInterruptedException>()
         }
         assertNull(orchestrator.result)
     }
@@ -399,7 +406,7 @@ class OrchestratorTest {
         orchestrator.state.waitTill { it is State.Terminal.Failure }
 
         (orchestrator.state.value as State.Terminal.Failure).let {
-            assertTrue(it.cause is Orchestrator.OrchestratorInterruptedException)
+            it.cause.assertIs<Orchestrator.OrchestratorInterruptedException>()
             assertNull(it.cause.cause)
         }
         assertNull(orchestrator.result)
@@ -538,8 +545,8 @@ class OrchestratorTest {
 
         orchestrator.state.waitTill { it is State.Terminal.Failure }
         assertNull(orchestrator.result)
-        assertTrue((orchestrator.state.value as State.Terminal.Failure).cause is Orchestrator.OrchestratorInterruptedException)
-        assertTrue((orchestrator.state.value as State.Terminal.Failure).cause.cause is Orchestrator.StepInterruptedException)
+        (orchestrator.state.value as State.Terminal.Failure).cause.assertIs<Orchestrator.OrchestratorInterruptedException>()
+        (orchestrator.state.value as State.Terminal.Failure).cause.cause.assertIs<Orchestrator.StepInterruptedException>()
     }
 
     @Test

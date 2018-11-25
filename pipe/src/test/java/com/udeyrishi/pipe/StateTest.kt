@@ -3,8 +3,9 @@
  */
 package com.udeyrishi.pipe
 
+import com.udeyrishi.pipe.testutil.assertIs
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertNotEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -15,15 +16,15 @@ class StateTest {
     @Test
     fun scheduledWorks() {
         val scheduled = State.Scheduled
-        assertTrue(scheduled.onSuccess() === State.Terminal.Success)
+        assertEquals(State.Terminal.Success, scheduled.onSuccess())
 
         val running = scheduled.onSuccess(nextStep = "foo")
-        assertTrue(running is State.Running.Attempting)
+        running.assertIs<State.Running.Attempting>()
         assertEquals("foo", (running as State.Running.Attempting).step)
 
         val cause = RuntimeException("Some error")
         val terminal = scheduled.onFailure(cause)
-        assertTrue(terminal is State.Terminal.Failure)
+        terminal.assertIs<State.Terminal.Failure>()
         assertEquals(cause, (terminal as State.Terminal.Failure).cause)
     }
 
@@ -33,13 +34,9 @@ class StateTest {
 
         val cause = RuntimeException("Some error")
         val attemptFailed = runningStep.onFailure(cause)
-        assertTrue(attemptFailed is State.Running.AttemptFailed)
-
-        (attemptFailed as State.Running.AttemptFailed).let {
-            assertEquals(cause, it.cause)
-        }
-
-        assertTrue(runningStep.onSuccess() is State.Running.AttemptSuccessful)
+        attemptFailed.assertIs<State.Running.AttemptFailed>()
+        assertEquals(cause, (attemptFailed as State.Running.AttemptFailed).cause)
+        runningStep.onSuccess().assertIs<State.Running.AttemptSuccessful>()
     }
 
     @Test(expected = IllegalArgumentException::class)
@@ -51,15 +48,15 @@ class StateTest {
     @Test
     fun stepSucceededWorks() {
         val stepSucceeded = State.Running.AttemptSuccessful("foo")
-        assertTrue(stepSucceeded.onSuccess() === State.Terminal.Success)
+        assertEquals(State.Terminal.Success, stepSucceeded.onSuccess())
 
         val attempting = stepSucceeded.onSuccess("bar")
-        assertTrue(attempting is State.Running.Attempting)
+        attempting.assertIs<State.Running.Attempting>()
         assertEquals("bar", (attempting as State.Running.Attempting).step)
 
         val cause = RuntimeException()
         val terminal = stepSucceeded.onFailure(cause)
-        assertTrue(terminal is State.Terminal.Failure)
+        terminal.assertIs<State.Terminal.Failure>()
         assertEquals(cause, (terminal as State.Terminal.Failure).cause)
     }
 
@@ -72,13 +69,13 @@ class StateTest {
 
         val cause2 = RuntimeException("Some error 2")
         val terminal = attemptFailed.onFailure(cause2)
-        assertTrue(terminal is State.Terminal.Failure)
+        terminal.assertIs<State.Terminal.Failure>()
 
         // It's the caller's responsibility to set up the cause-chain correctly
         assertEquals(cause2, (terminal as State.Terminal.Failure).cause)
 
         val success = attemptFailed.onSuccess("foo")
-        assertTrue(success is State.Running.Attempting)
+        success.assertIs<State.Running.Attempting>()
         assertEquals("foo", (success as State.Running.Attempting).step)
     }
 
@@ -90,12 +87,11 @@ class StateTest {
 
     @Test
     fun terminalSuccessWorks() {
-        val terminalSuccess = State.Terminal.Success
-        assertTrue(terminalSuccess === terminalSuccess.onSuccess())
+        assertEquals(State.Terminal.Success, State.Terminal.Success.onSuccess())
 
         val cause = RuntimeException()
-        val terminalFailure = terminalSuccess.onFailure(cause)
-        assertTrue(terminalFailure is State.Terminal.Failure)
+        val terminalFailure = State.Terminal.Success.onFailure(cause)
+        terminalFailure.assertIs<State.Terminal.Failure>()
         assertEquals(cause, (terminalFailure as State.Terminal.Failure).cause)
     }
 
@@ -114,7 +110,7 @@ class StateTest {
         val anotherCause = RuntimeException("hello")
         val newTerminalFailure = terminalFailure.onFailure(anotherCause)
 
-        assertTrue(newTerminalFailure !== terminalFailure)
+        assertNotEquals(terminalFailure, newTerminalFailure)
         assertEquals(anotherCause, (newTerminalFailure as State.Terminal.Failure).cause)
     }
 

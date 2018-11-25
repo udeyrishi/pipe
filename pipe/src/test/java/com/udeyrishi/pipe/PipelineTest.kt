@@ -6,10 +6,10 @@ package com.udeyrishi.pipe
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.udeyrishi.pipe.internal.Orchestrator
 import com.udeyrishi.pipe.testutil.DefaultTestDispatcher
+import com.udeyrishi.pipe.testutil.assertIs
 import com.udeyrishi.pipe.testutil.waitTill
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -66,7 +66,7 @@ class PipelineTest {
         jobs.map { it.state }.waitTill { it is State.Terminal }
 
         jobs.forEach {
-            assertTrue(it.state.value === State.Terminal.Success)
+            it.state.value.assertIs<State.Terminal.Success>()
         }
 
         jobs.forEachIndexed { index, job ->
@@ -113,11 +113,7 @@ class PipelineTest {
         pipeline.manualBarriers[0].lift()
         pipeline.countedBarriers[0].setCapacity(3)
 
-        jobs.map { it.state }.waitTill { it is State.Terminal }
-
-        jobs.forEach {
-            assertTrue(it.state.value === State.Terminal.Success)
-        }
+        jobs.map { it.state }.waitTill { it is State.Terminal.Success }
 
         jobs.forEachIndexed { index, job ->
             assertEquals(index + 1 + 2 + 3 + 1 + 4, job.result)
@@ -147,7 +143,7 @@ class PipelineTest {
 
         job1.state.waitTill { it is State.Terminal.Failure }
 
-        assertTrue((job1.state.value as State.Terminal.Failure).cause is Orchestrator.OrchestratorInterruptedException)
+        (job1.state.value as State.Terminal.Failure).cause.assertIs<Orchestrator.OrchestratorInterruptedException>()
         assertNull(job1.result)
 
         job2.state.waitTill { it is State.Terminal }
@@ -179,8 +175,8 @@ class PipelineTest {
 
         listOf(job1.state, job2.state).waitTill { it is State.Terminal }
 
-        assertTrue(job1.state.value is State.Terminal.Failure)
-        assertTrue((job1.state.value as State.Terminal.Failure).cause is Orchestrator.OrchestratorInterruptedException)
+        job1.state.value.assertIs<State.Terminal.Failure>()
+        (job1.state.value as State.Terminal.Failure).cause.assertIs<Orchestrator.OrchestratorInterruptedException>()
         assertNull(job1.result)
 
         assertEquals(State.Terminal.Success, job2.state.value)
@@ -206,14 +202,12 @@ class PipelineTest {
 
         job1.interrupt()
 
-        listOf(job1.state, job2.state).waitTill { it is State.Terminal }
+        listOf(job1.state, job2.state).waitTill { it is State.Terminal.Failure }
 
-        assertTrue(job1.state.value is State.Terminal.Failure)
-        assertTrue((job1.state.value as State.Terminal.Failure).cause is Orchestrator.OrchestratorInterruptedException)
+        (job1.state.value as State.Terminal.Failure).cause.assertIs<Orchestrator.OrchestratorInterruptedException>()
         assertNull(job1.result)
 
-        assertTrue(job2.state.value is State.Terminal.Failure)
-        assertTrue((job2.state.value as State.Terminal.Failure).cause is Orchestrator.OrchestratorInterruptedException)
+        (job2.state.value as State.Terminal.Failure).cause.assertIs<Orchestrator.OrchestratorInterruptedException>()
         assertNull(job2.result)
     }
 
@@ -246,17 +240,17 @@ class PipelineTest {
 
         listOf(job1.state, job2.state, job3.state).waitTill { it is State.Terminal }
 
-        assertTrue(job1.state.value is State.Terminal.Failure)
-        assertTrue((job1.state.value as State.Terminal.Failure).cause is Orchestrator.StepOutOfAttemptsException)
-        assertTrue((job1.state.value as State.Terminal.Failure).cause.cause is Orchestrator.StepFailureException)
-        assertTrue((job1.state.value as State.Terminal.Failure).cause.cause?.cause is RuntimeException)
+        job1.state.value.assertIs<State.Terminal.Failure>()
+        (job1.state.value as State.Terminal.Failure).cause.assertIs<Orchestrator.StepOutOfAttemptsException>()
+        (job1.state.value as State.Terminal.Failure).cause.cause.assertIs<Orchestrator.StepFailureException>()
+        (job1.state.value as State.Terminal.Failure).cause.cause?.cause.assertIs<RuntimeException>()
         assertEquals("BOOM!", (job1.state.value as State.Terminal.Failure).cause.cause?.cause?.message)
         assertNull(job1.result)
 
-        assertTrue(job2.state.value is State.Terminal.Success)
+        job2.state.value.assertIs<State.Terminal.Success>()
         assertEquals(4, job2.result)
 
-        assertTrue(job3.state.value is State.Terminal.Success)
+        job3.state.value.assertIs<State.Terminal.Success>()
         assertEquals(5, job3.result)
 
         // The arg to the `onBarrierLiftedAction` only included the successful passengers
@@ -294,17 +288,17 @@ class PipelineTest {
 
         listOf(job1.state, job2.state, job3.state).waitTill { it is State.Terminal }
 
-        assertTrue(job1.state.value is State.Terminal.Failure)
-        assertTrue((job1.state.value as State.Terminal.Failure).cause is Orchestrator.StepOutOfAttemptsException)
-        assertTrue((job1.state.value as State.Terminal.Failure).cause.cause is Orchestrator.StepFailureException)
-        assertTrue((job1.state.value as State.Terminal.Failure).cause.cause?.cause is RuntimeException)
+        job1.state.value.assertIs<State.Terminal.Failure>()
+        (job1.state.value as State.Terminal.Failure).cause.assertIs<Orchestrator.StepOutOfAttemptsException>()
+        (job1.state.value as State.Terminal.Failure).cause.cause.assertIs<Orchestrator.StepFailureException>()
+        (job1.state.value as State.Terminal.Failure).cause.cause?.cause.assertIs<RuntimeException>()
         assertEquals("BOOM!", (job1.state.value as State.Terminal.Failure).cause.cause?.cause?.message)
         assertNull(job1.result)
 
-        assertTrue(job2.state.value is State.Terminal.Success)
+        job2.state.value.assertIs<State.Terminal.Success>()
         assertEquals(4, job2.result)
 
-        assertTrue(job3.state.value is State.Terminal.Success)
+        job3.state.value.assertIs<State.Terminal.Success>()
         assertEquals(5, job3.result)
 
         assertEquals(listOf(2, 3, 4), barrierList)
@@ -340,17 +334,17 @@ class PipelineTest {
 
         listOf(job2.state, job3.state).waitTill { it is State.Terminal }
 
-        assertTrue(job1.state.value is State.Terminal.Failure)
-        assertTrue((job1.state.value as State.Terminal.Failure).cause is Orchestrator.StepOutOfAttemptsException)
-        assertTrue((job1.state.value as State.Terminal.Failure).cause.cause is Orchestrator.StepFailureException)
-        assertTrue((job1.state.value as State.Terminal.Failure).cause.cause?.cause is RuntimeException)
+        job1.state.value.assertIs<State.Terminal.Failure>()
+        (job1.state.value as State.Terminal.Failure).cause.assertIs<Orchestrator.StepOutOfAttemptsException>()
+        (job1.state.value as State.Terminal.Failure).cause.cause.assertIs<Orchestrator.StepFailureException>()
+        (job1.state.value as State.Terminal.Failure).cause.cause?.cause.assertIs<RuntimeException>()
         assertEquals("BOOM!", (job1.state.value as State.Terminal.Failure).cause.cause?.cause?.message)
         assertNull(job1.result)
 
-        assertTrue(job2.state.value is State.Terminal.Success)
+        job2.state.value.assertIs<State.Terminal.Success>()
         assertEquals(4, job2.result)
 
-        assertTrue(job3.state.value is State.Terminal.Success)
+        job3.state.value.assertIs<State.Terminal.Success>()
         assertEquals(5, job3.result)
     }
 
@@ -371,10 +365,7 @@ class PipelineTest {
         val job1 = pipeline.push(1, null)
         val job2 = pipeline.push(2, null)
 
-        listOf(job1.state, job2.state).waitTill { it is State.Terminal }
-
-        assertTrue(job1.state.value is State.Terminal.Success)
-        assertTrue(job2.state.value is State.Terminal.Success)
+        listOf(job1.state, job2.state).waitTill { it is State.Terminal.Success }
 
         assertEquals(5, attemptNum)
 
