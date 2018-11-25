@@ -9,7 +9,8 @@ import com.udeyrishi.pipe.internal.pipeline.Passenger
 import com.udeyrishi.pipe.util.Identifiable
 
 /**
- * Represents a chunk of work that is being processed in a pipeline.
+ * Represents a chunk of work that is being processed in a pipeline. When an item gets
+ * pushed into a pipeline, the pipeline returns a `Job` to track its progress.
  */
 class Job<T : Any> internal constructor(private val orchestrator: Orchestrator<Passenger<T>>) : Identifiable by orchestrator {
     /**
