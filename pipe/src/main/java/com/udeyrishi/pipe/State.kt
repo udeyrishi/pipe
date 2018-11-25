@@ -5,6 +5,25 @@ package com.udeyrishi.pipe
 
 import com.udeyrishi.pipe.internal.util.detailedToString
 
+/**
+ * Represents the state machine that all pipe jobs follow.
+ *
+ *                                                 --------------------------(yes; ++i)------------------------------------------
+ *                                                |                                                                             |
+ *                                                v                                                                             |
+ * Scheduled(•) --- (Started; i = 0) --> Running.Attempting[i] ---- (Successful) ----> Running.AttemptSuccessful[i] ---- (Has next step?) ----(no)----> Terminal.Success(⍟)
+ *     |                                          |     ^                                          |
+ * (Interrupted)                              (Failed)  |                                          |
+ *     |                                          |     |--------------------                      |
+ *     |                                          |                         |                      |
+ *     v                                          V                         |                (Interrupted)
+ * Terminal.Failure(⍟) <--(Interrupted)--Running.AttemptFailed[i]           |                      |
+ *     ^                                          |                         |                      |
+ *     |                                  (Has more attempts?)              |                      |
+ *     |<---------(no)------------------------<---|-->------(yes)---------->|                      |
+ *     |                                                                                           |
+ *     |<------------------------------------------------------------------------------------------V
+ */
 sealed class State {
     internal abstract fun onSuccess(nextStep: String? = null): State
     internal abstract fun onFailure(cause: Throwable): State
