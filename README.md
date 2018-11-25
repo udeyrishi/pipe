@@ -40,7 +40,7 @@ Pipe uses a Kotlin DSL to declare pipeline schematics. We can express the above 
 
 ```kt
 data class ImagePipelineMember(val url: String? = null, val image: Bitmap? = null)
-val JOBS_REPO = InMemoryRepository()
+val JOBS_REPO = InMemoryRepository<Job<ImagePipelineMember>>()
 val LOGGER = AndroidLogger("Pipe")
 
 fun makePipeline() = buildPipeline<ImagePipelineMember> {
