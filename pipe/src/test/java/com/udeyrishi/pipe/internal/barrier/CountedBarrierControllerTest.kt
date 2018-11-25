@@ -7,6 +7,7 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.isA
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
@@ -244,7 +245,7 @@ class CountedBarrierControllerTest {
         verify(barriers[1], times(1)).lift(eq("mockResult2"))
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun `checks that onBarrierLiftedAction returns correct sized lists`() {
         val onBarrierLiftedActionWaiter = Waiter()
         controller = CountedBarrierControllerImpl(capacity = 2, launchContext = dispatcher.createEffectiveContext()) {
@@ -261,7 +262,30 @@ class CountedBarrierControllerTest {
 
         onBarrierLiftedActionWaiter.await(1000)
 
-        dispatcher.verify(errorExpected = true)
+        verify(barriers[0]).markAsFailed(isA<IllegalArgumentException>())
+        verify(barriers[1]).markAsFailed(isA<IllegalArgumentException>())
+    }
+
+    @Test
+    fun `errors in onBarrierLiftedAction are conveyed to the barriers as step failures`() {
+        val error = RuntimeException("Something went wrong")
+
+        val onBarrierLiftedActionWaiter = Waiter()
+        controller = CountedBarrierControllerImpl(capacity = 3, launchContext = dispatcher.createEffectiveContext()) {
+            onBarrierLiftedActionWaiter.resume()
+            throw error
+        }
+
+        barriers.forEach {
+            controller.onBarrierCreated(it)
+            controller.onBarrierBlocked(it)
+        }
+
+        onBarrierLiftedActionWaiter.await(1000)
+
+        verify(barriers[0]).markAsFailed(eq(error))
+        verify(barriers[1]).markAsFailed(eq(error))
+        verify(barriers[2]).markAsFailed(eq(error))
     }
 
     @Test(expected = IllegalArgumentException::class)

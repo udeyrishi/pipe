@@ -174,8 +174,9 @@ internal class CountedBarrierControllerImpl<T : Comparable<T>>(private val launc
                 val sortedInputs = unsortedInputs.sorted()
                 val sortReplayer = SortReplayer(original = unsortedInputs, sorted = sortedInputs)
 
-                val sortedOutputs = try {
-                    onBarrierLiftedAction.invoke(sortedInputs.map { it })
+                try {
+                    val sortedOutputs = onBarrierLiftedAction.invoke(sortedInputs.map { it })
+                    sortReplayer.reverseApplySortTransformations(sortedOutputs)
                 } catch (e: Throwable) {
                     // markAsFailed will lift the barrier. If there are more attempts, the barrier may re-block.
                     // So mark it as unblocked once again.
@@ -193,8 +194,6 @@ internal class CountedBarrierControllerImpl<T : Comparable<T>>(private val launc
                     }
                     return@launch
                 }
-                val unsortedOutputs = sortReplayer.reverseApplySortTransformations(sortedOutputs)
-                unsortedOutputs
             }
 
             blockedBarriers.zip(results).forEach { (barrier, result) ->

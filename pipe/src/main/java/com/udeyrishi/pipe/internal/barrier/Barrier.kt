@@ -89,9 +89,10 @@ internal class BarrierImpl<T : Any>(private val controller: BarrierController<T>
                         } catch (e: Throwable) {
                             continuation?.resumeWithException(e)
                         }
+                        continuation = null
                     }
                     BarrierState.ResultPrepared.Lifted, BarrierState.ResultPrepared.Interrupted -> { /* no-op */ }
-                    else -> throw IllegalStateException("Cannot prepare result when state is $it")
+                    else -> throw IllegalStateException("Cannot lift barrier when state is $it")
                 }
             }
         }
@@ -109,9 +110,8 @@ internal class BarrierImpl<T : Any>(private val controller: BarrierController<T>
                         } catch (e: Throwable) {
                             continuation?.resumeWithException(e)
                         }
+                        continuation = null
                     }
-                    BarrierState.ResultPrepared.Lifted, BarrierState.ResultPrepared.Interrupted -> { /* no-op */ }
-                    else -> throw IllegalStateException("Cannot prepare result when state is $it")
                 }
             }
         }
@@ -129,8 +129,9 @@ internal class BarrierImpl<T : Any>(private val controller: BarrierController<T>
                         } catch (e: Throwable) {
                             continuation?.resumeWithException(e)
                         }
+                        continuation = null
                     }
-                    else -> throw IllegalStateException("Cannot prepare result when state is $it")
+                    else -> throw IllegalStateException("Cannot mark as failed when state is $it")
                 }
             }
         }
