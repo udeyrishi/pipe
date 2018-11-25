@@ -4,6 +4,7 @@
 package com.udeyrishi.pipe.testutil
 
 import com.udeyrishi.pipe.PipelineDispatcher
+import com.udeyrishi.pipe.internal.util.stackTraceToString
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.fail
@@ -15,6 +16,7 @@ class DefaultTestDispatcher : PipelineDispatcher {
 
     override fun onInternalPipeError(throwable: Throwable) {
         lastUnhandledError = throwable
+        System.err.print("Unhandled exception: ${throwable.stackTraceToString()}")
     }
 
     fun verify(errorExpected: Boolean = false) {

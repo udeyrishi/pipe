@@ -135,7 +135,7 @@ class OrchestratorTest {
         val error = RuntimeException("something went wrong")
         var attempt = 0
         val steps = listOf(
-                StepDescriptor<IdentifiableString>("some step", maxAttempts = 2) {
+                StepDescriptor<IdentifiableString>("some step", maxAttempts = 5) {
                     ++attempt
                     throw error
                 }
@@ -148,7 +148,7 @@ class OrchestratorTest {
         orchestrator.state.waitTill { it is State.Terminal.Failure }
 
         assertNull(orchestrator.result)
-        assertEquals(2, attempt)
+        assertEquals(5, attempt)
 
         (orchestrator.state.value as State.Terminal.Failure).let {
             it.cause.assertIs<Orchestrator.StepOutOfAttemptsException>()
@@ -179,83 +179,6 @@ class OrchestratorTest {
 
         assertEquals(IdentifiableString("in-result", input.uuid), orchestrator.result)
         assertEquals(2, attempt)
-    }
-
-    @Test
-    fun respectsMaxAttempts() {
-        val error = RuntimeException("something went wrong")
-        var step2Called = 0
-
-        val steps = (0..5).map { i ->
-            StepDescriptor<IdentifiableString>("step$i", 5) {
-                when {
-                    i == 2 -> {
-                        step2Called++
-                        throw error
-                    }
-                    i > 2 -> throw AssertionError("Step 2 should've been the last one.")
-                    else -> IdentifiableString("${it.data}->$i", it.uuid)
-                }
-            }
-        }
-
-        val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator(), launchContext = dispatcher.createEffectiveContext())
-        assertNull(orchestrator.result)
-
-        var i = 0
-        orchestrator.state.observe(createMockLifecycleOwner(), Observer { newState ->
-            when (i++) {
-                0 -> assertEquals(State.Scheduled, orchestrator.state.value)
-                1 -> {
-                    // step 0 start
-                    newState.assertIs<State.Running.Attempting>()
-                    assertEquals("step0", (newState as State.Running).step)
-                }
-                2 -> {
-                    // step 0 done
-                    newState.assertIs<State.Running.AttemptSuccessful>()
-                    assertEquals("step0", (newState as State.Running).step)
-                }
-                3, 5 -> {
-                    // step starts
-                    newState.assertIs<State.Running.Attempting>()
-                    val j = if (i < 8) i else (i - 2)
-                    assertEquals("step${(j - 1) / 2}", (newState as State.Running).step)
-                }
-                4 -> {
-                    newState.assertIs<State.Running.AttemptSuccessful>()
-                    val j = if (i < 7) i else (i - 2)
-                    assertEquals("step${(j - 2) / 2}", (newState as State.Running).step)
-                }
-                6, 8, 10, 12, 14 -> {
-                    // step 2 failure
-                    newState.assertIs<State.Running.AttemptFailed>()
-                    assertEquals("step2", (newState as State.Running).step)
-                }
-                7, 9, 11, 13 -> {
-                    // step 2 retry
-                    newState.assertIs<State.Running.Attempting>()
-                    assertEquals("step2", (newState as State.Running).step)
-                }
-                15 -> {
-                    newState.assertIs<State.Terminal.Failure>()
-                }
-                else -> fail("Counter should've never reached $i.")
-            }
-        })
-
-        orchestrator.start()
-
-        orchestrator.state.waitTill { it is State.Terminal.Failure }
-        assertNull(orchestrator.result)
-
-        (orchestrator.state.value as State.Terminal.Failure).let {
-            it.cause.assertIs<Orchestrator.StepOutOfAttemptsException>()
-            it.cause.cause.assertIs<Orchestrator.StepFailureException>()
-            assertEquals(error, it.cause.cause?.cause)
-        }
-
-        assertEquals(5, step2Called)
     }
 
     @Test
