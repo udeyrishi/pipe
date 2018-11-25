@@ -17,6 +17,7 @@ import com.udeyrishi.pipe.internal.steps.InterruptibleStep
 import com.udeyrishi.pipe.internal.steps.StepDescriptor
 import com.udeyrishi.pipe.internal.util.createEffectiveContext
 import com.udeyrishi.pipe.testutil.DefaultTestDispatcher
+import com.udeyrishi.pipe.testutil.TapeLiveDataObserver
 import com.udeyrishi.pipe.testutil.assertIs
 import com.udeyrishi.pipe.testutil.createMockLifecycleOwner
 import com.udeyrishi.pipe.testutil.waitTill
@@ -91,42 +92,34 @@ class OrchestratorTest {
         val orchestrator = Orchestrator(input, steps.iterator(), launchContext = dispatcher.createEffectiveContext())
         assertNull(orchestrator.result)
 
-        var i = 0
-        orchestrator.state.observe(createMockLifecycleOwner(), Observer { newState ->
-            when (i++) {
-                0 -> assertEquals(State.Scheduled, orchestrator.state.value)
-                1 -> {
-                    // step 0 start
-                    newState.assertIs<State.Running.Attempting>()
-                    assertEquals("step0", (newState as State.Running).step)
-                }
-                2 -> {
-                    // step 0 done
-                    newState.assertIs<State.Running.AttemptSuccessful>()
-                    assertEquals("step0", (newState as State.Running).step)
-                }
-                3, 5, 7, 9, 11 -> {
-                    // steps 1-5 start
-                    newState.assertIs<State.Running.Attempting>()
-                    assertEquals("step${(i - 1) / 2}", (newState as State.Running).step)
-                }
-                4, 6, 8, 10, 12 -> {
-                    // steps 1-5 end
-                    newState.assertIs<State.Running.AttemptSuccessful>()
-                    assertEquals("step${(i - 2) / 2}", (newState as State.Running).step)
-                }
-                13 -> {
-                    // pipeline completion
-                    assertEquals(State.Terminal.Success, newState)
-                }
-                else -> fail("Counter should've never reached $i.")
-            }
-        })
+        val observer = TapeLiveDataObserver<State>()
+        orchestrator.state.observe(createMockLifecycleOwner(), observer)
 
         orchestrator.start()
 
         orchestrator.state.waitTill { it is State.Terminal.Success }
         assertEquals(IdentifiableString("in->0->1->2->3->4->5", input.uuid), orchestrator.result)
+
+        observer.items.forEachIndexed { i, state ->
+            when (i) {
+                0 -> assertEquals(State.Scheduled, state)
+                1, 3, 5, 7, 9, 11 -> {
+                    // steps 1-5 start
+                    state.assertIs<State.Running.Attempting>()
+                    assertEquals("step${(i - 1) / 2}", (state as State.Running).step)
+                }
+                2, 4, 6, 8, 10, 12 -> {
+                    // steps 1-5 end
+                    state.assertIs<State.Running.AttemptSuccessful>()
+                    assertEquals("step${(i - 2) / 2}", (state as State.Running).step)
+                }
+                13 -> {
+                    // pipeline completion
+                    assertEquals(State.Terminal.Success, state)
+                }
+                else -> fail("Counter should've never reached $i.")
+            }
+        }
     }
 
     @Test
