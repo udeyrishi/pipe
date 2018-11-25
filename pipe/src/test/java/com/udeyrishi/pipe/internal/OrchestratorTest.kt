@@ -597,15 +597,14 @@ class OrchestratorTest {
                 }
         )
 
-        var failed = false
-
+        val failureWaiter = Waiter()
         val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator(), launchContext = dispatcher.createEffectiveContext(), failureListener = {
-            failed = true
+            failureWaiter.resume()
         })
 
         orchestrator.start()
 
         orchestrator.state.waitTill { it is State.Terminal.Failure }
-        assertTrue(failed)
+        failureWaiter.await(1000)
     }
 }
