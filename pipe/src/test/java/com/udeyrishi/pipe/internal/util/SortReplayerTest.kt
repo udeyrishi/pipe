@@ -22,6 +22,17 @@ class SortReplayerTest {
         assertEquals(listOf("zero", "one", "two", "three", "four"), sortedStrings)
     }
 
+    @Test(expected = IllegalArgumentException::class)
+    fun `forward apply verifies input size`() {
+        val original = listOf(4, 0, 2, 3, 1)
+        val comparator = Comparator<Int> { o1, o2 -> o1.compareTo(o2) }
+        val sorted = original.sortedWith(comparator)
+        val sortReplayer = SortReplayer(original = original, sorted = sorted)
+
+        val originalStrings = listOf("four", "zero")
+        sortReplayer.applySortTransformations(originalStrings)
+    }
+
     @Test
     fun reverseApplyWorks() {
         val original = listOf(4, 0, 2, 3, 1)
@@ -32,5 +43,16 @@ class SortReplayerTest {
         val sortedStrings = listOf("zero", "one", "two", "three", "four")
         val originalStrings = sortReplayer.reverseApplySortTransformations(sortedStrings)
         assertEquals(listOf("four", "zero", "two", "three", "one"), originalStrings)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `reverse apply verifies input size`() {
+        val original = listOf(4, 0, 2, 3, 1)
+        val comparator = Comparator<Int> { o1, o2 -> o1.compareTo(o2) }
+        val sorted = original.sortedWith(comparator)
+        val sortReplayer = SortReplayer(original = original, sorted = sorted)
+
+        val sortedStrings = listOf("zero", "one")
+        sortReplayer.reverseApplySortTransformations(sortedStrings)
     }
 }

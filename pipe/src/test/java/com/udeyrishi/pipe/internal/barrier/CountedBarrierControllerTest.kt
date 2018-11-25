@@ -15,9 +15,10 @@ import com.udeyrishi.pipe.internal.util.createEffectiveContext
 import com.udeyrishi.pipe.testutil.DefaultTestDispatcher
 import kotlinx.coroutines.runBlocking
 import net.jodah.concurrentunit.Waiter
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Before
-import org.junit.Ignore
+import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.Timeout
@@ -34,6 +35,22 @@ class CountedBarrierControllerTest {
     private lateinit var controller: CountedBarrierControllerImpl<String>
     private lateinit var barrierLiftWaiter: Waiter
 
+    companion object {
+        private lateinit var dispatcher: DefaultTestDispatcher
+
+        @JvmStatic
+        @BeforeClass
+        fun setupClass() {
+            dispatcher = DefaultTestDispatcher()
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun teardown() {
+            dispatcher.verify()
+        }
+    }
+
     @Before
     fun setup() {
         barrierLiftWaiter = Waiter()
@@ -47,7 +64,7 @@ class CountedBarrierControllerTest {
             }
         }
 
-        controller = CountedBarrierControllerImpl(capacity = 2, launchContext = DefaultTestDispatcher.createEffectiveContext())
+        controller = CountedBarrierControllerImpl(capacity = 2, launchContext = dispatcher.createEffectiveContext())
     }
 
     @Test(expected = IllegalStateException::class)
@@ -99,7 +116,7 @@ class CountedBarrierControllerTest {
 
     @Test
     fun `can update capacity to a lower value when blocked`() {
-        controller = CountedBarrierControllerImpl(capacity = 4, launchContext = DefaultTestDispatcher.createEffectiveContext())
+        controller = CountedBarrierControllerImpl(capacity = 4, launchContext = dispatcher.createEffectiveContext())
 
         controller.onBarrierCreated(barriers[0])
         controller.onBarrierCreated(barriers[1])
@@ -146,7 +163,7 @@ class CountedBarrierControllerTest {
 
     @Test
     fun `can update capacity to a lower value before start`() {
-        controller = CountedBarrierControllerImpl(capacity = 4, launchContext = DefaultTestDispatcher.createEffectiveContext())
+        controller = CountedBarrierControllerImpl(capacity = 4, launchContext = dispatcher.createEffectiveContext())
         controller.setCapacity(3)
 
         controller.onBarrierCreated(barriers[0])
@@ -170,7 +187,7 @@ class CountedBarrierControllerTest {
 
     @Test
     fun `updating capacity to arrival count lifts the barriers`() {
-        controller = CountedBarrierControllerImpl(capacity = 4, launchContext = DefaultTestDispatcher.createEffectiveContext())
+        controller = CountedBarrierControllerImpl(capacity = 4, launchContext = dispatcher.createEffectiveContext())
 
         controller.onBarrierCreated(barriers[0])
         controller.onBarrierBlocked(barriers[0])
@@ -190,7 +207,7 @@ class CountedBarrierControllerTest {
 
     @Test(expected = IllegalStateException::class)
     fun `cannot update capacity to a value less than the registration count`() {
-        controller = CountedBarrierControllerImpl(capacity = 4, launchContext = DefaultTestDispatcher.createEffectiveContext())
+        controller = CountedBarrierControllerImpl(capacity = 4, launchContext = dispatcher.createEffectiveContext())
         controller.onBarrierCreated(barriers[0])
         controller.onBarrierCreated(barriers[1])
 
@@ -204,7 +221,7 @@ class CountedBarrierControllerTest {
 
     @Test
     fun `invokes onBarrierLiftedAction when supplied`() {
-        controller = CountedBarrierControllerImpl(capacity = 2, launchContext = DefaultTestDispatcher.createEffectiveContext()) {
+        controller = CountedBarrierControllerImpl(capacity = 2, launchContext = dispatcher.createEffectiveContext()) {
             // the inputs come in sorted
             assertEquals(listOf("mockInput1", "mockInput2"), it)
             listOf("mockResult1", "mockResult2")
@@ -227,11 +244,11 @@ class CountedBarrierControllerTest {
         verify(barriers[1], times(1)).lift(eq("mockResult2"))
     }
 
-    // https://github.com/udeyrishi/pipe/issues/5
-    @Ignore
     @Test(expected = IllegalArgumentException::class)
     fun `checks that onBarrierLiftedAction returns correct sized lists`() {
-        controller = CountedBarrierControllerImpl(capacity = 2, launchContext = DefaultTestDispatcher.createEffectiveContext()) {
+        val onBarrierLiftedActionWaiter = Waiter()
+        controller = CountedBarrierControllerImpl(capacity = 2, launchContext = dispatcher.createEffectiveContext()) {
+            onBarrierLiftedActionWaiter.resume()
             // the inputs come in sorted
             listOf("mockResult1")
         }
@@ -242,7 +259,9 @@ class CountedBarrierControllerTest {
         controller.onBarrierBlocked(barriers[1])
         controller.onBarrierBlocked(barriers[0])
 
-        barrierLiftWaiter.await(1000, 2)
+        onBarrierLiftedActionWaiter.await(1000)
+
+        dispatcher.verify(errorExpected = true)
     }
 
     @Test(expected = IllegalArgumentException::class)
