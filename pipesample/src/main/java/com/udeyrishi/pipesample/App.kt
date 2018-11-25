@@ -14,11 +14,11 @@ class App : Application() {
 
     override fun onTerminate() {
         jobsRepo.apply {
-            getMatching { true }
+            items
                 .map { it.identifiableObject }
                 .forEach { it.interrupt() }
 
-            removeIf { true }
+            clear()
             close()
         }
         super.onTerminate()

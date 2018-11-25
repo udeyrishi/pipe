@@ -19,6 +19,12 @@ class InMemoryRepository<T : Identifiable> : MutableRepository<T> {
     private val uuidIndex = hashMapOf<UUID, Int>()
     private val lock = Any()
 
+    override val size: Int
+        get() = entries.size
+
+    override val items: List<Record<T>>
+        get() = entries.map { it }
+
     override fun add(tag: String?, entry: T) {
         return synchronized(lock) {
             if (uuidIndex.containsKey(entry.uuid)) {
@@ -50,13 +56,22 @@ class InMemoryRepository<T : Identifiable> : MutableRepository<T> {
     }
 
     override fun removeIf(predicate: (Record<T>) -> Boolean) {
-        val iterator = entries.iterator()
-        while (iterator.hasNext()) {
-            val item = iterator.next()
-            if (predicate(item)) {
-                iterator.remove()
-                uuidIndex.remove(item.uuid)
+        synchronized(lock) {
+            val iterator = entries.iterator()
+            while (iterator.hasNext()) {
+                val item = iterator.next()
+                if (predicate(item)) {
+                    iterator.remove()
+                    uuidIndex.remove(item.uuid)
+                }
             }
+        }
+    }
+
+    override fun clear() {
+        synchronized(lock) {
+            entries.clear()
+            uuidIndex.clear()
         }
     }
 

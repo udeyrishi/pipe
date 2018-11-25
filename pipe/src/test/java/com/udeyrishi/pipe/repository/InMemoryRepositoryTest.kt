@@ -106,5 +106,47 @@ class InMemoryRepositoryTest {
         repo.add(null, MyIdentifiable(uuid))
     }
 
+    @Test
+    fun `clear clears everything`() {
+        val items = (0 .. 2).map {
+            MyIdentifiable(UUID.randomUUID())
+        }
+        items.forEach {
+            repo.add(null, it)
+        }
+
+        assertEquals(3, repo.size)
+        repo.clear()
+        assertEquals(0, repo.size)
+    }
+
+    @Test
+    fun `size works`() {
+        val items = (0 .. 2).map {
+            MyIdentifiable(UUID.randomUUID())
+        }
+
+        assertEquals(0, repo.size)
+        items.forEach {
+            repo.add(null, it)
+        }
+
+        assertEquals(3, repo.size)
+    }
+
+    @Test
+    fun `items works`() {
+        val items = (0 .. 2).map {
+            MyIdentifiable(UUID.randomUUID())
+        }
+        items.forEach {
+            repo.add(null, it)
+        }
+
+        assertEquals(items, repo.items.map { it.identifiableObject })
+        repo.clear()
+        assertEquals(listOf<Record<MyIdentifiable>>(), repo.items)
+    }
+
     private data class MyIdentifiable(override val uuid: UUID) : Identifiable
 }

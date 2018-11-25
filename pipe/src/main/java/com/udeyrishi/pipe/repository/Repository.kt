@@ -15,6 +15,8 @@ import java.util.UUID
  *     - More than 1 item can have the same tag. Use tags for grouping categories of items.
  */
 interface Repository<out T : Identifiable> : Closeable {
+    val size: Int
+    val items: List<Record<T>>
     operator fun get(uuid: UUID): Record<T>?
     operator fun get(tag: String?): List<Record<T>>
     fun getMatching(predicate: (Record<T>) -> Boolean): List<Record<T>>
@@ -26,6 +28,7 @@ interface Repository<out T : Identifiable> : Closeable {
 interface MutableRepository<T : Identifiable> : Repository<T> {
     fun add(tag: String?, entry: T)
     fun removeIf(predicate: (Record<T>) -> Boolean)
+    fun clear()
 }
 
 /**
