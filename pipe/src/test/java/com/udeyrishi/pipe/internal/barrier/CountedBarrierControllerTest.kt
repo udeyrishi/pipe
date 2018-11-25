@@ -350,4 +350,36 @@ class CountedBarrierControllerTest {
         controller.onBarrierCreated(barriers[2])
         verify(barriers[2]).interrupt()
     }
+
+    @Test
+    fun `interrupting while the controller is lifting the barrier is a no-op`() {
+        val onBarrierLiftedActionWaiter = Waiter()
+        val continueBarrierLiftedActionWaiter = Waiter()
+        controller = CountedBarrierControllerImpl(capacity = 2, launchContext = dispatcher.createEffectiveContext()) {
+            onBarrierLiftedActionWaiter.resume()
+            continueBarrierLiftedActionWaiter.await(1000)
+            it
+        }
+
+        controller.onBarrierCreated(barriers[0])
+        controller.onBarrierCreated(barriers[1])
+        controller.onBarrierBlocked(barriers[0])
+        controller.onBarrierBlocked(barriers[1])
+
+        onBarrierLiftedActionWaiter.await(1000)
+
+        controller.onBarrierInterrupted(barriers[0])
+        controller.onBarrierInterrupted(barriers[1])
+
+        verify(barriers[0], never()).lift(isA())
+        verify(barriers[1], never()).lift(isA())
+
+        continueBarrierLiftedActionWaiter.resume()
+
+        verify(barriers[0], never()).interrupt()
+        verify(barriers[1], never()).interrupt()
+
+        verify(barriers[0]).lift(eq(barriers[0].input))
+        verify(barriers[1]).lift(eq(barriers[1].input))
+    }
 }

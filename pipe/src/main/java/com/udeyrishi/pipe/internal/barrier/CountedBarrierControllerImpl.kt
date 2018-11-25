@@ -120,6 +120,7 @@ internal class CountedBarrierControllerImpl<T : Comparable<T>>(private val launc
     override fun onBarrierInterrupted(barrier: Barrier<T>) {
         synchronized(lock) {
             when {
+                isReadyToLift -> { /* no-op. If it's ready to lift, we've already dispatched another coroutine to do the lift. It can't be safely cancelled anymore. */ }
                 barrier in barriers -> {
                     interrupted = true
                     barriers.remove(barrier)
