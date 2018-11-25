@@ -5,7 +5,7 @@ package com.udeyrishi.pipe.internal.pipeline
 
 import com.udeyrishi.pipe.Step
 
-// The PipelineSpecReifier uses the generic information
+// The PipelineImpl uses the generic information
 @Suppress("unused")
 internal sealed class PipelineOperationSpec<T : Any>(val name: String, val attempts: Long) {
     class RegularStep<T : Any>(name: String, attempts: Long, val step: Step<T>) : PipelineOperationSpec<T>(name, attempts)
