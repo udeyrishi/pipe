@@ -108,7 +108,7 @@ We can also fetch any ongoing jobs from the repository (e.g., if the fragment is
 
 
 ```kt
-JOBS_REPO[JOB_TAG].forEach { job ->
+JOBS_REPO[JOB_TAG].forEach { (job, _, _) ->
     // Perform actions on the jobs, such as interrupting them, unsubscribing from them, etc.
 }
 ```

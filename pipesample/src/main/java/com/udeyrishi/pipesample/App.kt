@@ -14,9 +14,7 @@ class App : Application() {
 
     override fun onTerminate() {
         jobsRepo.apply {
-            items
-                .map { it.identifiableObject }
-                .forEach { it.interrupt() }
+            items.forEach { (job, _, _) -> job.interrupt() }
 
             clear()
             close()

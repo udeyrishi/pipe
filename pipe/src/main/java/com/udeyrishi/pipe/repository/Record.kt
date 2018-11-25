@@ -27,4 +27,8 @@ interface Record<out T : Identifiable> : Identifiable {
      */
     override val uuid: UUID
         get() = identifiableObject.uuid
+
+    operator fun component1() = identifiableObject
+    operator fun component2() = tag
+    operator fun component3() = uuid
 }

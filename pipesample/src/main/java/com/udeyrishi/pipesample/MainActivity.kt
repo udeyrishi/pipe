@@ -23,9 +23,9 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         rootView.setOnRefreshListener {
-            App.jobsRepo[JOB_TAG].forEach {
-                it.identifiableObject.state.removeObservers(this)
-                it.identifiableObject.interrupt()
+            App.jobsRepo[JOB_TAG].forEach { (job, _, _) ->
+                job.state.removeObservers(this)
+                job.interrupt()
             }
 
             App.jobsRepo.removeIf {
