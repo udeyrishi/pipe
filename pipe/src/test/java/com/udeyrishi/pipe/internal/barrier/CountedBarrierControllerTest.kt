@@ -14,6 +14,7 @@ import com.nhaarman.mockitokotlin2.verify
 import com.udeyrishi.pipe.internal.util.createEffectiveContext
 import com.udeyrishi.pipe.testutil.DefaultTestDispatcher
 import kotlinx.coroutines.runBlocking
+import net.jodah.concurrentunit.Waiter
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Ignore
@@ -29,42 +30,20 @@ class CountedBarrierControllerTest {
     @get:Rule
     val timeoutRule = Timeout(25, TimeUnit.SECONDS)
 
-    private lateinit var mockBarrier1: Barrier<String>
-    private lateinit var mockBarrier2: Barrier<String>
-    private lateinit var mockBarrier3: Barrier<String>
-    private var barrier1Lifted = false
-    private var barrier2Lifted = false
-    private var barrier3Lifted = false
-
+    private lateinit var barriers: List<Barrier<String>>
     private lateinit var controller: CountedBarrierControllerImpl<String>
+    private lateinit var barrierLiftWaiter: Waiter
 
     @Before
     fun setup() {
-        barrier1Lifted = false
-        barrier2Lifted = false
-        barrier3Lifted = false
+        barrierLiftWaiter = Waiter()
 
-        mockBarrier1 = mock {
-            on { input } doReturn "mockInput1"
-            on { lift(any()) } doAnswer {
-                barrier1Lifted = true
-                Unit
-            }
-        }
-
-        mockBarrier2 = mock {
-            on { input } doReturn "mockInput2"
-            on { lift(any()) } doAnswer {
-                barrier2Lifted = true
-                Unit
-            }
-        }
-
-        mockBarrier3 = mock {
-            on { input } doReturn "mockInput3"
-            on { lift(any()) } doAnswer {
-                barrier3Lifted = true
-                Unit
+        barriers = (1..3).map { i ->
+            mock<Barrier<String>> {
+                on { input } doReturn "mockInput$i"
+                on { lift(any()) } doAnswer {
+                    barrierLiftWaiter.resume()
+                }
             }
         }
 
@@ -74,95 +53,95 @@ class CountedBarrierControllerTest {
     @Test(expected = IllegalStateException::class)
     fun `onBarrierCreated checks for capacity overflows`() {
         controller.setCapacity(1)
-        controller.onBarrierCreated(mockBarrier1)
-        controller.onBarrierCreated(mockBarrier2)
+        controller.onBarrierCreated(barriers[0])
+        controller.onBarrierCreated(barriers[1])
     }
 
     @Test
     fun `lifts barrier when arrival count matches capacity`() {
-        controller.onBarrierCreated(mockBarrier1)
-        controller.onBarrierCreated(mockBarrier2)
+        controller.onBarrierCreated(barriers[0])
+        controller.onBarrierCreated(barriers[1])
 
-        controller.onBarrierBlocked(mockBarrier1)
+        controller.onBarrierBlocked(barriers[0])
 
-        verify(mockBarrier1, never()).lift(any())
-        verify(mockBarrier2, never()).lift(any())
+        verify(barriers[0], never()).lift(any())
+        verify(barriers[1], never()).lift(any())
 
-        controller.onBarrierBlocked(mockBarrier2)
+        controller.onBarrierBlocked(barriers[1])
 
-        while (!barrier1Lifted || !barrier2Lifted) { }
+        barrierLiftWaiter.await(1000, 2)
 
-        verify(mockBarrier1, times(1)).lift(eq("mockInput1"))
-        verify(mockBarrier2, times(1)).lift(eq("mockInput2"))
+        verify(barriers[0], times(1)).lift(eq("mockInput1"))
+        verify(barriers[1], times(1)).lift(eq("mockInput2"))
     }
 
     @Test
     fun `can update capacity to a bigger value when blocked`() {
-        controller.onBarrierCreated(mockBarrier1)
-        controller.onBarrierCreated(mockBarrier2)
-        controller.onBarrierBlocked(mockBarrier1)
+        controller.onBarrierCreated(barriers[0])
+        controller.onBarrierCreated(barriers[1])
+        controller.onBarrierBlocked(barriers[0])
         controller.setCapacity(3)
-        controller.onBarrierCreated(mockBarrier3)
-        controller.onBarrierBlocked(mockBarrier2)
+        controller.onBarrierCreated(barriers[2])
+        controller.onBarrierBlocked(barriers[1])
 
-        verify(mockBarrier1, never()).lift(any())
-        verify(mockBarrier2, never()).lift(any())
-        verify(mockBarrier3, never()).lift(any())
+        verify(barriers[0], never()).lift(any())
+        verify(barriers[1], never()).lift(any())
+        verify(barriers[2], never()).lift(any())
 
-        controller.onBarrierBlocked(mockBarrier3)
+        controller.onBarrierBlocked(barriers[2])
 
-        while (!barrier1Lifted || !barrier2Lifted || !barrier3Lifted) { }
+        barrierLiftWaiter.await(1000, 3)
 
-        verify(mockBarrier1, times(1)).lift(eq("mockInput1"))
-        verify(mockBarrier2, times(1)).lift(eq("mockInput2"))
-        verify(mockBarrier3, times(1)).lift(eq("mockInput3"))
+        verify(barriers[0], times(1)).lift(eq("mockInput1"))
+        verify(barriers[1], times(1)).lift(eq("mockInput2"))
+        verify(barriers[2], times(1)).lift(eq("mockInput3"))
     }
 
     @Test
     fun `can update capacity to a lower value when blocked`() {
         controller = CountedBarrierControllerImpl(capacity = 4, launchContext = DefaultTestDispatcher.createEffectiveContext())
 
-        controller.onBarrierCreated(mockBarrier1)
-        controller.onBarrierCreated(mockBarrier2)
-        controller.onBarrierBlocked(mockBarrier1)
-        controller.onBarrierBlocked(mockBarrier2)
-        controller.onBarrierCreated(mockBarrier3)
+        controller.onBarrierCreated(barriers[0])
+        controller.onBarrierCreated(barriers[1])
+        controller.onBarrierBlocked(barriers[0])
+        controller.onBarrierBlocked(barriers[1])
+        controller.onBarrierCreated(barriers[2])
 
         controller.setCapacity(3)
 
-        verify(mockBarrier1, never()).lift(any())
-        verify(mockBarrier2, never()).lift(any())
-        verify(mockBarrier3, never()).lift(any())
+        verify(barriers[0], never()).lift(any())
+        verify(barriers[1], never()).lift(any())
+        verify(barriers[2], never()).lift(any())
 
-        controller.onBarrierBlocked(mockBarrier3)
+        controller.onBarrierBlocked(barriers[2])
 
-        while (!barrier1Lifted || !barrier2Lifted || !barrier3Lifted) { }
+        barrierLiftWaiter.await(1000, 3)
 
-        verify(mockBarrier1, times(1)).lift(eq("mockInput1"))
-        verify(mockBarrier2, times(1)).lift(eq("mockInput2"))
-        verify(mockBarrier3, times(1)).lift(eq("mockInput3"))
+        verify(barriers[0], times(1)).lift(eq("mockInput1"))
+        verify(barriers[1], times(1)).lift(eq("mockInput2"))
+        verify(barriers[2], times(1)).lift(eq("mockInput3"))
     }
 
     @Test
     fun `can update capacity to a bigger value before start`() {
         controller.setCapacity(3)
-        controller.onBarrierCreated(mockBarrier1)
-        controller.onBarrierCreated(mockBarrier2)
-        controller.onBarrierBlocked(mockBarrier1)
-        controller.onBarrierCreated(mockBarrier3)
-        controller.onBarrierBlocked(mockBarrier2)
+        controller.onBarrierCreated(barriers[0])
+        controller.onBarrierCreated(barriers[1])
+        controller.onBarrierBlocked(barriers[0])
+        controller.onBarrierCreated(barriers[2])
+        controller.onBarrierBlocked(barriers[1])
 
-        verify(mockBarrier1, never()).lift(any())
-        verify(mockBarrier2, never()).lift(any())
-        verify(mockBarrier3, never()).lift(any())
+        verify(barriers[0], never()).lift(any())
+        verify(barriers[1], never()).lift(any())
+        verify(barriers[2], never()).lift(any())
 
-        controller.onBarrierBlocked(mockBarrier3)
+        controller.onBarrierBlocked(barriers[2])
 
-        while (!barrier1Lifted || !barrier2Lifted || !barrier3Lifted) { }
+        barrierLiftWaiter.await(1000, 3)
 
-        verify(mockBarrier1, times(1)).lift(eq("mockInput1"))
-        verify(mockBarrier2, times(1)).lift(eq("mockInput2"))
-        verify(mockBarrier3, times(1)).lift(eq("mockInput3"))
+        verify(barriers[0], times(1)).lift(eq("mockInput1"))
+        verify(barriers[1], times(1)).lift(eq("mockInput2"))
+        verify(barriers[2], times(1)).lift(eq("mockInput3"))
     }
 
     @Test
@@ -170,76 +149,57 @@ class CountedBarrierControllerTest {
         controller = CountedBarrierControllerImpl(capacity = 4, launchContext = DefaultTestDispatcher.createEffectiveContext())
         controller.setCapacity(3)
 
-        controller.onBarrierCreated(mockBarrier1)
-        controller.onBarrierCreated(mockBarrier2)
-        controller.onBarrierBlocked(mockBarrier1)
-        controller.onBarrierBlocked(mockBarrier2)
-        controller.onBarrierCreated(mockBarrier3)
+        controller.onBarrierCreated(barriers[0])
+        controller.onBarrierCreated(barriers[1])
+        controller.onBarrierBlocked(barriers[0])
+        controller.onBarrierBlocked(barriers[1])
+        controller.onBarrierCreated(barriers[2])
 
-        verify(mockBarrier1, never()).lift(any())
-        verify(mockBarrier2, never()).lift(any())
-        verify(mockBarrier3, never()).lift(any())
+        verify(barriers[0], never()).lift(any())
+        verify(barriers[1], never()).lift(any())
+        verify(barriers[2], never()).lift(any())
 
-        controller.onBarrierBlocked(mockBarrier3)
+        controller.onBarrierBlocked(barriers[2])
 
-        while (!barrier1Lifted || !barrier2Lifted || !barrier3Lifted) { }
+        barrierLiftWaiter.await(1000, 3)
 
-        verify(mockBarrier1, times(1)).lift(eq("mockInput1"))
-        verify(mockBarrier2, times(1)).lift(eq("mockInput2"))
-        verify(mockBarrier3, times(1)).lift(eq("mockInput3"))
+        verify(barriers[0], times(1)).lift(eq("mockInput1"))
+        verify(barriers[1], times(1)).lift(eq("mockInput2"))
+        verify(barriers[2], times(1)).lift(eq("mockInput3"))
     }
 
     @Test
     fun `updating capacity to arrival count lifts the barriers`() {
         controller = CountedBarrierControllerImpl(capacity = 4, launchContext = DefaultTestDispatcher.createEffectiveContext())
 
-        var mockBarrier1Result: Any? = null
-        mockBarrier1 = mock {
-            on { input } doReturn "mockInput1"
-            on { lift(any()) } doAnswer { invocation ->
-                mockBarrier1Result = invocation.arguments[0]
-                Unit
-            }
-        }
+        controller.onBarrierCreated(barriers[0])
+        controller.onBarrierBlocked(barriers[0])
 
-        var mockBarrier2Result: Any? = null
-        mockBarrier2 = mock {
-            on { input } doReturn "mockInput2"
-            on { lift(any()) } doAnswer { invocation ->
-                mockBarrier2Result = invocation.arguments[0]
-                Unit
-            }
-        }
+        controller.onBarrierCreated(barriers[1])
+        controller.onBarrierBlocked(barriers[1])
 
-        controller.onBarrierCreated(mockBarrier1)
-        controller.onBarrierBlocked(mockBarrier1)
-
-        controller.onBarrierCreated(mockBarrier2)
-        controller.onBarrierBlocked(mockBarrier2)
-
-        verify(mockBarrier1, never()).lift(any())
-        verify(mockBarrier2, never()).lift(any())
+        verify(barriers[0], never()).lift(any())
+        verify(barriers[1], never()).lift(any())
 
         controller.setCapacity(2)
-        while (mockBarrier1Result == null || mockBarrier2Result == null) {
-            Thread.sleep(100)
-        }
-        verify(mockBarrier1, times(1)).lift(eq("mockInput1"))
-        verify(mockBarrier2, times(1)).lift(eq("mockInput2"))
+
+        barrierLiftWaiter.await(1000, 2)
+        verify(barriers[0], times(1)).lift(eq("mockInput1"))
+        verify(barriers[1], times(1)).lift(eq("mockInput2"))
     }
 
     @Test(expected = IllegalStateException::class)
     fun `cannot update capacity to a value less than the registration count`() {
         controller = CountedBarrierControllerImpl(capacity = 4, launchContext = DefaultTestDispatcher.createEffectiveContext())
-        controller.onBarrierCreated(mockBarrier1)
-        controller.onBarrierCreated(mockBarrier2)
+        controller.onBarrierCreated(barriers[0])
+        controller.onBarrierCreated(barriers[1])
 
         controller.setCapacity(1)
     }
 
     @Test(expected = IllegalArgumentException::class)
     fun `onBarrierBlocked verifies that the barrier was registered`() {
-        controller.onBarrierBlocked(mockBarrier1)
+        controller.onBarrierBlocked(barriers[0])
     }
 
     @Test
@@ -250,21 +210,21 @@ class CountedBarrierControllerTest {
             listOf("mockResult1", "mockResult2")
         }
 
-        controller.onBarrierCreated(mockBarrier2)
-        controller.onBarrierCreated(mockBarrier1)
+        controller.onBarrierCreated(barriers[1])
+        controller.onBarrierCreated(barriers[0])
 
-        controller.onBarrierBlocked(mockBarrier2)
+        controller.onBarrierBlocked(barriers[1])
 
-        verify(mockBarrier1, never()).lift(any())
-        verify(mockBarrier2, never()).lift(any())
+        verify(barriers[0], never()).lift(any())
+        verify(barriers[1], never()).lift(any())
 
         // 1 is getting pushed after 2. So arriving out of order (wrt the natural order for strings)
-        controller.onBarrierBlocked(mockBarrier1)
+        controller.onBarrierBlocked(barriers[0])
 
-        while (!barrier1Lifted || !barrier2Lifted) { }
+        barrierLiftWaiter.await(1000, 2)
 
-        verify(mockBarrier1, times(1)).lift(eq("mockResult1"))
-        verify(mockBarrier2, times(1)).lift(eq("mockResult2"))
+        verify(barriers[0], times(1)).lift(eq("mockResult1"))
+        verify(barriers[1], times(1)).lift(eq("mockResult2"))
     }
 
     // https://github.com/udeyrishi/pipe/issues/5
@@ -276,69 +236,69 @@ class CountedBarrierControllerTest {
             listOf("mockResult1")
         }
 
-        controller.onBarrierCreated(mockBarrier2)
-        controller.onBarrierCreated(mockBarrier1)
+        controller.onBarrierCreated(barriers[1])
+        controller.onBarrierCreated(barriers[0])
 
-        controller.onBarrierBlocked(mockBarrier2)
-        controller.onBarrierBlocked(mockBarrier1)
+        controller.onBarrierBlocked(barriers[1])
+        controller.onBarrierBlocked(barriers[0])
 
-        while (!barrier1Lifted || !barrier2Lifted) { }
+        barrierLiftWaiter.await(1000, 2)
     }
 
     @Test(expected = IllegalArgumentException::class)
     fun `cannot register a barrier 2x`() {
-        controller.onBarrierCreated(mockBarrier1)
-        controller.onBarrierCreated(mockBarrier1)
+        controller.onBarrierCreated(barriers[0])
+        controller.onBarrierCreated(barriers[0])
     }
 
     @Test(expected = IllegalArgumentException::class)
     fun `cannot mark a barrier as blocked 2x`() {
-        controller.onBarrierCreated(mockBarrier1)
-        controller.onBarrierBlocked(mockBarrier1)
-        controller.onBarrierBlocked(mockBarrier1)
+        controller.onBarrierCreated(barriers[0])
+        controller.onBarrierBlocked(barriers[0])
+        controller.onBarrierBlocked(barriers[0])
     }
 
     @Test(expected = IllegalArgumentException::class)
     fun `onBarrierInterrupted checks whether the barrier was registered`() {
-        controller.onBarrierInterrupted(mockBarrier1)
+        controller.onBarrierInterrupted(barriers[0])
     }
 
     @Test
     fun `controller interrupts all other barriers if any one is interrupted`() {
         controller.setCapacity(3)
 
-        controller.onBarrierCreated(mockBarrier1)
-        controller.onBarrierCreated(mockBarrier2)
-        controller.onBarrierCreated(mockBarrier3)
+        controller.onBarrierCreated(barriers[0])
+        controller.onBarrierCreated(barriers[1])
+        controller.onBarrierCreated(barriers[2])
 
         runBlocking {
-            controller.onBarrierBlocked(mockBarrier1)
-            controller.onBarrierBlocked(mockBarrier2)
+            controller.onBarrierBlocked(barriers[0])
+            controller.onBarrierBlocked(barriers[1])
         }
 
-        verify(mockBarrier1, never()).interrupt()
-        verify(mockBarrier2, never()).interrupt()
-        verify(mockBarrier3, never()).interrupt()
+        verify(barriers[0], never()).interrupt()
+        verify(barriers[1], never()).interrupt()
+        verify(barriers[2], never()).interrupt()
 
-        controller.onBarrierInterrupted(mockBarrier2)
+        controller.onBarrierInterrupted(barriers[1])
 
-        verify(mockBarrier1).interrupt()
-        verify(mockBarrier2, never()).interrupt()
-        verify(mockBarrier3).interrupt()
+        verify(barriers[0]).interrupt()
+        verify(barriers[1], never()).interrupt()
+        verify(barriers[2]).interrupt()
     }
 
     @Test
     fun `controller interrupts any future registrations if any one is interrupted`() {
         controller.setCapacity(3)
-        controller.onBarrierCreated(mockBarrier1)
-        controller.onBarrierInterrupted(mockBarrier1)
+        controller.onBarrierCreated(barriers[0])
+        controller.onBarrierInterrupted(barriers[0])
 
-        verify(mockBarrier2, never()).interrupt()
-        controller.onBarrierCreated(mockBarrier2)
-        verify(mockBarrier2).interrupt()
+        verify(barriers[1], never()).interrupt()
+        controller.onBarrierCreated(barriers[1])
+        verify(barriers[1]).interrupt()
 
-        verify(mockBarrier3, never()).interrupt()
-        controller.onBarrierCreated(mockBarrier3)
-        verify(mockBarrier3).interrupt()
+        verify(barriers[2], never()).interrupt()
+        controller.onBarrierCreated(barriers[2])
+        verify(barriers[2]).interrupt()
     }
 }

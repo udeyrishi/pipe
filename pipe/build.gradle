@@ -46,6 +46,7 @@ dependencies {
     api depends.android.x.lifecycle.livedata
 
     testImplementation depends.junit
+    testImplementation depends.concurrent_unit
     testImplementation depends.android.x.lifecycle.runtime
     testImplementation depends.android.x.lifecycle.testing
     testImplementation depends.mockito_kotlin

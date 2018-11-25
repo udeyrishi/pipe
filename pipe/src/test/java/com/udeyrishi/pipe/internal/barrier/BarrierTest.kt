@@ -10,34 +10,25 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import com.udeyrishi.pipe.testutil.Repeat
-import com.udeyrishi.pipe.testutil.RepeatRule
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import net.jodah.concurrentunit.Waiter
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.Timeout
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.mockito.Mock
 import org.mockito.junit.MockitoJUnit
 import org.mockito.junit.MockitoRule
-import java.util.concurrent.TimeUnit
 
 @RunWith(JUnit4::class)
 class BarrierTest {
-    @get:Rule
-    val repeatRule = RepeatRule()
-
-    @get:Rule
-    val timeoutRule = Timeout(25, TimeUnit.SECONDS)
-
     @get:Rule
     val mockRule: MockitoRule = MockitoJUnit.rule()
 
@@ -45,7 +36,6 @@ class BarrierTest {
     internal lateinit var mockController: BarrierController<String>
 
     @Test
-    @Repeat
     fun worksIfLiftedAfterStart() {
         val barrier = BarrierImpl(mockController)
         var result: String? = null
@@ -66,7 +56,6 @@ class BarrierTest {
     }
 
     @Test
-    @Repeat
     fun worksIfLiftedBeforeStart() {
         val barrier = BarrierImpl(mockController)
         barrier.lift()
@@ -121,12 +110,11 @@ class BarrierTest {
 
     @Test
     fun callsControllerUponBlock() {
-        var controllerCalled = false
+        val waiter = Waiter()
         val mockController = mock<BarrierController<String>>()
 
         whenever(mockController.onBarrierBlocked(any())).doAnswer {
-            controllerCalled = true
-            Unit
+            waiter.resume()
         }
 
         val barrier = BarrierImpl(mockController)
@@ -135,9 +123,7 @@ class BarrierTest {
             barrier.invoke("this")
         }
 
-        while (!controllerCalled) {
-            Thread.sleep(100)
-        }
+        waiter.await()
 
         barrier.lift()
 

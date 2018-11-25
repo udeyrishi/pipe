@@ -8,6 +8,7 @@ buildscript {
                             'lifecycle': '2.0.0'
                     ]
                 ],
+                'concurrent_unit': '0.4.3',
                 'junit' : '4.12',
                 'kotlin': [
                         'coroutines': '1.0.0',
@@ -43,6 +44,7 @@ buildscript {
                             ]
                     ]
                 ],
+                'concurrent_unit': "net.jodah:concurrentunit:${versions.concurrent_unit}",
                 'junit' : "junit:junit:${versions.junit}",
                 'kotlin': [
                         'coroutines'   : "org.jetbrains.kotlinx:kotlinx-coroutines-core:${versions.kotlin.coroutines}",

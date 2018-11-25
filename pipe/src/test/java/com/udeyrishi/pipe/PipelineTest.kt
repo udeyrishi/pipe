@@ -6,35 +6,23 @@ package com.udeyrishi.pipe
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.udeyrishi.pipe.internal.Orchestrator
 import com.udeyrishi.pipe.testutil.DefaultTestDispatcher
-import com.udeyrishi.pipe.testutil.Repeat
-import com.udeyrishi.pipe.testutil.RepeatRule
+import com.udeyrishi.pipe.testutil.waitTill
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.Timeout
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import java.util.concurrent.TimeUnit
 
 @RunWith(JUnit4::class)
 class PipelineTest {
     @get:Rule
     val instantExecutionRule = InstantTaskExecutorRule()
 
-    @get:Rule
-    val timeoutRule = Timeout(25, TimeUnit.SECONDS)
-
-    @get:Rule
-    val repeatRule = RepeatRule()
-
     @Test
     fun `DSL api works`() {
-        val lock = Any()
         lateinit var aggregated: List<Int>
-
-        var barrierReachedCount = 0
 
         val pipeline = buildPipeline<Int> {
             setDispatcher(DefaultTestDispatcher)
@@ -44,9 +32,6 @@ class PipelineTest {
             }
 
             addStep("Step 2") {
-                synchronized(lock) {
-                    barrierReachedCount++
-                }
                 it + 2
             }
 
@@ -72,23 +57,13 @@ class PipelineTest {
                 pipeline.push(2, null)
         )
 
-        while (barrierReachedCount < 3) {
-            Thread.sleep(100)
-        }
-
-        jobs.forEach {
-            assertTrue(it.state.value is State.Running.Attempting)
-        }
+        jobs.map { it.state }.waitTill { (it as? State.Running.Attempting)?.step == "Barrier 1" }
 
         // Everyone is waiting at the barrier. Now that we know the count, we can safely update the aggregator capacity, and then lift the barrier.
         pipeline.manualBarriers[0].lift()
         pipeline.countedBarriers[0].setCapacity(3)
 
-        while (jobs.any { it.state.value !is State.Terminal }) {
-            Thread.sleep(100)
-        }
-
-        // Everyone is done
+        jobs.map { it.state }.waitTill { it is State.Terminal }
 
         jobs.forEach {
             assertTrue(it.state.value === State.Terminal.Success)
@@ -103,19 +78,13 @@ class PipelineTest {
 
     @Test
     fun `builder API works`() {
-        val lock = Any()
         lateinit var aggregated: List<Int>
-
-        var barrierReachedCount = 0
 
         val pipeline = PipelineBuilder<Int>()
                 .addStep("step 1") {
                     it + 1
                 }
                 .addStep("Step 2") {
-                    synchronized(lock) {
-                        barrierReachedCount++
-                    }
                     it + 2
                 }
                 .addManualBarrier("Barrier 1")
@@ -138,23 +107,13 @@ class PipelineTest {
                 pipeline.push(2, null)
         )
 
-        while (barrierReachedCount < 3) {
-            Thread.sleep(100)
-        }
-
-        jobs.forEach {
-            assertTrue(it.state.value is State.Running.Attempting)
-        }
+        jobs.map { it.state }.waitTill { (it as? State.Running.Attempting)?.step == "Barrier 1" }
 
         // Everyone is waiting at the barrier. Now that we know the count, we can safely update the aggregator capacity, and then lift the barrier.
         pipeline.manualBarriers[0].lift()
         pipeline.countedBarriers[0].setCapacity(3)
 
-        while (jobs.any { it.state.value !is State.Terminal }) {
-            Thread.sleep(100)
-        }
-
-        // Everyone is done
+        jobs.map { it.state }.waitTill { it is State.Terminal }
 
         jobs.forEach {
             assertTrue(it.state.value === State.Terminal.Success)
@@ -186,15 +145,12 @@ class PipelineTest {
 
         pipeline.manualBarriers[0].lift()
 
-        while (job1.state.value !is State.Terminal.Failure) {
-            Thread.sleep(10)
-        }
+        job1.state.waitTill { it is State.Terminal.Failure }
+
         assertTrue((job1.state.value as State.Terminal.Failure).cause is Orchestrator.OrchestratorInterruptedException)
         assertNull(job1.result)
 
-        while (job2.state.value !is State.Terminal) {
-            Thread.sleep(10)
-        }
+        job2.state.waitTill { it is State.Terminal }
 
         assertEquals(State.Terminal.Success, job2.state.value)
         assertEquals(3, job2.result)
@@ -215,17 +171,13 @@ class PipelineTest {
         val job1 = pipeline.push(1, null)
         val job2 = pipeline.push(2, null)
 
-        while ((job1.state.value as? State.Running.Attempting)?.step != "some barrier") {
-            Thread.sleep(10)
-        }
+        job1.state.waitTill { (it as? State.Running.Attempting)?.step == "some barrier" }
 
         job1.interrupt()
 
         pipeline.manualBarriers[0].lift()
 
-        while (job1.state.value !is State.Terminal || job2.state.value !is State.Terminal) {
-            Thread.sleep(10)
-        }
+        listOf(job1.state, job2.state).waitTill { it is State.Terminal }
 
         assertTrue(job1.state.value is State.Terminal.Failure)
         assertTrue((job1.state.value as State.Terminal.Failure).cause is Orchestrator.OrchestratorInterruptedException)
@@ -235,7 +187,6 @@ class PipelineTest {
         assertEquals(3, job2.result)
     }
 
-    @Repeat
     @Test
     fun `interrupting one job blocked on a counted barrier also interrupts the sibling jobs`() {
         val pipeline = buildPipeline<Int> {
@@ -251,15 +202,11 @@ class PipelineTest {
         val job1 = pipeline.push(1, null)
         val job2 = pipeline.push(2, null)
 
-        while ((job1.state.value as? State.Running.Attempting)?.step != "some barrier") {
-            Thread.sleep(10)
-        }
+        job1.state.waitTill { (it as? State.Running.Attempting)?.step == "some barrier" }
 
         job1.interrupt()
 
-        while (job1.state.value !is State.Terminal || job2.state.value !is State.Terminal) {
-            Thread.sleep(10)
-        }
+        listOf(job1.state, job2.state).waitTill { it is State.Terminal }
 
         assertTrue(job1.state.value is State.Terminal.Failure)
         assertTrue((job1.state.value as State.Terminal.Failure).cause is Orchestrator.OrchestratorInterruptedException)
@@ -297,9 +244,7 @@ class PipelineTest {
         val job2 = pipeline.push(2, null)
         val job3 = pipeline.push(3, null)
 
-        while (listOf(job1, job2, job3).any { it.state.value !is State.Terminal }) {
-            Thread.sleep(100)
-        }
+        listOf(job1.state, job2.state, job3.state).waitTill { it is State.Terminal }
 
         assertTrue(job1.state.value is State.Terminal.Failure)
         assertTrue((job1.state.value as State.Terminal.Failure).cause is Orchestrator.StepOutOfAttemptsException)
@@ -347,9 +292,7 @@ class PipelineTest {
         val job2 = pipeline.push(2, null)
         val job3 = pipeline.push(3, null)
 
-        while (listOf(job1, job2, job3).any { it.state.value !is State.Terminal }) {
-            Thread.sleep(100)
-        }
+        listOf(job1.state, job2.state, job3.state).waitTill { it is State.Terminal }
 
         assertTrue(job1.state.value is State.Terminal.Failure)
         assertTrue((job1.state.value as State.Terminal.Failure).cause is Orchestrator.StepOutOfAttemptsException)
@@ -391,15 +334,11 @@ class PipelineTest {
         val job2 = pipeline.push(2, null)
         val job3 = pipeline.push(3, null)
 
-        while (job1.state.value !is State.Terminal) {
-            Thread.sleep(100)
-        }
+        job1.state.waitTill { it is State.Terminal }
 
         pipeline.manualBarriers[0].lift()
 
-        while (listOf(job2, job3).any { it.state.value !is State.Terminal }) {
-            Thread.sleep(100)
-        }
+        listOf(job2.state, job3.state).waitTill { it is State.Terminal }
 
         assertTrue(job1.state.value is State.Terminal.Failure)
         assertTrue((job1.state.value as State.Terminal.Failure).cause is Orchestrator.StepOutOfAttemptsException)
@@ -432,9 +371,7 @@ class PipelineTest {
         val job1 = pipeline.push(1, null)
         val job2 = pipeline.push(2, null)
 
-        while (job1.state.value !is State.Terminal || job2.state.value !is State.Terminal) {
-            Thread.sleep(100)
-        }
+        listOf(job1.state, job2.state).waitTill { it is State.Terminal }
 
         assertTrue(job1.state.value is State.Terminal.Success)
         assertTrue(job2.state.value is State.Terminal.Success)

@@ -22,8 +22,5 @@ android:
     # if you need to run emulator(s) during your tests
     # - sys-img-armeabi-v7a-android-26
 
-env:
-  - REPEAT=10
-
 script:
   - ./gradlew :pipe:check :pipesample:check
