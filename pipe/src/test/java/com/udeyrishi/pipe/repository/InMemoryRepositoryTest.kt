@@ -108,7 +108,7 @@ class InMemoryRepositoryTest {
 
     @Test
     fun `clear clears everything`() {
-        val items = (0 .. 2).map {
+        val items = (0..2).map {
             MyIdentifiable(UUID.randomUUID())
         }
         items.forEach {
@@ -122,7 +122,7 @@ class InMemoryRepositoryTest {
 
     @Test
     fun `size works`() {
-        val items = (0 .. 2).map {
+        val items = (0..2).map {
             MyIdentifiable(UUID.randomUUID())
         }
 
@@ -136,7 +136,7 @@ class InMemoryRepositoryTest {
 
     @Test
     fun `items works`() {
-        val items = (0 .. 2).map {
+        val items = (0..2).map {
             MyIdentifiable(UUID.randomUUID())
         }
         items.forEach {
