@@ -189,8 +189,9 @@ internal class CountedBarrierControllerImpl<T : Comparable<T>>(private val launc
                         next.setValue(false)
                     }
                     arrivalCount = 0
+                    expectedAbsenteeCount = 0
                     barriers.forEach { (barrier, _) ->
-                        barrier.markAsFailed(e)
+                        barrier.markAsFailed(BarrierLiftedActionException(this@CountedBarrierControllerImpl, e))
                     }
                     return@launch
                 }
@@ -202,4 +203,6 @@ internal class CountedBarrierControllerImpl<T : Comparable<T>>(private val launc
             barriers.clear()
         }
     }
+
+    class BarrierLiftedActionException(val source: CountedBarrierControllerImpl<*>, cause: Throwable) : RuntimeException(cause)
 }

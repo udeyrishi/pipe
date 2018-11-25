@@ -390,4 +390,25 @@ class PipelineTest {
         assertEquals(4, job1.result)
         assertEquals(5, job2.result)
     }
+
+    @Test
+    fun `failure in onBarrierLiftedAction doesn't cause it to be executed again`() {
+        var onBarrierLiftedActionCount = 0
+        val pipeline = buildPipeline<Int> {
+            setDispatcher(dispatcher)
+            addCountedBarrier(name = "My barrier", capacity = 2, attempts = 1) {
+                ++onBarrierLiftedActionCount
+                throw RuntimeException("BOOM!")
+            }
+        }
+
+        val job1 = pipeline.push(1, null)
+        val job2 = pipeline.push(2, null)
+
+        listOf(job1.state, job2.state).waitTill { it is State.Terminal.Failure }
+
+        assertNull(job1.result)
+        assertNull(job2.result)
+        assertEquals(1, onBarrierLiftedActionCount)
+    }
 }

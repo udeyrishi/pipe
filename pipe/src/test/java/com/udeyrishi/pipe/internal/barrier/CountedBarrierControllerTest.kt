@@ -4,6 +4,7 @@
 package com.udeyrishi.pipe.internal.barrier
 
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argWhere
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
@@ -262,8 +263,11 @@ class CountedBarrierControllerTest {
 
         onBarrierLiftedActionWaiter.await(1000)
 
-        verify(barriers[0]).markAsFailed(isA<IllegalArgumentException>())
-        verify(barriers[1]).markAsFailed(isA<IllegalArgumentException>())
+        barriers.subList(0, 2).forEach { barrier ->
+            verify(barrier).markAsFailed(argWhere {
+                it is CountedBarrierControllerImpl.BarrierLiftedActionException && it.cause is IllegalArgumentException
+            })
+        }
     }
 
     @Test
@@ -283,9 +287,11 @@ class CountedBarrierControllerTest {
 
         onBarrierLiftedActionWaiter.await(1000)
 
-        verify(barriers[0]).markAsFailed(eq(error))
-        verify(barriers[1]).markAsFailed(eq(error))
-        verify(barriers[2]).markAsFailed(eq(error))
+        barriers.forEach { barrier ->
+            verify(barrier).markAsFailed(argWhere {
+                it is CountedBarrierControllerImpl.BarrierLiftedActionException && it.cause == error
+            })
+        }
     }
 
     @Test(expected = IllegalArgumentException::class)

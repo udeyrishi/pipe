@@ -48,7 +48,7 @@ internal class PipelineImpl<T : Any>(private val repository: MutableRepository<i
             val uuid = UUID.randomUUID()
             val passenger = Passenger(input, uuid, createdAt = System.currentTimeMillis())
             val steps = materializeSteps()
-            val orchestrator = Orchestrator(passenger, steps, launchContext, failureListener = {
+            val orchestrator = Orchestrator(passenger, steps, launchContext, failureListener = { failureCause ->
                 synchronized(countedBarrierCapacityLock) {
                     barrierControllers
                             .asSequence()
@@ -56,6 +56,11 @@ internal class PipelineImpl<T : Any>(private val repository: MutableRepository<i
                             .filter {
                                 // Do not bother the counted barriers that have reached their capacity, and hence have been lifted.
                                 it.arrivalCount < it.getCapacity()
+                            }
+                            .filterNot {
+                                // If the failure is originating from a failed counted barrier controller, do not inform the same barrier again.
+                                // This prevents an infinite loop of sorts.
+                                it === ((failureCause.cause as? Orchestrator.StepFailureException)?.cause as? CountedBarrierControllerImpl.BarrierLiftedActionException)?.source
                             }
                             .forEach {
                                 // This will notify them to not bother waiting. The failed job is never going to arrive.
