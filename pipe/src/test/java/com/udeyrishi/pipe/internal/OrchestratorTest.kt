@@ -17,9 +17,9 @@ import com.udeyrishi.pipe.internal.steps.InterruptibleStep
 import com.udeyrishi.pipe.internal.steps.StepDescriptor
 import com.udeyrishi.pipe.internal.util.createEffectiveContext
 import com.udeyrishi.pipe.testutil.DefaultTestDispatcher
+import com.udeyrishi.pipe.testutil.MockLifecycleOwner
 import com.udeyrishi.pipe.testutil.TapeLiveDataObserver
 import com.udeyrishi.pipe.testutil.assertIs
-import com.udeyrishi.pipe.testutil.createMockLifecycleOwner
 import com.udeyrishi.pipe.testutil.waitTill
 import com.udeyrishi.pipe.util.Identifiable
 import com.udeyrishi.pipe.util.Logger
@@ -93,7 +93,7 @@ class OrchestratorTest {
         assertNull(orchestrator.result)
 
         val observer = TapeLiveDataObserver<State>()
-        orchestrator.state.observe(createMockLifecycleOwner(), observer)
+        orchestrator.state.observe(MockLifecycleOwner(), observer)
 
         orchestrator.start()
 
@@ -400,7 +400,7 @@ class OrchestratorTest {
 
         val orchestrator = Orchestrator(IdentifiableString("in"), steps.iterator(), launchContext = dispatcher.createEffectiveContext())
         var failed = false
-        orchestrator.state.observe(createMockLifecycleOwner(), Observer {
+        orchestrator.state.observe(MockLifecycleOwner(), Observer {
             when (it) {
                 is State.Terminal.Failure -> failed = true
             }

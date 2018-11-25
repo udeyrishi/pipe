@@ -13,7 +13,7 @@ internal fun LiveData<State>.waitTill(condition: (State) -> Boolean) = listOf(th
 internal fun List<LiveData<State>>.waitTill(condition: (State) -> Boolean) {
     val jobCompletedWaiter = Waiter()
     forEach { liveData ->
-        liveData.observe(createMockLifecycleOwner(), Observer {
+        liveData.observe(MockLifecycleOwner(), Observer {
             if (condition(it)) {
                 jobCompletedWaiter.resume()
             }
