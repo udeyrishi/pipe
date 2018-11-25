@@ -1,39 +1,33 @@
 package com.udeyrishi.pipesample
 
 import android.graphics.Bitmap
-import com.udeyrishi.pipe.Pipeline
 import com.udeyrishi.pipe.buildPipeline
 
-class ImagePipelineMember(private val url: String? = null, private val image: Bitmap? = null) {
-    fun getBitmap(): Bitmap = image ?: throw IllegalStateException("image must've been read.")
-    fun getUrl(): String = url ?: throw IllegalStateException("URL must've been non-null.")
-}
+data class ImagePipelineMember(val url: String? = null, val image: Bitmap? = null)
 
 private const val SCALED_IMAGE_SIZE = 400
 
-fun makePipeline(): Pipeline<ImagePipelineMember> {
-    return buildPipeline {
+fun makePipeline() = buildPipeline<ImagePipelineMember> {
         setRepository(App.jobsRepo)
         setLogger(App.logger)
 
         addStep("download", attempts = 4) {
-            ImagePipelineMember(image = downloadImage(it.getUrl()))
+            ImagePipelineMember(image = downloadImage(it.url!!))
         }
 
         addStep("rotate") {
-            ImagePipelineMember(image = rotateBitmap(it.getBitmap(), 90.0f))
+            ImagePipelineMember(image = rotateBitmap(it.image!!, 90.0f))
         }
 
         addStep("scale") {
-            ImagePipelineMember(image = scale(it.getBitmap(), SCALED_IMAGE_SIZE, SCALED_IMAGE_SIZE))
+            ImagePipelineMember(image = scale(it.image!!, SCALED_IMAGE_SIZE, SCALED_IMAGE_SIZE))
         }
 
         addCountedBarrier("overdraw", capacity = Int.MAX_VALUE) { allMembers ->
             allMembers.mapIndexed { index, member ->
                 val siblingIndex = if (index == 0) allMembers.lastIndex else index - 1
-                val resultingImage = overdraw(member.getBitmap(), allMembers[siblingIndex].getBitmap())
+                val resultingImage = overdraw(member.image!!, allMembers[siblingIndex].image!!)
                 ImagePipelineMember(image = resultingImage)
             }
         }
     }
-}

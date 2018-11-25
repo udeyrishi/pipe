@@ -29,27 +29,22 @@ class MainActivity : AppCompatActivity() {
                 it.tag == JOB_TAG
             }
 
-            runPipeline(intentionallyFail = false)
+            runPipeline()
         }
 
         rootView.isRefreshing = true
-        runPipeline(intentionallyFail = true)
+        runPipeline()
     }
 
-    private fun runPipeline(intentionallyFail: Boolean) {
+    private fun runPipeline() {
         val imageUrls = listOf(
                 "http://pre00.deviantart.net/ac5d/th/pre/f/2013/020/1/d/cat_stock_3_by_manonvr-d5s437u.jpg",
                 "http://i1.wp.com/ivereadthis.com/wp-content/uploads/2018/03/IMG_0340.jpg",
                 "http://i2.wp.com/debsrandomwritings.com/wp-content/uploads/2015/09/Ugg-with-stitches1.jpg",
-                "http://5v9xs33wvow7hck7-zippykid.netdna-ssl.com/wp-content/uploads/2011/05/Cat-Urine-300x293.jpg",
-                if (intentionallyFail) "foobar" else "http://g77v3827gg2notadhhw9pew7-wpengine.netdna-ssl.com/wp-content/uploads/2017/03/what-to-do-cat-seizure_canna-pet-e1490730066628-1024x681.jpg"
+                "http://5v9xs33wvow7hck7-zippykid.netdna-ssl.com/wp-content/uploads/2011/05/Cat-Urine-300x293.jpg"
         )
 
-        val jobs = if (App.jobsRepo[JOB_TAG].isEmpty()) {
-            createImageJobs(imageUrls)
-        } else {
-            App.jobsRepo[JOB_TAG].map { it.identifiableObject }
-        }
+        val jobs = createImageJobs(imageUrls)
 
         jobs.forEachIndexed { index, job ->
             job.state.observe(this, Observer {
@@ -66,7 +61,7 @@ class MainActivity : AppCompatActivity() {
             }
             is State.Terminal.Success -> {
                 rootView.isRefreshing = false
-                (imageContainer.getChildAt(index) as ImageView).setImageBitmap(job.result?.getBitmap())
+                (imageContainer.getChildAt(index) as ImageView).setImageBitmap(job.result?.image)
             }
             is State.Terminal.Failure -> {
                 rootView.isRefreshing = false
