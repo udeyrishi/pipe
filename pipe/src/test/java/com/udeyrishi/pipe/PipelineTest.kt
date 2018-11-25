@@ -414,4 +414,34 @@ class PipelineTest {
         assertTrue(job3.state.value is State.Terminal.Success)
         assertEquals(5, job3.result)
     }
+
+    @Test
+    fun `retries failures in counted barrier onBarrierLiftedAction`() {
+        var attemptNum = 0
+        val pipeline = buildPipeline<Int> {
+            setDispatcher(DefaultTestDispatcher)
+            addCountedBarrier(name = "My barrier", capacity = 2, attempts = 5) { input ->
+                if (++attemptNum < 5) {
+                    throw RuntimeException("BOOM!")
+                }
+                val total = input.sum()
+                input.map { it + total }
+            }
+        }
+
+        val job1 = pipeline.push(1, null)
+        val job2 = pipeline.push(2, null)
+
+        while (job1.state.value !is State.Terminal || job2.state.value !is State.Terminal) {
+            Thread.sleep(100)
+        }
+
+        assertTrue(job1.state.value is State.Terminal.Success)
+        assertTrue(job2.state.value is State.Terminal.Success)
+
+        assertEquals(5, attemptNum)
+
+        assertEquals(4, job1.result)
+        assertEquals(5, job2.result)
+    }
 }

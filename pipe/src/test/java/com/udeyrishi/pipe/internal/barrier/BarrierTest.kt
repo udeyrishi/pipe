@@ -124,17 +124,13 @@ class BarrierTest {
         var controllerCalled = false
         val mockController = mock<BarrierController<String>>()
 
-        runBlocking {
-            whenever(mockController.onBarrierBlocked(any())).doAnswer {
-                controllerCalled = true
-                Unit
-            }
+        whenever(mockController.onBarrierBlocked(any())).doAnswer {
+            controllerCalled = true
+            Unit
         }
 
         val barrier = BarrierImpl(mockController)
-        runBlocking {
-            verify(mockController, never()).onBarrierBlocked(any())
-        }
+        verify(mockController, never()).onBarrierBlocked(any())
         val job = GlobalScope.launch {
             barrier.invoke("this")
         }
@@ -149,26 +145,20 @@ class BarrierTest {
             job.join()
         }
 
-        runBlocking {
-            verify(mockController).onBarrierBlocked(barrier)
-        }
+        verify(mockController).onBarrierBlocked(barrier)
     }
 
     @Test
     fun doesNotCallControllerUponBlockIfLiftedBeforeStart() {
         val barrier = BarrierImpl(mockController)
-        runBlocking {
-            verify(mockController, never()).onBarrierBlocked(any())
-        }
+        verify(mockController, never()).onBarrierBlocked(any())
         barrier.lift()
 
         runBlocking {
             barrier.invoke("this")
         }
 
-        runBlocking {
-            verify(mockController, never()).onBarrierBlocked(any())
-        }
+        verify(mockController, never()).onBarrierBlocked(any())
     }
 
     @Test

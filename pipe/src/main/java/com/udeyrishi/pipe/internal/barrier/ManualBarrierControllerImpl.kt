@@ -22,7 +22,7 @@ internal class ManualBarrierControllerImpl<T : Any> : BarrierController<T>, Manu
         }
     }
 
-    override suspend fun onBarrierBlocked(barrier: Barrier<T>) {
+    override fun onBarrierBlocked(barrier: Barrier<T>) {
         synchronized(lock) {
             if (barrier !in unliftedBarriers && !lifted) {
                 // The barrier might be missing in barriers if the controller was lifted a moment ago. Possible
