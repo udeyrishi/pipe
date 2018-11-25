@@ -11,6 +11,8 @@ fun makePipeline() = buildPipeline<ImagePipelineMember> {
     setRepository(App.jobsRepo)
     setLogger(App.logger)
 
+    addManualBarrier("start_barrier")
+
     addStep("download", attempts = 4) {
         ImagePipelineMember(image = downloadImage(it.url!!))
     }

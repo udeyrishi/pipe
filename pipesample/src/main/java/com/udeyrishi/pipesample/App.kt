@@ -9,7 +9,7 @@ import com.udeyrishi.pipe.util.AndroidLogger
 class App : Application() {
     companion object {
         val jobsRepo: MutableRepository<Job<ImagePipelineMember>> = InMemoryRepository()
-        val logger = AndroidLogger("Pipe")
+        val logger = AndroidLogger("Pipe Sample App")
     }
 
     override fun onTerminate() {
