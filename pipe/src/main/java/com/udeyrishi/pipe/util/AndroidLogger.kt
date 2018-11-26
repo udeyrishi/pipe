@@ -6,7 +6,9 @@ package com.udeyrishi.pipe.util
 import android.util.Log
 
 /**
- * A `Logger` implementation that forwards the logs to the standard android `android.util.Log` logger.
+ * A [Logger] implementation that forwards the logs to the standard android [android.util.Log] logger.
+ *
+ * @param logTag The log tag to be used in the logs.
  */
 class AndroidLogger(private val logTag: String) : Logger {
     override fun e(message: String) {

@@ -7,9 +7,9 @@ import com.udeyrishi.pipe.util.Identifiable
 import java.util.UUID
 
 /**
- * Represents a unique item, and its metadata, as present in a `Repository`.
+ * Represents a unique item, and its metadata, as present in a [Repository].
  *
- * Concrete `Repository` implementations will have their own `Record` implementations.
+ * Concrete [Repository] implementations will have their own [Record] implementations.
  */
 interface Record<out T : Identifiable> : Identifiable {
     /**
@@ -23,12 +23,23 @@ interface Record<out T : Identifiable> : Identifiable {
     val tag: String?
 
     /**
-     * A shortcut for getting the `identifiableObject`'s UUID.
+     * A shortcut for getting the [identifiableObject]'s UUID.
      */
     override val uuid: UUID
         get() = identifiableObject.uuid
 
+    /**
+     * Returns the [identifiableObject] stored in this record.
+     */
     operator fun component1() = identifiableObject
+
+    /**
+     * Returns the tag under which this [Record] is categorized.
+     */
     operator fun component2() = tag
+
+    /**
+     * Returns the [uuid].
+     */
     operator fun component3() = uuid
 }

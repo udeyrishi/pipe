@@ -10,7 +10,7 @@ import com.udeyrishi.pipe.Step
  * the orchestrator. This is because we want to deter people from using state in their steps.
  * They should be plain input-output functions.
  *
- * All user-supplied steps are non-interruptible (created through `nonInterruptibleStep`).
+ * All user-supplied steps are non-interruptible (created through [nonInterruptibleStep]).
  */
 internal interface InterruptibleStep<T : Any> {
     /**
@@ -20,14 +20,14 @@ internal interface InterruptibleStep<T : Any> {
     suspend operator fun invoke(input: T): T?
 
     /**
-     * Attempts to interrupt the step. May or may not succeed at doing so. Check the result of `invoke`
+     * Attempts to interrupt the step. May or may not succeed at doing so. Check the result of [invoke]
      * to verify.
      */
     fun interrupt()
 }
 
 /**
- * Converts the function type `Step` into an `InterruptibleStep` that does not really support
+ * Converts the function type [Step] into an [InterruptibleStep] that does not really support
  * interruption.
  */
 internal fun <T : Any> nonInterruptibleStep(step: Step<T>): InterruptibleStep<T> {

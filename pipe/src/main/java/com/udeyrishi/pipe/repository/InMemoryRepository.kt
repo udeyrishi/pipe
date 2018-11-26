@@ -7,12 +7,12 @@ import com.udeyrishi.pipe.util.Identifiable
 import java.util.UUID
 
 /**
- * A simple in-memory `Record` to accompany the `InMemoryRepository`.
+ * A simple in-memory [Record] to accompany the [InMemoryRepository].
  */
 private data class InMemoryRecord<T : Identifiable>(override val identifiableObject: T, override val tag: String?) : Record<T>
 
 /**
- * A simple, `HashMap` backed in-memory implementation of `MutableRepository`.
+ * A simple, [HashMap] backed in-memory implementation of [MutableRepository].
  */
 class InMemoryRepository<T : Identifiable> : MutableRepository<T> {
     private val entries = arrayListOf<InMemoryRecord<T>>()
@@ -75,5 +75,8 @@ class InMemoryRepository<T : Identifiable> : MutableRepository<T> {
         }
     }
 
+    /**
+     * No-op. In memory repository doesn't need to be closed.
+     */
     override fun close() {}
 }

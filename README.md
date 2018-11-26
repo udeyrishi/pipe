@@ -104,6 +104,8 @@ jobs.forEach { job ->
 }
 ```
 
+See the [state machine](#state-machine) for the details.
+
 We can also fetch any ongoing jobs from the repository (e.g., if the fragment is re-created):
 
 
@@ -120,6 +122,31 @@ someButton.setOnClickListener {
     pipeline.manualBarriers.first().lift()
 }
 ```
+
+### State machine
+
+The progress of a job is encoded via a state machine:
+
+```
+                                                --------------------------(yes; ++i)------------------------------------------
+                                                |                                                                             |
+                                                v                                                                             |
+ Scheduled(•) --- (Started; i = 0) --> Running.Attempting(i) ---- (Successful) ----> Running.AttemptSuccessful(i) ---- (Has next step?) ----(no)----> Terminal.Success(⍟)
+     |                                          |     ^                                          |
+ (Interrupted)                              (Failed)  |                                          |
+     |                                          |     |--------------------                      |
+     |                                          |                         |                      |
+     v                                          V                         |                (Interrupted)
+ Terminal.Failure(⍟) <--(Interrupted)--Running.AttemptFailed(i)           |                      |
+     ^                                          |                         |                      |
+     |                                  (Has more attempts?)              |                      |
+     |<---------(no)------------------------<---|-->------(yes)---------->|                      |
+     |                                                                                           |
+     |<------------------------------------------------------------------------------------------V
+
+```
+
+See the [source](pipe/src/main/java/com/udeyrishi/pipe/State.kt) for more details.
 
 ### Learn more
 

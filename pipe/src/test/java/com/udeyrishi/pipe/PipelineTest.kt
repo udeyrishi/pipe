@@ -271,7 +271,7 @@ class PipelineTest {
         job3.state.value.assertIs<State.Terminal.Success>()
         assertEquals(5, job3.result)
 
-        // The arg to the `onBarrierLiftedAction` only included the successful passengers
+        // The arg to the onBarrierLiftedAction only included the successful passengers
         assertEquals(listOf(3, 4), barrierList)
         assertEquals(1, pipeline.countedBarriers[0].getErrorCount())
         assertEquals(3, pipeline.countedBarriers[0].getCapacity())

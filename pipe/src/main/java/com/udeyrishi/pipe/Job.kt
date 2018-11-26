@@ -10,17 +10,17 @@ import com.udeyrishi.pipe.util.Identifiable
 
 /**
  * Represents a chunk of work that is being processed in a pipeline. When an item gets
- * pushed into a pipeline, the pipeline returns a `Job` to track its progress.
+ * pushed into a pipeline, the pipeline returns a [Job] to track its progress.
  */
 class Job<T : Any> internal constructor(private val orchestrator: Orchestrator<Passenger<T>>) : Identifiable by orchestrator {
     /**
-     * A `LiveData` representing the state of the job.
+     * A [LiveData] representing the state of the job.
      */
     val state: LiveData<State>
         get() = orchestrator.state
 
     /**
-     * The final result of the job. Is set to a non-null value once the state reaches `Terminal.Success` value.
+     * The final result of the job. Is set to a non-null value once the state reaches [com.udeyrishi.pipe.State.Terminal.Success] value.
      */
     val result: T?
         get() = orchestrator.result?.data

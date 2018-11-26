@@ -9,5 +9,8 @@ import java.util.UUID
  * Represents an object that can be uniquely identified by its UUID.
  */
 interface Identifiable {
+    /**
+     * The [UUID] for this object.
+     */
     val uuid: UUID
 }

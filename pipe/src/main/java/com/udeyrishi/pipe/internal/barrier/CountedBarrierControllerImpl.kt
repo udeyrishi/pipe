@@ -12,12 +12,12 @@ import kotlin.coroutines.CoroutineContext
 
 /**
  * The launchContext is only needed if this controller deems necessary to create a new coroutine. Usually, it'll be able to reuse existing acting coroutines.
- * However, the user may update the capacity retroactively via `setCapacity`. If the new capacity == the number of arrivals at that point, we'll need to unblock the barrier.
- * This unblocking action may need to perform a `onBarrierLiftedAction` suspending action. Therefore, a new coroutine would be needed.
+ * However, the user may update the capacity retroactively via [setCapacity]. If the new capacity == the number of arrivals at that point, we'll need to unblock the barrier.
+ * This unblocking action may need to perform a [onBarrierLiftedAction] suspending action. Therefore, a new coroutine would be needed.
  *
  * Once that action is performed, the pipelines would be resumed on their original coroutines.
  *
- * TL;DR: ensure that the `launchContext` is the same as the one you used for creating the pipeline.
+ * TL;DR: ensure that the [launchContext] is the same as the one you used for creating the pipeline.
  */
 internal class CountedBarrierControllerImpl<T : Comparable<T>>(private val launchContext: CoroutineContext, private var capacity: Int = Int.MAX_VALUE, private val onBarrierLiftedAction: Step<List<T>>? = null) : BarrierController<T>, CountedBarrierController {
     private val lock = Any()
@@ -142,12 +142,12 @@ internal class CountedBarrierControllerImpl<T : Comparable<T>>(private val launc
         /**
          * The barrier-lift action must always be done on a separate coroutine:
          *
-         * - It may get called in response to `notifyError`. This is coming from a sibling's coroutine,
-         *   and we cannot simply hog it for potentially executing the `onBarrierLiftAction`. Moreover, if
+         * - It may get called in response to [notifyError]. This is coming from a sibling's coroutine,
+         *   and we cannot simply hog it for potentially executing the [onBarrierLiftedAction]. Moreover, if
          *   we use one of the existing coroutines, and the orchestrator decides to retry the barrier,
-         *   we'll get suspended in the middle of the `markAsFailed` loop. So just use a different one. (1)
+         *   we'll get suspended in the middle of the [Barrier.markAsFailed] loop. So just use a different one. (1)
          *
-         * - It may get called in response to `setCapacity`. This will usually be called from the UI thread
+         * - It may get called in response to [setCapacity]. This will usually be called from the UI thread
          *   anyway, so we need to let go of it ASAP.
          *
          * - It may get called when the last barrier is interrupted. Same issue there as (1) above.

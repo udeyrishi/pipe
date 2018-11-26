@@ -4,15 +4,19 @@
 package com.udeyrishi.pipe
 
 /**
- * A "barrier" in pipe has roughly the same meaning as the standard CS Barrier(https://en.wikipedia.org/wiki/Barrier_(computer_science)).
+ * A "barrier" in pipe has roughly the same meaning as the standard CS Barrier.
  *
- * - It can be conceptualized as a check-point, where all parallel `Job`s _may_ stop before continuing.
- * - The condition controlling whether a given `Job` will stop at the barrier or not is dependent on the barrier's controller (see below).
+ * See (https://en.wikipedia.org/wiki/Barrier_(computer_science)).
+ *
+ * - It can be conceptualized as a check-point, where all parallel [Job] _may_ stop before continuing.
+ * - The condition controlling whether a given [Job] will stop at the barrier or not is dependent on the barrier's controller (see below).
  * - The continuation condition is also dependent on the barrier's controller.
  */
 
 /**
- * This barrier controller models the textbook Barrier(https://en.wikipedia.org/wiki/Barrier_(computer_science)) for jobs.
+ * This barrier controller models the textbook Barrier for jobs.
+ *
+ * See wikipedia: (https://en.wikipedia.org/wiki/Barrier_(computer_science))
  *
  * When this controller is used with a barrier:
  * - The barrier has a max capacity.
@@ -30,17 +34,28 @@ package com.udeyrishi.pipe
  * and allow them to continue independently afterwards. So an n -> 1 -> n shaped flow.
  */
 interface CountedBarrierController {
+    /**
+     * The number of jobs that have arrived this barrier so far.
+     */
     val arrivalCount: Int
 
+    /**
+     * The max capacity of this controller, after which it'll lift the barrier.
+     */
     fun getCapacity(): Int
+
+    /**
+     * The number of jobs that were expected to reach this controller, but have failed. These will
+     * be ignored in the `onBarrierLiftedAction`.
+     */
     fun getErrorCount(): Int
 
     /**
      * Updates the barrier's capacity.
      *
-     * - If the arrivalCount is `n`, the new capacity must be >= n. Else, `IllegalStateException` would be thrown.
+     * - If the arrivalCount is `n`, the new capacity must be >= n. Else, [IllegalStateException] would be thrown.
      * - If the new capacity == arrival count, the barrier will also be lifted.
-     * - If more jobs arrive after the barrier have been lifted (i.e., arrivalCount had reached the capacity), `IllegalStateException` would be thrown.
+     * - If more jobs arrive after the barrier have been lifted (i.e., arrivalCount had reached the capacity), [IllegalStateException] would be thrown.
      *
      * It's usually recommended to start with a really high number (Int.MAX_VALUE) as the capacity, and update once you conclusively
      * know what the arrival count is going to be.
@@ -49,12 +64,14 @@ interface CountedBarrierController {
 }
 
 /**
- * A simple barrier controller that lifts the barrier when `lift()` is called.
- *
- * Once `lift()` is called:
- * - All pending jobs will be lifted immediately.
- * - Any future arrivals will continue through the barrier without stopping at all.
+ * A simple barrier controller that lifts the barrier when [lift] is called.
  */
 interface ManualBarrierController {
+
+    /**
+     * Lifts the barrier.
+     * - All pending jobs will be lifted immediately.
+     * - Any future arrivals will continue through the barrier without stopping at all.
+     */
     fun lift()
 }
