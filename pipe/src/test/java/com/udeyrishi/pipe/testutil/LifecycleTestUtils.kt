@@ -6,7 +6,6 @@ package com.udeyrishi.pipe.testutil
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
-import androidx.lifecycle.Observer
 
 internal class MockLifecycleOwner : LifecycleOwner {
     private val registry = LifecycleRegistry(this).apply {
@@ -16,14 +15,4 @@ internal class MockLifecycleOwner : LifecycleOwner {
     }
 
     override fun getLifecycle() = registry
-}
-
-internal class TapeLiveDataObserver<T> : Observer<T> {
-    private val _items = mutableListOf<T>()
-    val items: List<T>
-        get() = _items
-
-    override fun onChanged(t: T) {
-        _items.add(t)
-    }
 }

@@ -18,7 +18,6 @@ import com.udeyrishi.pipe.internal.steps.StepDescriptor
 import com.udeyrishi.pipe.internal.util.createEffectiveContext
 import com.udeyrishi.pipe.testutil.DefaultTestDispatcher
 import com.udeyrishi.pipe.testutil.MockLifecycleOwner
-import com.udeyrishi.pipe.testutil.TapeLiveDataObserver
 import com.udeyrishi.pipe.testutil.assertIs
 import com.udeyrishi.pipe.testutil.waitTill
 import com.udeyrishi.pipe.util.Identifiable
@@ -30,7 +29,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Assert.fail
 import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
@@ -81,7 +79,7 @@ class OrchestratorTest {
     }
 
     @Test
-    fun `ticks state machine correctly`() {
+    fun `goes to completion if no errors`() {
         val steps = (0..5).map { i ->
             StepDescriptor<IdentifiableString>("step$i", 1) {
                 IdentifiableString("${it.data}->$i", it.uuid)
@@ -92,34 +90,10 @@ class OrchestratorTest {
         val orchestrator = Orchestrator(input, steps.iterator(), launchContext = dispatcher.createEffectiveContext())
         assertNull(orchestrator.result)
 
-        val observer = TapeLiveDataObserver<State>()
-        orchestrator.state.observe(MockLifecycleOwner(), observer)
-
         orchestrator.start()
 
         orchestrator.state.waitTill { it is State.Terminal.Success }
         assertEquals(IdentifiableString("in->0->1->2->3->4->5", input.uuid), orchestrator.result)
-
-        observer.items.forEachIndexed { i, state ->
-            when (i) {
-                0 -> assertEquals(State.Scheduled, state)
-                1, 3, 5, 7, 9, 11 -> {
-                    // steps 1-5 start
-                    state.assertIs<State.Running.Attempting>()
-                    assertEquals("step${(i - 1) / 2}", (state as State.Running).step)
-                }
-                2, 4, 6, 8, 10, 12 -> {
-                    // steps 1-5 end
-                    state.assertIs<State.Running.AttemptSuccessful>()
-                    assertEquals("step${(i - 2) / 2}", (state as State.Running).step)
-                }
-                13 -> {
-                    // pipeline completion
-                    assertEquals(State.Terminal.Success, state)
-                }
-                else -> fail("Counter should've never reached $i.")
-            }
-        }
     }
 
     @Test
