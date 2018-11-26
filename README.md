@@ -2,6 +2,8 @@
 
 -----------------
 [![Build Status](https://travis-ci.org/udeyrishi/pipe.svg?branch=master)](https://travis-ci.org/udeyrishi/pipe)
+[![Download](https://api.bintray.com/packages/udeyrishi/pipe/pipe/images/download.svg)](https://bintray.com/udeyrishi/pipe/pipe/_latestVersion)
+
 
 Pipe is an Android library for building pipelines for executing background tasks.
 
@@ -9,19 +11,6 @@ Pipe is an Android library for building pipelines for executing background tasks
 * **Powerful:** Supports both simple steps and complex synchronization structures like barriers and aggregators.
 * **Resilient:** Pipe has resiliency baked-in. Has support for step retries in case of failures.
 * **Android arch-friendly:** The API is designed with the Android architecture components in mind, making integration into your apps easy.
-
-
-### Getting started
-
-To add Pipe to your Gradle project:
-
-```groovy
-dependencies {
-    implementation "com.udeyrishi:pipe:${versions.pipe}"
-}
-```
-
-You can see the release versions on the [releases](https://github.com/udeyrishi/pipe/releases) page.
 
 
 ### Example
@@ -128,8 +117,6 @@ someButton.setOnClickListener {
 The progress of a job is encoded via a state machine:
 
 <img src="docs/assets/state_machine.svg"/>
-
-See the [source](pipe/src/main/java/com/udeyrishi/pipe/State.kt) for more details.
 
 ### Learn more
 
