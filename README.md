@@ -127,24 +127,7 @@ someButton.setOnClickListener {
 
 The progress of a job is encoded via a state machine:
 
-```
-                                                --------------------------(yes; ++i)------------------------------------------
-                                                |                                                                             |
-                                                v                                                                             |
- Scheduled(•) --- (Started; i = 0) --> Running.Attempting(i) ---- (Successful) ----> Running.AttemptSuccessful(i) ---- (Has next step?) ----(no)----> Terminal.Success(⍟)
-     |                                          |     ^                                          |
- (Interrupted)                              (Failed)  |                                          |
-     |                                          |     |--------------------                      |
-     |                                          |                         |                      |
-     v                                          V                         |                (Interrupted)
- Terminal.Failure(⍟) <--(Interrupted)--Running.AttemptFailed(i)           |                      |
-     ^                                          |                         |                      |
-     |                                  (Has more attempts?)              |                      |
-     |<---------(no)------------------------<---|-->------(yes)---------->|                      |
-     |                                                                                           |
-     |<------------------------------------------------------------------------------------------V
-
-```
+<img src="docs/assets/state_machine.svg"/>
 
 See the [source](pipe/src/main/java/com/udeyrishi/pipe/State.kt) for more details.
 
