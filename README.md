@@ -83,12 +83,12 @@ And then schedule jobs into it:
 const val JOB_TAG = "IMAGE_TRANSFORM_JOBS"
 
 fun Pipeline<ImagePipelineMember>.createImageJobs(imageUrls: List<String>): List<Job<ImagePipelineMember>> {
-    pipeline.countedBarriers.forEach {
+    countedBarriers.forEach {
         it.setCapacity(imageUrls.size)
     }
 
     return imageUrls.map { url ->
-        pipeline.push(ImagePipelineMember(url = url), tag = JOB_TAG)
+        push(ImagePipelineMember(url = url), tag = JOB_TAG)
     }
 }
 ```
