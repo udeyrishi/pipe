@@ -24,7 +24,7 @@ Consider a use case where we want to construct the following pipeline:
 1. Scale the image to a 400px x 400px size
 1. Overdraw the scaled image on top if its sibling
 
-<img src="docs/assets/sample_app_demo.gif" width=300/> 
+<img src="docs/assets/sample_app_demo.gif" width=300/>
 
 Pipe uses a Kotlin DSL to declare pipeline schematics. We can express the above pipeline as:
 
@@ -121,4 +121,4 @@ The progress of a job is encoded via a state machine:
 
 ### Learn more
 
-To see a full Android app example using the above pipeline, see the [sample app](pipesample/).
+To see a full Android app example using the above pipeline, see the [sample app](pipesample/). Or see the javadocs [here](https://www.udeyrishi.com/pipe/).
