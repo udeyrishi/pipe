@@ -13,6 +13,7 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import com.udeyrishi.pipe.internal.util.createEffectiveContext
 import com.udeyrishi.pipe.testutil.DefaultTestDispatcher
 import kotlinx.coroutines.runBlocking
@@ -272,7 +273,17 @@ class CountedBarrierControllerTest {
 
     @Test
     fun `errors in onBarrierLiftedAction are conveyed to the barriers as step failures`() {
+        val markAsFailedWaiter = Waiter()
+
         val error = RuntimeException("Something went wrong")
+
+        barriers.forEach { barrier ->
+            whenever(barrier.markAsFailed(isA<CountedBarrierControllerImpl.BarrierLiftedActionException>())).thenAnswer {
+                @Suppress("CAST_NEVER_SUCCEEDS")
+                markAsFailedWaiter.assertEquals(error, (it.arguments[0] as CountedBarrierControllerImpl.BarrierLiftedActionException).cause)
+                markAsFailedWaiter.resume()
+            }
+        }
 
         val onBarrierLiftedActionWaiter = Waiter()
         controller = CountedBarrierControllerImpl(capacity = 3, launchContext = dispatcher.createEffectiveContext()) {
@@ -287,11 +298,7 @@ class CountedBarrierControllerTest {
 
         onBarrierLiftedActionWaiter.await(1000)
 
-        barriers.forEach { barrier ->
-            verify(barrier).markAsFailed(argWhere {
-                it is CountedBarrierControllerImpl.BarrierLiftedActionException && it.cause == error
-            })
-        }
+        markAsFailedWaiter.await(5000, barriers.size)
     }
 
     @Test(expected = IllegalArgumentException::class)
