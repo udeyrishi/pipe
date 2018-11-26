@@ -16,6 +16,7 @@ buildscript {
                 ],
                 'mockito_kotlin': '2.0.0',
                 'publish': [
+                        'dokka': '0.9.17',
                         'maven_plugin': '2.1',
                         'bintray_plugin': '1.8.4'
                 ],
@@ -53,6 +54,7 @@ buildscript {
                 ],
                 'mockito_kotlin': "com.nhaarman.mockitokotlin2:mockito-kotlin:${versions.mockito_kotlin}",
                 'publish': [
+                        'dokka': "org.jetbrains.dokka:dokka-android-gradle-plugin:${versions.publish.dokka}",
                         'maven_plugin': "com.github.dcendents:android-maven-gradle-plugin:${versions.publish.maven_plugin}",
                         'bintray_plugin': "com.jfrog.bintray.gradle:gradle-bintray-plugin:${versions.publish.bintray_plugin}"
                 ],
@@ -72,6 +74,7 @@ buildscript {
         classpath depends.android.gradle_plugin
         classpath depends.publish.maven_plugin
         classpath depends.publish.bintray_plugin
+        classpath depends.publish.dokka
     }
 }
 

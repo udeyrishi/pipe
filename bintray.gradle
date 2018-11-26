@@ -1,6 +1,8 @@
 group = publishedGroupId
 version = libraryVersion
 
+apply plugin: 'org.jetbrains.dokka-android'
+
 install {
     repositories.mavenInstaller {
         pom.project {
@@ -39,15 +41,18 @@ task sourcesJar(type: Jar) {
     from android.sourceSets.main.java.srcDirs
 }
 
-task javadoc(type: Javadoc) {
-    source = android.sourceSets.main.java.srcDirs
-    excludes = ['**/*.kt'] // temporary, until the kdocs are sorted out
-    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
-}
+ext {
+    android {
+        dokka {
+            outputFormat = 'javadoc'
+            outputDirectory = "$buildDir/javadoc"
+        }
 
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
-    from javadoc.destinationDir
+        task javadocJar(type: Jar, dependsOn: dokka) {
+            classifier = 'javadoc'
+            from "$buildDir/javadoc"
+        }
+    }
 }
 
 artifacts {
