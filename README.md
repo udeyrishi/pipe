@@ -2,6 +2,7 @@
 
 -----------------
 [![Build Status](https://travis-ci.org/udeyrishi/pipe.svg?branch=master)](https://travis-ci.org/udeyrishi/pipe)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Download](https://api.bintray.com/packages/udeyrishi/pipe/pipe/images/download.svg)](https://bintray.com/udeyrishi/pipe/pipe/_latestVersion)
 
 
