@@ -28,3 +28,13 @@ internal fun Throwable.detailedToString(): String {
 
     return sb.toString()
 }
+
+internal inline fun <reified T : Throwable, R> repeatUntilSucceeds(action: () -> R): R {
+    while (true) {
+        try {
+            return action()
+        } catch (e: Throwable) {
+            if (e !is T) throw e
+        }
+    }
+}
