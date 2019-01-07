@@ -5,9 +5,7 @@ package com.udeyrishi.pipe
 
 import android.os.Handler
 import android.os.Looper
-import com.udeyrishi.pipe.DefaultAndroidDispatcher.onInternalPipeError
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 
 /**
  * Represents a dispatcher that will be used to start all pipe coroutines.
@@ -31,20 +29,19 @@ interface PipelineDispatcher {
 }
 
 /**
- * A standard implementation of [PipelineDispatcher] that can be used by most apps.
- * Executes all the jobs on [Dispatchers.IO], and throws any internal errors on the Android UI thread.
- *
- * This is only meant as an example. In real production apps, you might want to replace [onInternalPipeError]
- * with an implementation that logs the exceptions to some error reporting service.
+ * Converts a [CoroutineDispatcher] to a [PipelineDispatcher], such that any unhandled exceptions
+ * are thrown on the Android UI thread.
  */
-object DefaultAndroidDispatcher : PipelineDispatcher {
-    private val handler = Handler(Looper.getMainLooper())
+fun CoroutineDispatcher.toStrictAndroidPipeDispatcher(): PipelineDispatcher {
+    return object : PipelineDispatcher {
+        private val handler = Handler(Looper.getMainLooper())
 
-    override val coroutineDispatcher: CoroutineDispatcher = Dispatchers.IO
+        override val coroutineDispatcher = this@toStrictAndroidPipeDispatcher
 
-    override fun onInternalPipeError(throwable: Throwable) {
-        handler.post {
-            throw throwable
+        override fun onInternalPipeError(throwable: Throwable) {
+            handler.post {
+                throw throwable
+            }
         }
     }
 }

@@ -9,6 +9,7 @@ import com.udeyrishi.pipe.internal.util.createEffectiveContext
 import com.udeyrishi.pipe.repository.InMemoryRepository
 import com.udeyrishi.pipe.repository.MutableRepository
 import com.udeyrishi.pipe.util.Logger
+import kotlinx.coroutines.Dispatchers
 
 /**
  * A pipeline is a sequence of steps (and barriers, optionally) used to convert an input to an output.
@@ -84,7 +85,7 @@ fun <T : Any> buildPipeline(stepDefiner: (PipelineBuilder<T>.() -> Unit)): Pipel
  */
 class PipelineBuilder<T : Any> {
     private val operations = mutableListOf<PipelineOperationSpec<T>>()
-    private var dispatcher: PipelineDispatcher = DefaultAndroidDispatcher
+    private var dispatcher: PipelineDispatcher = Dispatchers.IO.toStrictAndroidPipeDispatcher()
     private var repository: MutableRepository<in Job<T>> = InMemoryRepository()
     private var logger: Logger? = null
 
@@ -143,7 +144,8 @@ class PipelineBuilder<T : Any> {
     }
 
     /**
-     * Sets the dispatcher that this pipeline will use. Uses [DefaultAndroidDispatcher] by default.
+     * Sets the dispatcher that this pipeline will use. Uses the [Dispatchers.IO] coroutine dispatcher
+     * by default, and converts it to a pipe-compatible dispatcher via [toStrictAndroidPipeDispatcher].
      */
     fun setDispatcher(dispatcher: PipelineDispatcher) = apply {
         this.dispatcher = dispatcher

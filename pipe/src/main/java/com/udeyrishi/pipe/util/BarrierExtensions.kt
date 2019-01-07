@@ -3,10 +3,11 @@
  */
 package com.udeyrishi.pipe.util
 
-import com.udeyrishi.pipe.DefaultAndroidDispatcher
 import com.udeyrishi.pipe.ManualBarrierController
 import com.udeyrishi.pipe.PipelineDispatcher
 import com.udeyrishi.pipe.internal.util.createEffectiveContext
+import com.udeyrishi.pipe.toStrictAndroidPipeDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -16,7 +17,7 @@ interface Cancellable {
     fun cancel()
 }
 
-fun ManualBarrierController.liftWhen(periodicityMillis: Long = 500L, pollingDispatcher: PipelineDispatcher = DefaultAndroidDispatcher, condition: suspend () -> Boolean): Cancellable {
+fun ManualBarrierController.liftWhen(periodicityMillis: Long = 500L, pollingDispatcher: PipelineDispatcher = Dispatchers.IO.toStrictAndroidPipeDispatcher(), condition: suspend () -> Boolean): Cancellable {
     val job = GlobalScope.launch(pollingDispatcher.createEffectiveContext()) {
         while (!condition() && isActive) {
             delay(periodicityMillis)
