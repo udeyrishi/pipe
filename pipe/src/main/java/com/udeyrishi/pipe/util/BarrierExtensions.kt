@@ -3,8 +3,12 @@
  */
 package com.udeyrishi.pipe.util
 
+import android.Manifest.permission.ACCESS_NETWORK_STATE
+import android.content.Context
+import androidx.annotation.RequiresPermission
 import com.udeyrishi.pipe.ManualBarrierController
 import com.udeyrishi.pipe.PipelineDispatcher
+import com.udeyrishi.pipe.internal.util.createConnectivityMonitor
 import com.udeyrishi.pipe.internal.util.createEffectiveContext
 import com.udeyrishi.pipe.toStrictAndroidPipeDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -31,4 +35,17 @@ fun ManualBarrierController.liftWhen(periodicityMillis: Long = 500L, pollingDisp
     return object : Cancellable {
         override fun cancel() = job.cancel()
     }
+}
+
+@RequiresPermission(ACCESS_NETWORK_STATE)
+fun ManualBarrierController.liftWhenHasInternet(context: Context) {
+    val connectivityMonitor = context.createConnectivityMonitor()
+    connectivityMonitor += {
+        if (it) {
+            connectivityMonitor.stop()
+            connectivityMonitor.clearObservers()
+            lift()
+        }
+    }
+    connectivityMonitor.start()
 }

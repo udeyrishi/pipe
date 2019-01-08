@@ -10,7 +10,6 @@ import com.nhaarman.mockitokotlin2.verify
 import com.udeyrishi.pipe.ManualBarrierController
 import com.udeyrishi.pipe.testutil.DefaultTestDispatcher
 import net.jodah.concurrentunit.Waiter
-import org.junit.After
 import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.fail
@@ -38,13 +37,6 @@ class BarrierExtensionTest {
         }
     }
 
-    private lateinit var cancellable: Cancellable
-
-    @After
-    fun teardown() {
-        cancellable.cancel()
-    }
-
     @Test
     fun `lifts when condition returns true`() {
         val liftWaiter = Waiter()
@@ -57,7 +49,7 @@ class BarrierExtensionTest {
         var shouldLift = false
         val attemptWaiter = Waiter()
 
-        cancellable = manualBarrierController.liftWhen(pollingDispatcher = dispatcher) {
+        manualBarrierController.liftWhen(pollingDispatcher = dispatcher) {
             attemptWaiter.resume()
             shouldLift
         }
@@ -74,7 +66,7 @@ class BarrierExtensionTest {
         val attemptWaiter = Waiter()
         var attempts = 0
 
-        cancellable = manualBarrierController.liftWhen(pollingDispatcher = dispatcher) {
+        val cancellable = manualBarrierController.liftWhen(pollingDispatcher = dispatcher) {
             attemptWaiter.resume()
             if (++attempts > 2) {
                 fail("Should not have attempted more than 2x")
