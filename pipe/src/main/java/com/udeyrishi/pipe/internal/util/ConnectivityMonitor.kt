@@ -31,16 +31,10 @@ internal abstract class ConnectivityMonitor(protected val context: Context) : Ob
     final override fun clearObservers() = connected.clearObservers()
 
     @RequiresPermission(ACCESS_NETWORK_STATE)
-    fun start() {
-        postUpdate(context.connectivityManager.isConnected)
-        onStarted()
-    }
+    abstract fun start()
 
     @RequiresPermission(ACCESS_NETWORK_STATE)
     abstract fun stop()
-
-    @RequiresPermission(ACCESS_NETWORK_STATE)
-    protected abstract fun onStarted()
 
     protected fun postUpdate(connected: Boolean) = this.connected.postValue(connected)
 }
@@ -66,7 +60,7 @@ private class ICSConnectivityMonitor @RequiresPermission(ACCESS_NETWORK_STATE) c
 
     @Suppress("DEPRECATION")
     @RequiresPermission(ACCESS_NETWORK_STATE)
-    override fun onStarted() {
+    override fun start() {
         context.registerReceiver(connectivityReceiver, IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION))
     }
 
@@ -79,7 +73,7 @@ private class LollipopConnectivityMonitor @RequiresPermission(ACCESS_NETWORK_STA
     private val networkCallback = createNetworkCallback(::postUpdate)
 
     @RequiresPermission(ACCESS_NETWORK_STATE)
-    override fun onStarted() = context.connectivityManager.registerNetworkCallback(NetworkRequest.Builder().build(), networkCallback)
+    override fun start() = context.connectivityManager.registerNetworkCallback(NetworkRequest.Builder().build(), networkCallback)
 
     @RequiresPermission(ACCESS_NETWORK_STATE)
     override fun stop() = context.connectivityManager.unregisterNetworkCallback(networkCallback)
@@ -90,14 +84,14 @@ private class NougatConnectivityMonitor @RequiresPermission(ACCESS_NETWORK_STATE
     private val networkCallback = createNetworkCallback(::postUpdate)
 
     @RequiresPermission(ACCESS_NETWORK_STATE)
-    override fun onStarted() = context.connectivityManager.registerDefaultNetworkCallback(networkCallback)
+    override fun start() = context.connectivityManager.registerDefaultNetworkCallback(networkCallback)
 
     @RequiresPermission(ACCESS_NETWORK_STATE)
     override fun stop() = context.connectivityManager.unregisterNetworkCallback(networkCallback)
 }
 
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-private inline fun createNetworkCallback(crossinline onNetworkEvent: (connected: Boolean) -> Unit) = object : ConnectivityManager.NetworkCallback() {
+private fun createNetworkCallback(onNetworkEvent: (connected: Boolean) -> Unit) = object : ConnectivityManager.NetworkCallback() {
     override fun onAvailable(network: Network?) = onNetworkEvent(true)
     override fun onLost(network: Network?) = onNetworkEvent(false)
 }
