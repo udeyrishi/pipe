@@ -5,8 +5,11 @@ package com.udeyrishi.pipe.internal.barrier
 
 import com.udeyrishi.pipe.ManualBarrierController
 import com.udeyrishi.pipe.internal.util.immutableAfterSet
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlin.coroutines.CoroutineContext
 
-internal class ManualBarrierControllerImpl<T : Any> : BarrierController<T>, ManualBarrierController {
+internal class ManualBarrierControllerImpl<T : Any>(private val launchContext: CoroutineContext) : BarrierController<T>, ManualBarrierController {
     private val lock = Any()
     // Registered barrier to whether it's blocked or not
     private val unliftedBarriers = mutableMapOf<Barrier<T>, Boolean>()
@@ -41,13 +44,17 @@ internal class ManualBarrierControllerImpl<T : Any> : BarrierController<T>, Manu
     }
 
     override fun lift() {
-        synchronized(lock) {
-            if (!lifted) {
-                lifted = true
-                unliftedBarriers.forEach { (barrier, _) ->
-                    barrier.lift()
+        // lift is most likely called on the UI thread. Since we acquire a bunch of locks in this process,
+        // donn't slow the UI down.
+        GlobalScope.launch(launchContext) {
+            synchronized(lock) {
+                if (!lifted) {
+                    lifted = true
+                    unliftedBarriers.forEach { (barrier, _) ->
+                        barrier.lift()
+                    }
+                    unliftedBarriers.clear()
                 }
-                unliftedBarriers.clear()
             }
         }
     }

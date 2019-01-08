@@ -27,7 +27,7 @@ internal class PipelineImpl<T : Any>(private val repository: MutableRepository<i
                 .filterIsInstance<PipelineOperationSpec.Barrier<T>>()
                 .map {
                     when (it) {
-                        is PipelineOperationSpec.Barrier.Manual<T> -> ManualBarrierControllerImpl<Passenger<T>>()
+                        is PipelineOperationSpec.Barrier.Manual<T> -> ManualBarrierControllerImpl<Passenger<T>>(launchContext)
                         is PipelineOperationSpec.Barrier.Counted<T> -> CountedBarrierControllerImpl(capacity = it.capacity, onBarrierLiftedAction = it.onBarrierLiftedAction?.toPassengerStep(), launchContext = launchContext)
                     }
                 }

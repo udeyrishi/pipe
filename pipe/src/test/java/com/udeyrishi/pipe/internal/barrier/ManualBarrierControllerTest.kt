@@ -4,11 +4,19 @@
 package com.udeyrishi.pipe.internal.barrier
 
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.doAnswer
+import com.nhaarman.mockitokotlin2.isA
 import com.nhaarman.mockitokotlin2.isNull
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
+import com.udeyrishi.pipe.internal.util.createEffectiveContext
+import com.udeyrishi.pipe.testutil.DefaultTestDispatcher
 import kotlinx.coroutines.runBlocking
+import net.jodah.concurrentunit.Waiter
+import org.junit.AfterClass
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,17 +30,43 @@ class ManualBarrierControllerTest {
     @get:Rule
     val rule: MockitoRule = MockitoJUnit.rule()
 
-    @Mock
-    internal lateinit var mockBarrier1: Barrier<String>
-
-    @Mock
-    internal lateinit var mockBarrier2: Barrier<String>
-
+    private lateinit var liftWaiter1: Waiter
+    private lateinit var liftWaiter2: Waiter
+    private lateinit var mockBarrier1: Barrier<String>
+    private lateinit var mockBarrier2: Barrier<String>
     private lateinit var controller: ManualBarrierControllerImpl<String>
+
+    companion object {
+        private lateinit var dispatcher: DefaultTestDispatcher
+
+        @JvmStatic
+        @BeforeClass
+        fun setupClass() {
+            dispatcher = DefaultTestDispatcher()
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun teardown() {
+            dispatcher.verify()
+        }
+    }
 
     @Before
     fun setup() {
-        controller = ManualBarrierControllerImpl()
+        liftWaiter1 = Waiter()
+        liftWaiter2 = Waiter()
+        mockBarrier1 = mock {
+            on { lift(isNull()) } doAnswer {
+                liftWaiter1.resume()
+            }
+        }
+        mockBarrier2 = mock {
+            on { lift(isNull()) } doAnswer {
+                liftWaiter2.resume()
+            }
+        }
+        controller = ManualBarrierControllerImpl(dispatcher.createEffectiveContext())
     }
 
     @Test
@@ -42,9 +76,12 @@ class ManualBarrierControllerTest {
         verify(mockBarrier2, never()).lift(any())
 
         controller.onBarrierCreated(mockBarrier1)
-        verify(mockBarrier1).lift(isNull())
-
         controller.onBarrierCreated(mockBarrier2)
+
+        liftWaiter1.await(500)
+        liftWaiter2.await(500)
+
+        verify(mockBarrier1).lift(isNull())
         verify(mockBarrier2).lift(isNull())
     }
 
@@ -57,6 +94,10 @@ class ManualBarrierControllerTest {
         verify(mockBarrier2, never()).lift(any())
 
         controller.lift()
+
+        liftWaiter1.await(500)
+        liftWaiter2.await(500)
+
         verify(mockBarrier1).lift(isNull())
         verify(mockBarrier2).lift(isNull())
     }
@@ -69,12 +110,14 @@ class ManualBarrierControllerTest {
         verify(mockBarrier1, never()).lift(any())
         verify(mockBarrier2, never()).lift(any())
 
-        runBlocking {
-            controller.onBarrierBlocked(mockBarrier1)
-            controller.onBarrierBlocked(mockBarrier2)
-        }
+        controller.onBarrierBlocked(mockBarrier1)
+        controller.onBarrierBlocked(mockBarrier2)
 
         controller.lift()
+
+        liftWaiter1.await(500)
+        liftWaiter2.await(500)
+
         verify(mockBarrier1).lift(isNull())
         verify(mockBarrier2).lift(isNull())
     }
@@ -93,13 +136,14 @@ class ManualBarrierControllerTest {
         verify(mockBarrier1, never()).lift(any())
         verify(mockBarrier2, never()).lift(any())
 
-        runBlocking {
-            controller.onBarrierBlocked(mockBarrier1)
-            controller.onBarrierBlocked(mockBarrier2)
-        }
+        controller.onBarrierBlocked(mockBarrier1)
+        controller.onBarrierBlocked(mockBarrier2)
 
         controller.lift()
         controller.lift()
+
+        liftWaiter1.await(500)
+        liftWaiter2.await(500)
 
         verify(mockBarrier1).lift(isNull())
         verify(mockBarrier2).lift(isNull())
@@ -112,7 +156,7 @@ class ManualBarrierControllerTest {
     }
 
     @Test(expected = IllegalArgumentException::class)
-    fun `cannot mark a barrier as blocked 2x`() = runBlocking {
+    fun `cannot mark a barrier as blocked 2x`() {
         controller.onBarrierCreated(mockBarrier1)
         controller.onBarrierBlocked(mockBarrier1)
         controller.onBarrierBlocked(mockBarrier1)
@@ -128,13 +172,13 @@ class ManualBarrierControllerTest {
         controller.onBarrierCreated(mockBarrier1)
         controller.onBarrierCreated(mockBarrier2)
         controller.onBarrierInterrupted(mockBarrier2)
-        runBlocking {
-            controller.onBarrierBlocked(mockBarrier1)
-        }
+        controller.onBarrierBlocked(mockBarrier1)
 
         verify(mockBarrier1, never()).lift(any())
         verify(mockBarrier2, never()).lift(any())
         controller.lift()
+
+        liftWaiter1.await(500)
 
         verify(mockBarrier1).lift(isNull())
         verify(mockBarrier2, never()).lift(any())
