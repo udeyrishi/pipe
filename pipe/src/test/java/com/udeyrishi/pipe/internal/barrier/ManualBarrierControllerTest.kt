@@ -35,7 +35,6 @@ class ManualBarrierControllerTest {
     @get:Rule
     val dispatcherRule = TestDispatcherRule()
 
-
     @Before
     fun setup() {
         liftWaiter1 = Waiter()

@@ -5,7 +5,6 @@ package com.udeyrishi.pipe.util
 
 import android.Manifest.permission.ACCESS_NETWORK_STATE
 import android.app.Application
-import android.content.Context
 import androidx.annotation.RequiresPermission
 import com.udeyrishi.pipe.ManualBarrierController
 import com.udeyrishi.pipe.PipelineDispatcher
