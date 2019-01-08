@@ -5,13 +5,11 @@ package com.udeyrishi.pipe
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.udeyrishi.pipe.internal.Orchestrator
-import com.udeyrishi.pipe.testutil.DefaultTestDispatcher
+import com.udeyrishi.pipe.testutil.TestDispatcherRule
 import com.udeyrishi.pipe.testutil.assertIs
 import com.udeyrishi.pipe.testutil.waitTill
-import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,28 +20,15 @@ class PipelineTest {
     @get:Rule
     val instantExecutionRule = InstantTaskExecutorRule()
 
-    companion object {
-        private lateinit var dispatcher: DefaultTestDispatcher
-
-        @JvmStatic
-        @BeforeClass
-        fun setup() {
-            dispatcher = DefaultTestDispatcher()
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun teardown() {
-            dispatcher.verify()
-        }
-    }
+    @get:Rule
+    val dispatcherRule = TestDispatcherRule()
 
     @Test
     fun `DSL api works`() {
         lateinit var aggregated: List<Int>
 
         val pipeline = buildPipeline<Int> {
-            setDispatcher(dispatcher)
+            setDispatcher(dispatcherRule.dispatcher)
 
             addStep("step 1") {
                 it + 1
@@ -116,7 +101,7 @@ class PipelineTest {
                 .addStep("Step 4") {
                     it + 4
                 }
-                .setDispatcher(dispatcher)
+                .setDispatcher(dispatcherRule.dispatcher)
                 .build()
 
         val jobs = mutableListOf(
@@ -143,7 +128,7 @@ class PipelineTest {
     @Test
     fun `interrupting one job does not interrupt others`() {
         val pipeline = buildPipeline<Int> {
-            setDispatcher(dispatcher)
+            setDispatcher(dispatcherRule.dispatcher)
 
             addManualBarrier("some barrier")
 
@@ -173,7 +158,7 @@ class PipelineTest {
     @Test
     fun `interrupting one job blocked on a manual barrier does not interrupt other jobs blocked on the same barrier`() {
         val pipeline = buildPipeline<Int> {
-            setDispatcher(dispatcher)
+            setDispatcher(dispatcherRule.dispatcher)
 
             addManualBarrier("some barrier")
 
@@ -204,7 +189,7 @@ class PipelineTest {
     @Test
     fun `interrupting one job blocked on a counted barrier also interrupts the sibling jobs`() {
         val pipeline = buildPipeline<Int> {
-            setDispatcher(dispatcher)
+            setDispatcher(dispatcherRule.dispatcher)
 
             addCountedBarrier("some barrier", capacity = 3)
 
@@ -233,7 +218,7 @@ class PipelineTest {
     fun `error in one job does not affect its siblings if the error appears before the counted barrier`() {
         lateinit var barrierList: List<Int>
         val pipeline = buildPipeline<Int> {
-            setDispatcher(dispatcher)
+            setDispatcher(dispatcherRule.dispatcher)
 
             addStep("my step 1", attempts = 1L) {
                 if (it == 1) {
@@ -281,7 +266,7 @@ class PipelineTest {
     fun `error in one job does not affect its siblings if the error appears after the counted barrier`() {
         lateinit var barrierList: List<Int>
         val pipeline = buildPipeline<Int> {
-            setDispatcher(dispatcher)
+            setDispatcher(dispatcherRule.dispatcher)
 
             addStep("my step 1", attempts = 1L) {
                 it + 1
@@ -326,7 +311,7 @@ class PipelineTest {
     @Test
     fun `error in one job does not affect its sibling if they share a manual barrier`() {
         val pipeline = buildPipeline<Int> {
-            setDispatcher(dispatcher)
+            setDispatcher(dispatcherRule.dispatcher)
 
             addStep("my step 1", attempts = 1L) {
                 if (it == 1) {
@@ -370,7 +355,7 @@ class PipelineTest {
     fun `retries failures in counted barrier onBarrierLiftedAction`() {
         var attemptNum = 0
         val pipeline = buildPipeline<Int> {
-            setDispatcher(dispatcher)
+            setDispatcher(dispatcherRule.dispatcher)
             addCountedBarrier(name = "My barrier", capacity = 2, attempts = 5) { input ->
                 if (++attemptNum < 5) {
                     throw RuntimeException("BOOM!")
@@ -395,7 +380,7 @@ class PipelineTest {
     fun `failure in onBarrierLiftedAction doesn't cause it to be executed again`() {
         var onBarrierLiftedActionCount = 0
         val pipeline = buildPipeline<Int> {
-            setDispatcher(dispatcher)
+            setDispatcher(dispatcherRule.dispatcher)
             addCountedBarrier(name = "My barrier", capacity = 2, attempts = 1) {
                 ++onBarrierLiftedActionCount
                 throw RuntimeException("BOOM!")

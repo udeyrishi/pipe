@@ -8,34 +8,19 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.udeyrishi.pipe.ManualBarrierController
-import com.udeyrishi.pipe.testutil.DefaultTestDispatcher
+import com.udeyrishi.pipe.testutil.TestDispatcherRule
 import net.jodah.concurrentunit.Waiter
-import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.fail
-import org.junit.BeforeClass
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 @RunWith(JUnit4::class)
 class BarrierExtensionTest {
-
-    companion object {
-        private lateinit var dispatcher: DefaultTestDispatcher
-
-        @JvmStatic
-        @BeforeClass
-        fun setupClass() {
-            dispatcher = DefaultTestDispatcher()
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun teardownClass() {
-            dispatcher.verify()
-        }
-    }
+    @get:Rule
+    val dispatcherRule = TestDispatcherRule()
 
     @Test
     fun `lifts when condition returns true`() {
@@ -49,7 +34,7 @@ class BarrierExtensionTest {
         var shouldLift = false
         val attemptWaiter = Waiter()
 
-        manualBarrierController.liftWhen(pollingDispatcher = dispatcher) {
+        manualBarrierController.liftWhen(pollingDispatcher = dispatcherRule.dispatcher) {
             attemptWaiter.resume()
             shouldLift
         }
@@ -66,7 +51,7 @@ class BarrierExtensionTest {
         val attemptWaiter = Waiter()
         var attempts = 0
 
-        val cancellable = manualBarrierController.liftWhen(pollingDispatcher = dispatcher) {
+        val cancellable = manualBarrierController.liftWhen(pollingDispatcher = dispatcherRule.dispatcher) {
             attemptWaiter.resume()
             if (++attempts > 2) {
                 fail("Should not have attempted more than 2x")

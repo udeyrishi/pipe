@@ -5,23 +5,19 @@ package com.udeyrishi.pipe.internal.barrier
 
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
-import com.nhaarman.mockitokotlin2.isA
 import com.nhaarman.mockitokotlin2.isNull
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.udeyrishi.pipe.internal.util.createEffectiveContext
-import com.udeyrishi.pipe.testutil.DefaultTestDispatcher
+import com.udeyrishi.pipe.testutil.TestDispatcherRule
 import kotlinx.coroutines.runBlocking
 import net.jodah.concurrentunit.Waiter
-import org.junit.AfterClass
 import org.junit.Before
-import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.mockito.Mock
 import org.mockito.junit.MockitoJUnit
 import org.mockito.junit.MockitoRule
 
@@ -36,21 +32,9 @@ class ManualBarrierControllerTest {
     private lateinit var mockBarrier2: Barrier<String>
     private lateinit var controller: ManualBarrierControllerImpl<String>
 
-    companion object {
-        private lateinit var dispatcher: DefaultTestDispatcher
+    @get:Rule
+    val dispatcherRule = TestDispatcherRule()
 
-        @JvmStatic
-        @BeforeClass
-        fun setupClass() {
-            dispatcher = DefaultTestDispatcher()
-        }
-
-        @JvmStatic
-        @AfterClass
-        fun teardown() {
-            dispatcher.verify()
-        }
-    }
 
     @Before
     fun setup() {
@@ -66,7 +50,7 @@ class ManualBarrierControllerTest {
                 liftWaiter2.resume()
             }
         }
-        controller = ManualBarrierControllerImpl(dispatcher.createEffectiveContext())
+        controller = ManualBarrierControllerImpl(dispatcherRule.dispatcher.createEffectiveContext())
     }
 
     @Test

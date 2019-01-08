@@ -4,22 +4,44 @@
 package com.udeyrishi.pipe.testutil
 
 import com.udeyrishi.pipe.PipelineDispatcher
-import com.udeyrishi.pipe.internal.util.stackTraceToString
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.fail
+import org.junit.rules.TestRule
+import org.junit.runner.Description
+import org.junit.runners.model.Statement
 
-class DefaultTestDispatcher : PipelineDispatcher {
+class TestDispatcherRule(private val errorExpected: Boolean = false) : TestRule {
+    lateinit var dispatcher: PipelineDispatcher
+        private set
+
+    override fun apply(base: Statement, description: Description): Statement {
+        return object : Statement() {
+            override fun evaluate() {
+                val dispatcher = DefaultTestDispatcher().also {
+                    this@TestDispatcherRule.dispatcher = it
+                }
+
+                try {
+                    base.evaluate()
+                } finally {
+                    dispatcher.verify(errorExpected)
+                }
+            }
+        }
+    }
+}
+
+private class DefaultTestDispatcher : PipelineDispatcher {
     private var lastUnhandledError: Throwable? = null
 
     override val coroutineDispatcher: CoroutineDispatcher = Dispatchers.IO
 
     override fun onInternalPipeError(throwable: Throwable) {
         lastUnhandledError = throwable
-        System.err.print("Unhandled exception: ${throwable.stackTraceToString()}")
     }
 
-    fun verify(errorExpected: Boolean = false) {
+    fun verify(errorExpected: Boolean) {
         if (errorExpected) {
             var attempt = 0
             while (lastUnhandledError == null && attempt++ < MAX_VERIFY_ATTEMPTS) {
