@@ -10,20 +10,23 @@ import java.net.URL
 
 internal fun downloadImage(stringUrl: String): Bitmap {
     val url = URL(stringUrl)
-    val inputStream = url.content as InputStream
-    val buffer = ByteArray(8192)
-    var bytesRead: Int
-    val bytes = ByteArrayOutputStream().use {
-        bytesRead = inputStream.read(buffer)
+    return (url.content as InputStream).use { inputStream ->
+        val bytes = inputStream.readBytes()
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+    }
+}
+
+private fun InputStream.readBytes(): ByteArray {
+    return ByteArrayOutputStream().use {
+        val buffer = ByteArray(8192)
+        var bytesRead = read(buffer)
         while (bytesRead != -1) {
             it.write(buffer, 0, bytesRead)
-            bytesRead = inputStream.read(buffer)
+            bytesRead = read(buffer)
         }
 
         it.toByteArray()
     }
-
-    return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
 }
 
 internal fun rotateBitmap(source: Bitmap, angle: Float): Bitmap {
