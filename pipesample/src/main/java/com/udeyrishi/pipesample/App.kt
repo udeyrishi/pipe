@@ -4,7 +4,6 @@ import android.app.Application
 import com.udeyrishi.pipe.Job
 import com.udeyrishi.pipe.repository.InMemoryRepository
 import com.udeyrishi.pipe.repository.MutableRepository
-import com.udeyrishi.pipe.util.AndroidLogger
 
 class App : Application() {
     companion object {

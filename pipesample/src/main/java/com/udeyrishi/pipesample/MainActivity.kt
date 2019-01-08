@@ -18,7 +18,6 @@ import com.udeyrishi.pipe.util.liftWhenHasInternet
 import kotlinx.android.synthetic.main.activity_main.image_container as imageContainer
 import kotlinx.android.synthetic.main.activity_main.root_view as rootView
 
-
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
