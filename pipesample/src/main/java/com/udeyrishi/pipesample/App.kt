@@ -8,7 +8,15 @@ import com.udeyrishi.pipe.util.AndroidLogger
 
 class App : Application() {
     companion object {
-        val jobsRepo: MutableRepository<Job<*>> = InMemoryRepository()
+        lateinit var INSTANCE: App
+            private set
+    }
+
+    val jobsRepo: MutableRepository<Job<*>> = InMemoryRepository()
+
+    override fun onCreate() {
+        super.onCreate()
+        INSTANCE = this
     }
 
     override fun onTerminate() {

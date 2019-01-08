@@ -4,6 +4,7 @@
 package com.udeyrishi.pipe.util
 
 import android.Manifest.permission.ACCESS_NETWORK_STATE
+import android.app.Application
 import android.content.Context
 import androidx.annotation.RequiresPermission
 import com.udeyrishi.pipe.ManualBarrierController
@@ -38,8 +39,8 @@ fun ManualBarrierController.liftWhen(periodicityMillis: Long = 500L, pollingDisp
 }
 
 @RequiresPermission(ACCESS_NETWORK_STATE)
-fun ManualBarrierController.liftWhenHasInternet(context: Context) {
-    val connectivityMonitor = context.createConnectivityMonitor()
+fun ManualBarrierController.liftWhenHasInternet(app: Application) {
+    val connectivityMonitor = app.createConnectivityMonitor()
     connectivityMonitor += {
         if (it) {
             connectivityMonitor.stop()

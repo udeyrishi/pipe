@@ -29,7 +29,7 @@ class MainActivity : AppCompatActivity() {
             startJobs()
         }
 
-        App.jobsRepo[JOB_TAG]
+        App.INSTANCE.jobsRepo[JOB_TAG]
                 .map {
                     @Suppress("UNCHECKED_CAST")
                     it.identifiableObject as Job<ImagePipelineMember>
@@ -41,12 +41,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onRefresh() {
-        App.jobsRepo[JOB_TAG].forEach { (job, _, _) ->
+        App.INSTANCE.jobsRepo[JOB_TAG].forEach { (job, _, _) ->
             job.state.removeObservers(this)
             job.interrupt()
         }
 
-        App.jobsRepo.removeIf {
+        App.INSTANCE.jobsRepo.removeIf {
             it.tag == JOB_TAG
         }
 
@@ -66,7 +66,7 @@ class MainActivity : AppCompatActivity() {
 
         jobs.setupStateChangeListeners()
 
-        pipeline.manualBarriers[0].liftWhenHasInternet(this)
+        pipeline.manualBarriers[0].liftWhenHasInternet(App.INSTANCE)
         pipeline.manualBarriers[1].lift()
     }
 
@@ -107,7 +107,7 @@ class MainActivity : AppCompatActivity() {
         private const val JOB_TAG = "IMAGE_TRANSFORM_JOBS"
 
         private fun makePipeline() = buildPipeline<ImagePipelineMember> {
-            setRepository(App.jobsRepo)
+            setRepository(App.INSTANCE.jobsRepo)
             setLogger(AndroidLogger("Pipe Sample App"))
 
             addManualBarrier("internet_barrier")
