@@ -14,6 +14,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
+            android:gravity="center_horizontal"
             tools:context=".MainActivity">
 
             <Button
@@ -28,8 +29,6 @@
                 android:layout_height="wrap_content"
                 android:maxHeight="100dp"
                 android:maxWidth="100dp"
-                android:background="@color/colorAccent"
-                android:layout_gravity="center_horizontal"
                 tools:ignore="ContentDescription" />
 
             <ImageView
@@ -37,8 +36,6 @@
                 android:layout_height="wrap_content"
                 android:maxHeight="100dp"
                 android:maxWidth="100dp"
-                android:background="@color/colorPrimary"
-                android:layout_gravity="center_horizontal"
                 tools:ignore="ContentDescription" />
 
             <ImageView
@@ -46,8 +43,6 @@
                 android:layout_height="wrap_content"
                 android:maxHeight="100dp"
                 android:maxWidth="100dp"
-                android:background="#FFFFFFFF"
-                android:layout_gravity="center_horizontal"
                 tools:ignore="ContentDescription" />
 
             <ImageView
@@ -55,8 +50,6 @@
                 android:layout_height="wrap_content"
                 android:maxHeight="100dp"
                 android:maxWidth="100dp"
-                android:background="#FF00FF00"
-                android:layout_gravity="center_horizontal"
                 tools:ignore="ContentDescription" />
         </LinearLayout>
     </ScrollView>
