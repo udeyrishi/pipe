@@ -8,14 +8,12 @@ import com.udeyrishi.pipe.util.AndroidLogger
 
 class App : Application() {
     companion object {
-        val jobsRepo: MutableRepository<Job<ImagePipelineMember>> = InMemoryRepository()
-        val logger = AndroidLogger("Pipe Sample App")
+        val jobsRepo: MutableRepository<Job<*>> = InMemoryRepository()
     }
 
     override fun onTerminate() {
         jobsRepo.apply {
             items.forEach { (job, _, _) -> job.interrupt() }
-
             clear()
             close()
         }
