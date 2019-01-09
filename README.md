@@ -18,7 +18,8 @@ Pipe is an Android library for building pipelines for executing background tasks
 
 Consider a use case where we want to construct the following pipeline:
 
-1. Wait for a UI signal to start the pipeline (i.e., button click to lift the manual barrier)
+1. Wait for a UI signal to start the pipeline (say, button click)
+1. Ensure that there is internet connectivity
 1. Download an image from the given URL
 1. Rotate the downloaded image by 90 degrees
 1. Scale the image to a 400px x 400px size
@@ -38,6 +39,8 @@ fun makePipeline() = buildPipeline<ImagePipelineMember> {
     setLogger(LOGGER)
 
     addManualBarrier("start_barrier")
+    
+    addManualBarrier("internet_barrier")
 
     addStep("download", attempts = 4) {
         ImagePipelineMember(image = downloadImage(it.url!!))
@@ -105,11 +108,18 @@ JOBS_REPO[JOB_TAG].forEach { (job, _, _) ->
 }
 ```
 
+To lift the `internet_barrier` automatically when we have internet connectivity, we can use one of the [BarrierExtensions](pipe/src/main/java/com/udeyrishi/pipe/util/BarrierExtensions.kt):
+
+
+```kt
+pipeline.manualBarriers[1].liftWhenHasInternet(App.INSTANCE)
+```
+
 And finally, we can start the pipeline when a UI button is clicked:
 
 ```kt
 someButton.setOnClickListener {
-    pipeline.manualBarriers.first().lift()
+    pipeline.manualBarriers[0].lift()
 }
 ```
 
