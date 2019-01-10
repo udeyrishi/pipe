@@ -52,10 +52,10 @@ class BarrierExtensionTest {
         var attempts = 0
 
         val cancellable = manualBarrierController.liftWhen(pollingDispatcher = dispatcherRule.dispatcher) {
-            attemptWaiter.resume()
             if (++attempts > 2) {
                 fail("Should not have attempted more than 2x")
             }
+            attemptWaiter.resume()
             false
         }
 
